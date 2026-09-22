@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Companion.Core/Companion.Core.csproj" />
+    <Project Path="src/Companion.Application/Companion.Application.csproj" />
+    <Project Path="src/Companion.Infrastructure/Companion.Infrastructure.csproj" />
+    <Project Path="src/Companion.Desktop/Companion.Desktop.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Companion.ArchitectureChecks/Companion.ArchitectureChecks.csproj" />
+    <Project Path="tests/Companion.Tests/Companion.Tests.csproj" />
+  </Folder>
+</Solution>

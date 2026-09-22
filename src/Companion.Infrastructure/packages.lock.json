@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "dependencies": {
+    "net10.0-windows7.0": {
+      "companion.application": {
+        "type": "Project",
+        "dependencies": {
+          "Companion.Core": "[1.0.0, )"
+        }
+      },
+      "companion.core": {
+        "type": "Project"
+      }
+    }
+  }
+}
