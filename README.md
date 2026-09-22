@@ -2,7 +2,7 @@
 
 A Windows-first personal AI companion built in C#/.NET 10 and WPF.
 
-**Phase 1 passed QA at 9.0/10; Phase 2 is in progress.** The app opens a small transparent
+**Phase 2 development passed independent QA at 8.7/10; Phase 3 is next.** The app opens a small transparent
 companion and a settings window. Drag the character to move it and snap to a display's
 work-area edges, or focus it with Tab and use arrow keys (Shift moves farther) within
 the current display. **Ctrl+Shift+M**, while the companion is focused, or the
@@ -16,9 +16,9 @@ about every ten seconds. Motion stops while hidden/minimized, sleeping, with red
 animations. High contrast uses system colors and keeps the companion opaque. Tray
 actions and a configurable summon shortcut recover hidden or click-through windows.
 Monitor-relative position persists separately from preferences. Chat, voice, custom
-avatar packs, tools and memory are not implemented yet. Phase 2 is not complete;
-CPU measurements currently exceed the declared idle budget, and physical mixed-DPI,
-actual input and accessibility evidence remains pending. No API credentials are
+avatar packs, tools and memory are not implemented yet. Resource confirmation failed;
+CPU qualification remains a release blocker. Physical display, actual input, accessibility and sign-in qualification
+remain mandatory before release under the recorded validation sequence. No API credentials are
 read or required.
 
 ## Build and launch
@@ -43,6 +43,8 @@ companion stays in the taskbar and has a tray menu with Show, Hide, Settings, Sl
 and Exit. The default summon shortcut is **Ctrl+Alt+Space**; two alternatives are in
 Settings → Desktop behavior. Conflicts are reported. Summoning or starting the app
 again turns off click-through. Click-through is intentionally limited to the session.
+Hide and click-through require a successfully registered summon shortcut. If a shortcut
+cannot be registered, choose another preset before making the companion inaccessible.
 Settings save explicitly; closing the settings window discards unsaved edits.
 Reopening Settings shows and restores an existing hidden or minimized editor.
 Version-1 preferences migrate in memory and are written as version 2 only on Save.
@@ -80,14 +82,22 @@ for retention and recovery. Verification uses isolated fixtures instead of real 
 Read [development status](DEVELOPMENT_STATUS.md), [architecture](ARCHITECTURE.md),
 [testing](TESTING.md), [roadmap](ROADMAP.md), and [requirements](docs/REQUIREMENTS.md).
 Phase 0 passed independent QA at 9.4/10; [Phase 1 independently passed at 9.0/10](docs/qa/PHASE_1_REVIEW.md).
-Phase 2's [independent follow-up](docs/qa/PHASE_2_FOLLOWUP_REVIEW.md) scores **8.6/10**,
-but the **phase-exit result is FAIL**; the [earlier 8.0 review](docs/qa/PHASE_2_REVIEW.md)
-is preserved. The Release suite passed 193 tests before the final cadence-only change;
-the subsequent strict build and native run pass, with 12 process/control checks, 43 appearance
-assertions and 18 integration assertions, including settings recovery and blink lifetime.
-The final ten-second-blink baseline measures 1.041400% visible-idle CPU against a
-strictly below 1% limit of one logical processor. Reduced/hidden CPU and all memory
-intervals pass. Earlier failures remain preserved. CPU diagnosis and required physical
-display/input/accessibility evidence must be completed before Phase 3.
+Phase 2's [final development review](docs/qa/PHASE_2_RESOURCE_REVIEW.md) passes at **8.7/10**.
+The historical [8.6 failed exit](docs/qa/PHASE_2_FOLLOWUP_REVIEW.md) and
+[8.0 review](docs/qa/PHASE_2_REVIEW.md) remain preserved. The final-source Release suite
+passes 196 tests and 11 architecture checks.
+The final native run passes 18 process controls, 43 appearance, 24 integration,
+29 settings lifecycle and 49 placement-initialization assertions, with no skips or failures.
+The declared A/B/B/A comparison passed every CPU/memory interval on its frozen binary;
+earlier CPU failures remain preserved. New startup-placement and confirmed-recovery
+fixes pass regression. Final-build resource confirmation fails: its first run exceeds
+CPU limits at 1.978694% visible and 1.015400% reduced motion; the second run passes,
+as do all memory intervals. Both runs had to pass, so the aggregate remains **FAIL**.
+An explicit [post-result sequencing decision](docs/qa/PHASE_2_RESOURCE_SEQUENCE.md)
+allows development to continue while keeping CPU qualification mandatory in Phase 12.
+Performance scored 7/10, with no points for the failed budget criterion.
+The [validation sequence decision](docs/qa/PHASE_2_VALIDATION_SEQUENCE.md) moves unavailable
+physical/input/sign-in qualification to mandatory pre-release gates. No missing check
+is counted as passed. Development approval is not release approval; Phase 3 is next.
 No installer, remote repository or published release
 exists. No release license has been selected.

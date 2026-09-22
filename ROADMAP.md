@@ -1,7 +1,7 @@
 # Implementation roadmap
 
 This is a staged delivery plan, not a list of completed capabilities. **Phase 0 passed
-at 9.4/10; Phase 1 independently passed at 9.0/10. Phase 2 is in progress.** Every phase gets an independent QA report;
+at 9.4/10; Phase 1 independently passed at 9.0/10; Phase 2 development passed at 8.7/10.** Every phase gets an independent QA report;
 none advances with a score of 8.5 or lower. Cross-cutting security is designed now,
 implemented with each feature and adversarially tested again in Phase 11.
 
@@ -9,7 +9,7 @@ implemented with each feature and adversarially tested again in Phase 11.
 |---|---|---|
 | 0 | Requirements, architecture, threat model, contracts, repo and minimal Windows build | Clean strict build; architecture and real-XAML smoke checks; documented limitations, traceability and independent QA |
 | 1 | Composition root, lifetime/single instance, settings, structured logging, basic companion window, standard test framework | Atomic settings round trip/corrupt recovery/full disk; log redaction; startup/shutdown/cancellation; real visible launch and accessible close |
-| 2 | Default 2D avatar, animation states, drag/snap/DPI, scale/opacity/topmost/click-through, tray/hotkey/startup preference | Mixed-DPI/negative-coordinate/disconnected monitor matrix; recover from hidden/click-through; hotkey conflict; state transitions; idle baseline |
+| 2 | Default 2D avatar, animation states, drag/snap/DPI, scale/opacity/topmost/click-through, tray/hotkey/startup preference | Independent geometry/storage tests; programmatic owned-window recovery/hotkey/state/lifetime checks; recorded resource baseline and independent QA >8.5. Historical budget failures stay explicit; resource and physical qualification remain mandatory release gates under the recorded sequence decisions. |
 | 3 | Provider port + first real provider, bounded streaming, history/branches/search/private mode, complete chat rendering/UI | Scripted HTTP normal/malformed/timeout/offline/cancel cases; key/endpoint validation; real SQLite and temporary sentinel; Markdown/code/LaTeX/XSS; user-configured live check |
 | 4 | VAD, push-to-talk/STT/TTS, playback synchronization, optional activation, device/voice/speed settings | Audio fixtures + physical device matrix; denied/unavailable/unplugged input/output; mute and stop; no feedback loops; no raw-audio persistence |
 | 5 | Personality editor and prompt composer, presets, progressive disclosure | Every personality setting round trips; malformed config recovery; personality cannot change permission policy; keyboard/high contrast UX |
@@ -18,8 +18,8 @@ implemented with each feature and adversarially tested again in Phase 11.
 | 8 | Notes, timers/reminders, tasks, selected-file text inspection and tightly allowlisted app launch | Durable restart semantics, DST/time changes, bounded file handling, actual tool integration and approved side-effect tests |
 | 9 | Scientific expression engine, units/dimensions/uncertainty, symbolic worker and plot boundary where justified | Independent oracles, domains/nonfinite/overflow, affine units, covariance, plot limits; worker isolation before execution |
 | 10 | Layered customization/pack import, expressions/themes/bubbles and asset tooling | Full default companion, manifest/version limits, malformed/huge assets/path escape, license inventory, reduced motion and accessibility |
-| 11 | Security hardening, privacy/deletion/export, fault recovery and optional context permission surfaces | Cross-feature injection and exfiltration tests; crash/full-disk/migration; temporary sentinel; revoke all context; no secrets in exports |
-| 12 | Profiling, installer/update architecture, release docs and distribution readiness | Declared reference-machine budgets, clean-user install/rollback/uninstall, signatures/advisories/licenses, recovery drill and full regression |
+| 11 | Security hardening, privacy/deletion/export, fault recovery and optional context permission surfaces | Cross-feature injection and exfiltration tests; crash/full-disk/migration; temporary sentinel; revoke all context; no secrets in exports; actual drag/focus/tray/hotkey/click-through, screen-reader/accessibility and sign-in qualification |
+| 12 | Profiling, installer/update architecture, release docs and distribution readiness | Predeclared controlled repeat protocol: idle/hidden CPU strictly below 1% of one logical processor and sampled private bytes below 150,000,000, with presentation/occlusion, warmup and observer cost recorded and no overhead subtraction; tray/compositor costs and broader stability; clean-user install/rollback/uninstall, signatures/advisories/licenses, recovery drill and full regression; physical mixed-DPI/negative-coordinate/disconnected-monitor/work-area matrix and all deferred input qualification before release |
 
 Core ports for later phases are specified now; their production implementations remain
 deferred. Minimal SQLite conversation storage belongs in Phase 3, with advanced memory
@@ -27,14 +27,26 @@ storage in Phase 6. Permission boundaries are mandatory before any Phase 8 tool 
 Deterministic calculation introduced earlier, if needed, inherits Phase 9 numerical QA
 immediately; an LLM-only calculator never counts as complete.
 
+The [2026-09-22 validation sequence decision](docs/qa/PHASE_2_VALIDATION_SEQUENCE.md)
+records the user-confirmed lack of a second monitor and independent QA's rationale
+for moving unavailable physical/input qualification to mandatory pre-release gates.
+It preserves every unexecuted scenario and historical failure; no score credit or
+resource limit changes. The original frozen experiment passed. Subsequent final-build
+confirmation failed because both B runs had to pass and the first exceeded
+CPU limits. The explicitly [post-result resource sequence decision](docs/qa/PHASE_2_RESOURCE_SEQUENCE.md)
+allows Phase 2 development completion at **8.7/10**, placing unresolved resource
+qualification in the user's original Phase 12 optimization scope. The experiment
+remains FAIL; Performance stays 7/10 with zero budget-criterion points. No resource
+limit, acceptance rule or failed result changes, and release remains blocked.
+
 Phase 2 now implements appearance migration/controls, an eight-state vector renderer,
 scoped activity arbitration, drag/keyboard movement, work-area snapping, durable
 monitor-relative placement, tray/hotkey recovery, session click-through and explicit
 startup registration, plus a deterministic next-display command (Ctrl+Shift+M).
-Release verification passes 193 tests and 11 architecture checks before the final
-cadence-only change; the subsequent strict build passes, and native checks pass
-12 process controls, 43 appearance assertions and 18 integration assertions, including
-hidden/minimized settings recovery and actual timed blink transitions. The
+The final-source build passes 196 tests and 11 architecture checks; native regression
+passes 18 process controls, 43 appearance, 24 integration, 29 settings lifecycle and
+49 placement-initialization assertions, including shutdown
+during Save, hidden/minimized settings recovery and timed blink transitions. The
 observed display is a single monitor at 125% scale; actual multi-monitor transfer and
 physical input/accessibility remain unverified. Thirteen isolated-registry cases pass;
 actual sign-in remains pending. Two controlled baselines of the earlier renderer pass
@@ -43,10 +55,19 @@ reduced/hidden CPU and memory, but visible CPU still fails at 1.093335%. Product
 now uses a ten-second wait and 120 ms blink without animation clocks. Native regression
 passes; its single clean baseline still fails visible CPU at 1.041400%, while reduced/
 hidden CPU and memory pass. The cadence and resource limits are frozen; all prior
-failures remain preserved. The [follow-up review](docs/qa/PHASE_2_FOLLOWUP_REVIEW.md)
-scores **8.6/10**, but **phase exit remains FAIL**. The earlier 8.0 failed checkpoint is
-historical. Remaining work is visible-idle CPU diagnosis, physical display/input/
-accessibility validation and actual sign-in testing before the required phase gate.
+failures remain preserved. The predeclared A/B/B/A experiment compared the default
+thread-snapshot observer with process counters alone, changing only the two boundary
+snapshots per interval. All four runs passed CPU and memory on their original frozen
+binary, without changing cadence, limits or overhead accounting. This does not prove
+an isolated product optimization. Later readiness fixes disable input during placement
+initialization and require a confirmed shortcut for Hide/click-through. Their strict
+build/tests and native regression pass. Final-build B run 1 fails visible/reduced CPU
+at 1.978694% / 1.015400%; run 2 passes at 0.755208% / 0.598859% / 0.364527%. Both hidden
+intervals and all memory intervals pass, but the required aggregate remains **FAIL**.
+The [final development review](docs/qa/PHASE_2_RESOURCE_REVIEW.md) passes at **8.7/10**.
+Historical 8.0/8.6 failed exits and source checkpoint 6306ec9 remain preserved. Phase 3
+is next; no provider or conversation feature is implemented yet. Physical display/input/
+accessibility, sign-in and unchanged resource qualification remain mandatory before release in Phases 11/12.
 Implementation alone does not complete the phase.
 
 First useful release candidate follows Phases 1–8 with validated simple calculation,

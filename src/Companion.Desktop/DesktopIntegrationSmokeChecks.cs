@@ -15,7 +15,11 @@ internal static class DesktopIntegrationSmokeChecks
     {
         List<string> passed = [];
         List<string> skipped = [];
+        List<string> skippedChecks = [];
+        List<ShortcutAttempt> shortcutAttempts = [];
         List<string> adapterErrors = [];
+        SummonHotkey? available = null;
+        SummonHotkey? alternate = null;
         string? failure = null;
         var firstWindow = CreateWindow();
         var secondWindow = CreateWindow();
@@ -26,6 +30,12 @@ internal static class DesktopIntegrationSmokeChecks
         {
             if (!condition) throw new InvalidOperationException("Desktop integration smoke failed: " + name);
             passed.Add(name);
+        }
+        bool TryRegister(DesktopIntegration adapter, SummonHotkey choice, string purpose, out string? error)
+        {
+            var registered = adapter.TryRegisterHotkey(choice, out error);
+            shortcutAttempts.Add(new(purpose, choice.ToString(), registered, error));
+            return registered;
         }
 
         try
@@ -46,60 +56,89 @@ internal static class DesktopIntegrationSmokeChecks
                 Check("hide-refused-without-recovery", refusedHide);
             }
             first = new(firstWindow, () => { }, () => { }, () => { }, adapterErrors.Add, () => recoveryCallbacks++);
-            Check("tray-recovery-available-before-shortcut", first.RecoveryAvailable);
+            Check("tray-visibility-requested-before-shortcut", first.IsTrayVisibilityRequested);
+            Check("tray-visibility-alone-is-not-confirmed-recovery", !first.RecoveryAvailable && first.RegisteredHotkey is null);
             firstWindow.Show();
             await firstWindow.Dispatcher.InvokeAsync(() => firstWindow.UpdateLayout(), DispatcherPriority.ApplicationIdle);
             var firstHandle = new WindowInteropHelper(firstWindow).Handle;
             Check("owned-window-handle-created", firstHandle != 0);
             var beforeStyle = ReadStyle(firstHandle);
-            first.SetClickThrough(true);
-            Check("native-click-through-bit-enabled-only", first.IsClickThrough &&
-                (ReadStyle(firstHandle) ^ beforeStyle) == 0x20);
-            first.Recover();
-            Check("recover-clears-native-click-through", !first.IsClickThrough && (ReadStyle(firstHandle) & 0x20) == 0 &&
-                firstWindow.IsVisible && recoveryCallbacks == 1);
-            first.Hide();
-            Check("hide-remains-recoverable", !firstWindow.IsVisible && first.RecoveryAvailable);
-            first.Recover();
-            Check("hidden-window-recovered", firstWindow.IsVisible && recoveryCallbacks == 2);
-            first.SetSleeping(true);
-            first.SetSleeping(false);
-            Check("sleep-menu-state-can-be-updated", first.RecoveryAvailable);
+            Check("owned-window-starts-visible-and-interactive", firstWindow.IsVisible && (beforeStyle & 0x20) == 0);
+            var trayOnlyClickThroughRefused = false;
+            try { first.SetClickThrough(true); }
+            catch (InvalidOperationException) { trayOnlyClickThroughRefused = true; }
+            Check("tray-only-click-through-refused", trayOnlyClickThroughRefused);
+            Check("tray-only-click-through-refusal-preserves-native-style-and-visibility",
+                !first.IsClickThrough && ReadStyle(firstHandle) == beforeStyle && firstWindow.IsVisible);
+            var trayOnlyHideRefused = false;
+            try { first.Hide(); }
+            catch (InvalidOperationException) { trayOnlyHideRefused = true; }
+            Check("tray-only-hide-refused", trayOnlyHideRefused);
+            Check("tray-only-hide-refusal-preserves-native-style-and-visibility",
+                !first.IsClickThrough && ReadStyle(firstHandle) == beforeStyle && firstWindow.IsVisible);
 
-            SummonHotkey? available = null;
             foreach (var choice in Enum.GetValues<SummonHotkey>())
-                if (first.TryRegisterHotkey(choice, out _)) { available = choice; break; }
+                if (TryRegister(first, choice, "find-recovery-shortcut", out _)) { available = choice; break; }
             if (available is { } selected)
             {
-                Check("available-global-shortcut-registered", first.RegisteredHotkey == selected);
+                Check("available-global-shortcut-confirms-recovery", first.RegisteredHotkey == selected && first.RecoveryAvailable);
+                first.SetClickThrough(true);
+                Check("native-click-through-bit-enabled-only", first.IsClickThrough &&
+                    (ReadStyle(firstHandle) ^ beforeStyle) == 0x20);
+                first.Recover();
+                Check("recover-clears-native-click-through", !first.IsClickThrough && (ReadStyle(firstHandle) & 0x20) == 0 &&
+                    firstWindow.IsVisible && recoveryCallbacks == 1);
+                first.Hide();
+                Check("hide-remains-recoverable", !firstWindow.IsVisible && first.RecoveryAvailable);
+                first.Recover();
+                Check("hidden-window-recovered", firstWindow.IsVisible && recoveryCallbacks == 2);
+                first.SetSleeping(true);
+                first.SetSleeping(false);
+                Check("sleep-menu-state-can-be-updated", first.RecoveryAvailable);
+
                 second = new(secondWindow, () => { }, () => { }, () => { }, adapterErrors.Add);
                 Check("second-owned-window-cannot-steal-shortcut",
-                    !second.TryRegisterHotkey(selected, out var conflict) && conflict is not null && second.RegisteredHotkey is null);
-                SummonHotkey? alternate = null;
+                    !TryRegister(second, selected, "reject-conflict", out var conflict) && conflict is not null &&
+                    second.RegisteredHotkey is null && !second.RecoveryAvailable);
                 foreach (var choice in Enum.GetValues<SummonHotkey>().Where(choice => choice != selected))
-                    if (second.TryRegisterHotkey(choice, out _)) { alternate = choice; break; }
+                    if (TryRegister(second, choice, "find-alternate-shortcut", out _)) { alternate = choice; break; }
                 if (alternate is { } retained)
                 {
                     Check("conflicting-change-retains-previous-shortcut",
-                        !second.TryRegisterHotkey(selected, out var changedError) &&
-                        second.RegisteredHotkey == retained && changedError is not null &&
+                        !TryRegister(second, selected, "preserve-alternate-on-conflict", out var changedError) &&
+                        second.RegisteredHotkey == retained && second.RecoveryAvailable && changedError is not null &&
                         changedError.Contains("remains active", StringComparison.Ordinal));
                 }
-                else skipped.Add("No second preset available; retaining a previous registration could not be exercised.");
+                else
+                {
+                    skipped.Add("No second preset available; retaining a previous registration could not be exercised.");
+                    skippedChecks.Add("conflicting-change-retains-previous-shortcut");
+                }
 
                 first.SetClickThrough(true);
                 first.Dispose();
                 Check("dispose-clears-native-click-through", (ReadStyle(firstHandle) & 0x20) == 0 && !first.RecoveryAvailable);
-                Check("disposed-shortcut-is-reusable", second.TryRegisterHotkey(selected, out _) && second.RegisteredHotkey == selected);
+                Check("disposed-shortcut-is-reusable", TryRegister(second, selected, "reuse-disposed-shortcut", out _) &&
+                    second.RegisteredHotkey == selected && second.RecoveryAvailable);
                 second.Dispose();
                 Check("second-adapter-disposed", !second.RecoveryAvailable);
             }
             else
             {
-                skipped.Add("No summon shortcut preset was available; native conflict, replacement, and release checks were not run.");
-                first.SetClickThrough(true);
+                skipped.Add("No summon shortcut preset was available; positive click-through, hide/recover, conflict, replacement, and release checks were not run.");
+                skippedChecks.AddRange([
+                    "available-global-shortcut-confirms-recovery", "native-click-through-bit-enabled-only",
+                    "recover-clears-native-click-through", "hide-remains-recoverable", "hidden-window-recovered",
+                    "sleep-menu-state-can-be-updated", "second-owned-window-cannot-steal-shortcut",
+                    "conflicting-change-retains-previous-shortcut", "dispose-clears-native-click-through",
+                    "disposed-shortcut-is-reusable", "second-adapter-disposed"
+                ]);
+                Check("unavailable-shortcuts-leave-window-visible-and-interactive",
+                    !first.RecoveryAvailable && first.RegisteredHotkey is null && !first.IsClickThrough &&
+                    firstWindow.IsVisible && ReadStyle(firstHandle) == beforeStyle);
                 first.Dispose();
-                Check("dispose-clears-native-click-through", (ReadStyle(firstHandle) & 0x20) == 0 && !first.RecoveryAvailable);
+                Check("unregistered-adapter-disposes-without-changing-interaction",
+                    ReadStyle(firstHandle) == beforeStyle && firstWindow.IsVisible && !first.RecoveryAvailable);
             }
             Check("no-adapter-errors", adapterErrors.Count == 0);
         }
@@ -116,7 +155,12 @@ internal static class DesktopIntegrationSmokeChecks
             secondWindow.Close();
             Directory.CreateDirectory(dataDirectory);
             await File.WriteAllTextAsync(Path.Combine(dataDirectory, "desktop-integration-smoke.json"),
-                JsonSerializer.Serialize(new { passed, count = passed.Count, skipped, adapterErrors, failure }));
+                JsonSerializer.Serialize(new
+                {
+                    passed, count = passed.Count, skipped, skippedChecks, skippedCount = skippedChecks.Count,
+                    registeredShortcut = available?.ToString(), alternateShortcut = alternate?.ToString(),
+                    shortcutAttempts, adapterErrors, failure
+                }));
         }
     }
 
@@ -126,6 +170,8 @@ internal static class DesktopIntegrationSmokeChecks
         WindowStyle = WindowStyle.None, AllowsTransparency = true, ShowInTaskbar = false,
         ShowActivated = false, Opacity = 0, WindowStartupLocation = WindowStartupLocation.CenterScreen
     };
+
+    private sealed record ShortcutAttempt(string Purpose, string Shortcut, bool Registered, string? Error);
 
     private static long ReadStyle(nint handle) => IntPtr.Size == 8
         ? GetWindowLongPtr(handle, -20).ToInt64() : GetWindowLong(handle, -20);

@@ -1,6 +1,10 @@
 [CmdletBinding()]
-param([ValidateSet('Debug', 'Release')][string]$Configuration = 'Release')
+param(
+    [ValidateSet('Debug', 'Release')][string]$Configuration = 'Release',
+    [ValidateSet('threads', 'process')][string]$Observer = 'threads'
+)
 $ErrorActionPreference = 'Stop'
+$Observer = $Observer.ToLowerInvariant()
 $workspaceRoot = Split-Path -Parent $PSScriptRoot
 $appPath = Join-Path $workspaceRoot "src\Companion.Desktop\bin\$Configuration\net10.0-windows\Companion.Desktop.exe"
 if (-not (Test-Path -LiteralPath $appPath -PathType Leaf)) { throw 'Build the selected desktop configuration before measuring.' }
@@ -35,11 +39,12 @@ $binaryHashes | ConvertTo-Json -Depth 3 | Set-Content -LiteralPath (Join-Path $p
 
 $process = New-Object System.Diagnostics.Process
 $process.StartInfo.FileName = $appPath
-$process.StartInfo.Arguments = '--performance-smoke --data-dir "' + $profile + '"'
+$process.StartInfo.Arguments = '--performance-smoke --performance-observer ' + $Observer + ' --data-dir "' + $profile + '"'
 $process.StartInfo.UseShellExecute = $false
 $process.StartInfo.CreateNoWindow = $true
 Write-Output 'Measuring isolated companion: 10-second warmup and three 60-second process-counter intervals.'
 Write-Output "Evidence profile: $profile"
+Write-Output "Observer mode: $Observer"
 try {
     if (-not $process.Start()) { throw 'Performance harness could not start.' }
     $elapsed = [System.Diagnostics.Stopwatch]::StartNew()
@@ -69,9 +74,24 @@ if (Test-Path -LiteralPath (Join-Path $profile 'settings.json')) {
 if ($report.schemaVersion -ne 1 -or $report.logicalProcessorCount -lt 1 -or @($report.samples).Count -ne 3) {
     throw 'Invalid performance report structure.'
 }
+if ($report.observerMode -cne $Observer -or $report.threadSnapshotCaptureAttempts -ne $(if ($Observer -eq 'threads') { 6 } else { 0 })) {
+    throw 'Recorded observer mode or diagnostic capture count does not match this invocation.'
+}
 $expectedModes = @('visible-idle', 'visible-reduced-motion', 'hidden')
 for ($index = 0; $index -lt 3; $index++) {
     $sample = $report.samples[$index]
+    foreach ($field in @('threadSnapshotCaptureAttempts', 'threadsAtStart', 'threadsAtEnd')) {
+        if ($field -notin $sample.PSObject.Properties.Name) { throw "Missing observer evidence: $field" }
+    }
+    if ($Observer -eq 'threads') {
+        if ($sample.threadSnapshotCaptureAttempts -ne 2 -or $null -eq $sample.threadsAtStart -or $null -eq $sample.threadsAtEnd -or
+            @($sample.threadsAtStart).Count -eq 0 -or @($sample.threadsAtEnd).Count -eq 0) {
+            throw 'Thread diagnostic interval lacks its two nonempty snapshots.'
+        }
+    }
+    elseif ($sample.threadSnapshotCaptureAttempts -ne 0 -or $null -ne $sample.threadsAtStart -or $null -ne $sample.threadsAtEnd) {
+        throw 'Process-only interval unexpectedly captured thread diagnostics.'
+    }
     if ($sample.mode -ne $expectedModes[$index] -or $sample.elapsedSeconds -lt 60 -or $sample.cpuSeconds -lt 0) {
         throw 'Incomplete or invalid measurement interval.'
     }
@@ -133,6 +153,7 @@ $budgetPassed = @($budgetSamples | Where-Object { -not $_.cpuBudgetPass -or -not
     cpuLimitExclusiveOneCorePercent = 1.0
     privateBytesLimitExclusive = 150000000
     overheadSubtracted = $false
+    observerMode = $report.observerMode
     allIntervalsWithinBudget = $budgetPassed
     samples = $budgetSamples
 } | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (Join-Path $profile 'budget-evaluation.json') -Encoding UTF8

@@ -1,6 +1,7 @@
 # Architecture
 
-Status: Phase 1 complete at independent QA 9.0/10; Phase 2 desktop interactions in progress. Configuration, log ports/adapters, instance
+Status: Phase 2 desktop interactions complete as a development milestone at independent
+QA 8.7/10; resource and physical qualification still block release. Configuration, log ports/adapters, instance
 activation and WPF shell now exist. Conversation, voice, memory, tools and rendering
 extensions below remain intended architecture. Review date: 2026-09-21; status synchronized 2026-09-22.
 
@@ -21,6 +22,11 @@ extensions below remain intended architecture. Review date: 2026-09-21; status s
 - Composition lives in Desktop. Runtime lifetime owns a cancellation source and serial
   save gate; async close drains work with a deadline. Postcommit diagnostic cancellation
   reports settings saved with a logging warning, never falsely reports rollback.
+- Settings capture the requested preferences and native options when Save starts.
+  Shutdown marks the settings window before disposing desktop integration, preventing
+  a delayed save continuation from applying appearance, registering shortcuts, changing
+  startup or re-enabling controls. A completed file commit remains committed even when
+  shutdown suppresses the later UI effects.
 - Single instance uses an exclusive profile/session file handle, released even on
   process death, plus a same-user named pipe carrying only a one-byte activation and
   acknowledgment. No commands, paths or free-form payload cross that IPC boundary.
@@ -165,12 +171,19 @@ A separate bounded atomic `placement.json` prevents move autosave from overwriti
 explicit preference edits. Moves capture a normal-state snapshot before debouncing,
 so immediate Hide/minimize/Exit can still flush that move. Unsupported/oversized files
 remain untouched. Native behavior follows Microsoft's [DPI notification contract](https://learn.microsoft.com/en-us/windows/win32/hidpi/wm-dpichanged).
+Initial placement loading disables companion input before its first await and restores
+the prior enabled state only while the window/session remain alive. Native restoration
+requires a visible normal window at both stages; closure, shutdown, hiding or minimizing
+cannot trigger a stale final restore. Tray actions are installed after initialization.
 Ctrl+Shift+M and Next display cycle a deterministic top/left/device-ID monitor order,
 preserve relative placement and use the same two-step DPI restore. One available
 display produces a visible no-op status; physical cross-display validation is pending.
 
-Tray menu and a registered, user-changeable hotkey always recover a hidden/click-through
-companion. Handle hotkey conflicts visibly. No focus stealing on notifications.
+A successfully registered, user-changeable hotkey is required before hiding or
+enabling click-through. The tray also offers recovery, but requested NotifyIcon
+visibility is not proof that Windows created the icon and cannot authorize those
+actions by itself. Handle shortcut conflicts visibly and retain a prior working
+registration. No focus stealing on notifications.
 Single-instance activation uses a current-user named pipe and a restricted message
 schema. Startup registration is opt-in and reversible through an explicit settings save;
 it writes one quoted, argument-free executable command under HKCU Run. The adapter is
@@ -293,6 +306,21 @@ conservatively: CPU is `100 * process CPU seconds / elapsed seconds`, without di
 by processor count, and memory uses decimal bytes. Machine-normalized CPU and MiB
 remain supplementary reporting. This keeps the budget comparable across core counts;
 it is not permission to select a friendlier denominator after seeing measurements.
+
+The performance harness has an explicit observer option: `threads` remains the default
+and includes two thread snapshots inside each interval; `process` omits only those
+snapshots. Both include one-second native process-counter reads and all enabled
+measurement overhead. The [predeclared observer comparison](docs/qa/PHASE_2_OBSERVER_PROTOCOL.md)
+freezes the build, supervisor and protocol before four sequential A/B/B/A runs. Its
+limited acceptance rule requires both process-only runs to pass every fixed-budget
+interval; it neither changes production rendering nor replaces physical display/input
+validation. Results and limits belong in the independent QA report. The later final-build
+confirmation failed: one process-only run exceeded visible and reduced-motion CPU
+limits, while the second passed. The explicit
+[post-result sequencing decision](docs/qa/PHASE_2_RESOURCE_SEQUENCE.md) retains that
+failure and the unchanged budget as a mandatory Phase 12 release gate; it permits
+conversation development under the user's weighted QA requirement without claiming
+resource compliance.
 
 Phase 12 produces a signed per-user installer, dependency/license inventory, update
 manifest/signature validation, staged downloads, user-controlled restart, rollback and

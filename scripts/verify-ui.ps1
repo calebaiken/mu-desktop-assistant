@@ -66,8 +66,23 @@ $script:caseCount++
 Write-Output "PASS $expectedAppearanceCount real-window appearance-state-placement-animation assertions"
 foreach ($limit in $appearance.skipped) { Write-Output "LIMIT: $limit" }
 $integration = Get-Content -LiteralPath (Join-Path $profile 'desktop-integration-smoke.json') -Raw | ConvertFrom-Json
-if ($integration.failure -or @($integration.adapterErrors).Count -gt 0 -or $integration.count -lt 13) {
+foreach ($field in @('registeredShortcut', 'alternateShortcut', 'skippedChecks', 'skippedCount', 'shortcutAttempts')) {
+    if ($field -notin $integration.PSObject.Properties.Name) { throw "Missing recovery evidence: $field" }
+}
+$expectedIntegrationCount = if ($null -eq $integration.registeredShortcut) { 15 } elseif ($null -eq $integration.alternateShortcut) { 23 } else { 24 }
+$expectedSkippedCount = if ($null -eq $integration.registeredShortcut) { 11 } elseif ($null -eq $integration.alternateShortcut) { 1 } else { 0 }
+if ($integration.failure -or @($integration.adapterErrors).Count -gt 0 -or
+    $integration.count -ne $expectedIntegrationCount -or
+    @($integration.passed | Select-Object -Unique).Count -ne $expectedIntegrationCount -or
+    $integration.skippedCount -ne $expectedSkippedCount -or
+    @($integration.skippedChecks | Select-Object -Unique).Count -ne $expectedSkippedCount) {
     throw 'Desktop integration evidence is incomplete or reports an adapter failure.'
+}
+foreach ($assertion in @('tray-visibility-alone-is-not-confirmed-recovery',
+    'tray-only-click-through-refused', 'tray-only-hide-refused',
+    'tray-only-click-through-refusal-preserves-native-style-and-visibility',
+    'tray-only-hide-refusal-preserves-native-style-and-visibility')) {
+    if ($assertion -notin $integration.passed) { throw "Missing required recovery guard: $assertion" }
 }
 $script:caseCount++
 Write-Output "PASS $($integration.count) desktop recovery/tray/shortcut assertions"
@@ -78,12 +93,32 @@ if (@($stages | Where-Object { $_ -like 'settings-recovery-complete:*' }).Count 
 }
 $script:caseCount++
 Write-Output 'PASS hidden-and-minimized-settings-recovery'
+$settingsLifecycle = Get-Content -LiteralPath (Join-Path $profile 'settings-lifecycle-smoke.json') -Raw | ConvertFrom-Json
+if ($settingsLifecycle.failure -or $settingsLifecycle.count -ne 29 -or
+    @($settingsLifecycle.passed | Select-Object -Unique).Count -ne 29 -or
+    @($stages | Where-Object { $_ -like 'settings-lifecycle-complete:*' }).Count -ne 2) {
+    throw 'Both native runs must complete all 29 save/shutdown lifecycle assertions.'
+}
+$script:caseCount++
+Write-Output 'PASS 29 settings-save-shutdown lifecycle assertions'
+$placementInitialization = Get-Content -LiteralPath (Join-Path $profile 'placement-initialization-smoke.json') -Raw | ConvertFrom-Json
+if ($placementInitialization.failure -or $placementInitialization.count -ne 49 -or
+    @($placementInitialization.passed | Select-Object -Unique).Count -ne 49 -or
+    @($stages | Where-Object { $_ -like 'placement-initialization-complete:*' }).Count -ne 2) {
+    throw 'Both native runs must complete all 49 placement initialization assertions.'
+}
+$script:caseCount++
+Write-Output 'PASS 49 placement initialization assertions'
 Assert-AppExit 'headless-composed-lifecycle' "--smoke $profileArgument" 0
 Assert-AppExit 'reject-forward-slash-unc' '--smoke --data-dir "//invalid-host.invalid/share"' 2
 Assert-AppExit 'reject-backslash-unc' '--smoke --data-dir "\\invalid-host.invalid\share"' 2
 Assert-AppExit 'reject-relative-data-path' '--smoke --data-dir "relative-profile"' 2
 Assert-AppExit 'reject-conflicting-smoke-flags' "--smoke --ui-smoke $profileArgument" 2
 Assert-AppExit 'reject-duplicate-data-flag' "$profileArgument $profileArgument --smoke" 2
+Assert-AppExit 'reject-observer-without-performance-mode' "--smoke --performance-observer process $profileArgument" 2
+Assert-AppExit 'reject-unknown-observer' "--performance-smoke --performance-observer unknown $profileArgument" 2
+Assert-AppExit 'reject-missing-observer-value' '--performance-smoke --performance-observer' 2
+Assert-AppExit 'reject-duplicate-observer' "--performance-smoke --performance-observer threads --performance-observer process $profileArgument" 2
 
 $logPath = Join-Path $profile 'logs\application.jsonl'
 $events = @(Get-Content -LiteralPath $logPath | ForEach-Object { $_ | ConvertFrom-Json })

@@ -7,6 +7,12 @@ preferences to satisfy this matrix; use appropriate test hardware/disposable acc
 Record OS/build, monitor layout/work areas, scale factors, executable revision, exact
 actions, observed result and any artifact path for each row.
 
+Availability recorded 2026-09-22: this machine exposes one display at 125% scale,
+and the user confirmed that no second monitor is available. The supported native
+interaction helper also fails window discovery with missing-pipe OS error 2.
+Physical monitor and actual input rows therefore remain unexecuted. Neither pure
+geometry tests nor programmatic window checks change those rows to passed.
+
 | Scenario | Actions | Expected result |
 |---|---|---|
 | Keyboard placement | Tab to Move companion; arrow and Shift+arrow; Tab onward | Visible focus; moves by 10/40 DIP within current work area; Settings/Exit reachable |

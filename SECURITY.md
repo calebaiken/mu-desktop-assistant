@@ -19,7 +19,8 @@ Atomic file operations prevent ordinary partial writes, not malicious same-user 
 Current-user named pipes are not a defense against malware running as the same user.
 
 Phase 2 adds native integration limited to the application's own window. Click-through
-and Hide require an available tray or registered shortcut; Show, the shortcut and
+and Hide now require a successfully registered summon shortcut; requested tray
+visibility alone does not prove that Windows displayed a usable icon. Show, the shortcut and
 same-user activation restore interaction. Registration conflicts are visible, and
 shortcuts/menu/icon resources are released on close. Placement JSON has a 4 KiB limit,
 a closed versioned schema and finite normalized coordinates. Monitor identifiers are
@@ -39,10 +40,30 @@ Monitor cycling uses enumerated displays and the companion's owned HWND. Shortcu
 registration success clears its own status message without clearing storage failures.
 Hidden/minimized settings recovery now passes native checks. Closing disposes renderer
 resources; stopping clears timers and controlled clocks so late callbacks cannot render.
+Beginning shutdown now disables settings before disposing native adapters. A pending
+Save may finish its atomic file commit, but its continuation cannot reapply the avatar,
+register a shortcut, change click-through/startup or re-enable controls afterward.
+Twenty-nine native lifecycle assertions cover controlled committed, cancelled and
+I/O-failed saves. The test profiles do not change the user's startup value.
+Initial placement now disables interaction until loading/restoration settles, without
+re-enabling a stopped or closed window or changing a previously disabled state. Final
+native regression passes 49 placement-initialization and 24 integration assertions,
+including the confirmed-shortcut requirement.
 Supported Computer Use input validation remains unavailable; programmatic native
 checks do not establish physical click-through delivery or accessibility behavior.
-The independent follow-up scores 8.6/10 but fails phase exit; that numeric result is
-not a security certification or authorization to advance past missing physical checks.
+The final independent development review passes at 8.7/10; the historical 8.6 failed
+phase exit remains preserved. The
+[validation sequence decision](docs/qa/PHASE_2_VALIDATION_SEQUENCE.md) keeps unavailable
+physical/input/accessibility and actual sign-in checks mandatory before release in
+Phases 11/12. Neither a development score nor programmatic tests certify those checks.
+The observer experiment changes only optional diagnostic thread snapshots, preserves
+fixed resource limits; all four original runs pass on their recorded binary. Final
+readiness fixes pass regression. Final resource confirmation fails because the first
+of two valid runs exceeds CPU limits, despite the second run and all memory intervals
+passing. The aggregate result is preserved. The explicit post-result
+[resource sequence decision](docs/qa/PHASE_2_RESOURCE_SEQUENCE.md) requires unchanged
+CPU/memory qualification in Phase 12 before release. Performance remains 7/10 with
+zero budget-criterion points; development approval is not security or release certification.
 
 ## Assets, actors and trust boundaries
 

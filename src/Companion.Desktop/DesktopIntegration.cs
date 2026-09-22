@@ -14,6 +14,7 @@ public sealed class DesktopIntegration : IDisposable
     private const long TransparentStyle = 0x00000020;
     private const long LayeredStyle = 0x00080000;
     private const int HotkeyMessage = 0x0312;
+    private const string HideRecoveryRequiredMessage = "Hiding needs a working summon shortcut. Choose a shortcut in Settings.";
     private readonly Window window;
     private readonly Action<string> reportError;
     private readonly Action? recovered;
@@ -50,7 +51,11 @@ public sealed class DesktopIntegration : IDisposable
         {
             menu = new Forms.ContextMenuStrip();
             menu.Items.Add("Show / recover companion", null, (_, _) => Invoke(Recover));
-            menu.Items.Add("Hide companion", null, (_, _) => Invoke(Hide));
+            menu.Items.Add("Hide companion", null, (_, _) => Invoke(() =>
+            {
+                if (!RecoveryAvailable) reportError(HideRecoveryRequiredMessage);
+                else Hide();
+            }));
             menu.Items.Add("Settings", null, (_, _) => Invoke(() => { Recover(); openSettings(); }));
             sleepItem = new Forms.ToolStripMenuItem("Sleep", null, (_, _) => Invoke(toggleSleep));
             menu.Items.Add(sleepItem);
@@ -68,7 +73,10 @@ public sealed class DesktopIntegration : IDisposable
         }
     }
 
-    public bool RecoveryAvailable => !disposed && (hotkeyId.HasValue || tray is { Visible: true });
+    // NotifyIcon.Visible records the requested state, not whether the shell accepted the icon.
+    // Only a successful RegisterHotKey result confirms a route back from an inaccessible window.
+    public bool RecoveryAvailable => !disposed && hotkeyId.HasValue;
+    internal bool IsTrayVisibilityRequested => tray is { Visible: true };
     public bool IsClickThrough { get; private set; }
     public SummonHotkey? RegisteredHotkey { get; private set; }
 
@@ -127,7 +135,7 @@ public sealed class DesktopIntegration : IDisposable
     {
         VerifyUsable();
         if (value && !RecoveryAvailable)
-            throw new InvalidOperationException("Click-through needs an available tray icon or summon shortcut first.");
+            throw new InvalidOperationException("Click-through needs a working summon shortcut. Choose a shortcut in Settings.");
         if (value == IsClickThrough) return;
         var oldStyle = ReadExtendedStyle();
         if (value && (oldStyle & LayeredStyle) == 0)
@@ -155,7 +163,7 @@ public sealed class DesktopIntegration : IDisposable
     public void Hide()
     {
         VerifyUsable();
-        if (!RecoveryAvailable) throw new InvalidOperationException("Hiding needs an available tray icon or summon shortcut first.");
+        if (!RecoveryAvailable) throw new InvalidOperationException(HideRecoveryRequiredMessage);
         window.Hide();
     }
 

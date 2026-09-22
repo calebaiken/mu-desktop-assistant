@@ -1,9 +1,13 @@
 # Development status
 
-Updated: 2026-09-22. Current phase: **2 — independent follow-up QA 8.6/10; phase exit FAIL**.
-Phase 0 passed at 9.4/10 and Phase 1 passed at 9.0/10. Phase 2 exceeds the numerical
-threshold, but required performance and physical validation remain incomplete.
-Phase 3 has not begun.
+Updated: 2026-09-22. **Phase 2 development complete — independent QA 8.7/10 PASS; Phase 3 next.**
+Phase 0 passed at 9.4/10 and Phase 1 passed at 9.0/10. Phase 2's final resource
+confirmation remains **FAIL**, and release is not approved. Phase 3 has not begun.
+The recorded validation sequence moves unavailable physical/input/sign-in qualification
+to mandatory Phase 11/12 pre-release gates without marking any missing check passed.
+The separate, explicitly post-result decision in docs/qa/PHASE_2_RESOURCE_SEQUENCE.md
+places unresolved CPU qualification in the user's Phase 12 optimization work. Performance
+remains 7/10 with zero budget-criterion points; neither limits nor measurements changed.
 
 ## Completed implementation
 
@@ -43,21 +47,42 @@ windows now show and restore when reopened; hidden/minimized recovery passes nat
 Measurement input is locked and labeled because the first performance run was changed
 interactively. Direct native process counters reduce measurement overhead; the
 remaining CPU cost is still under investigation.
+Settings Save now captures native preferences with the save request and suppresses
+later UI, shortcut, click-through and startup changes once shutdown begins. A pending
+save cannot re-enable the editor or reapply the companion after native resources are
+disposed. Native controlled-completion cases cover committed, cancelled and failed saves.
+Two subsequent readiness fixes now pass final regression: input is disabled while
+initial placement loads and restores, with prior disabled/closed/stopped state preserved;
+Hide and click-through require a successfully registered summon shortcut rather than
+requested tray visibility. Settings refresh click-through availability after shortcut changes.
 
 ## Test status and evidence
 
-- Latest executed full Release verification: **193 passed, 0 failed, 0 skipped**, 11
-  architecture checks, composed smoke, zero compiler warnings/errors. This suite
-  precedes the final cadence-only change; the later strict build and native run
-  execute that change. Preserved TRX:
-  artifacts/qa/desktop-ui-20260922-175553-c176ac05/release-193-before-cadence-only-change.trx.
-- Latest complete native UI run: **12/12 process/control checks**, **43 appearance,
-  state and placement assertions**, **18 tray/recovery/shortcut assertions**, no skipped
-  shortcut cases or adapter errors. Evidence:
-  artifacts/qa/desktop-ui-20260922-175553-c176ac05/profile. Hidden/minimized settings
-  reopening and timed blink transitions at the final ten-second cadence pass. The
+- Latest executed full Release verification: **196 passed, 0 failed, 0 skipped**, 11
+  architecture checks, composed smoke, zero compiler warnings/errors. The final-source
+  verification covers both readiness fixes; its retained TRX is
+  artifacts/qa/desktop-ui-20260922-185538-0c91126a/release-196-before-final-build-confirmation.trx.
+  Three new independent
+  placement tests cover cancelled waiters, cancellation after atomic commit and retry
+  after writer failure. Preserved TRX:
+  artifacts/qa/desktop-ui-20260922-183217-1d198cb8/release-196-before-observer-abba.trx.
+  The earlier 193-case artifact and its cadence-only scope remain retained.
+- Latest complete native UI run: **18/18 process/control checks**, **43 appearance,
+  state and placement assertions**, **24 tray/recovery/shortcut assertions**,
+  **29 settings lifecycle assertions**, and **49 placement-initialization assertions**,
+  with no skips or reported failures. Evidence:
+  artifacts/qa/desktop-ui-20260922-185538-0c91126a/profile.
+  Settings recovery, shutdown during Save, input freeze during placement and confirmed
+  shortcut recovery pass. The
   latest Release build has zero warnings/errors. This native run observed one display at
   120 DPI (125%); next-display coverage is therefore a single-display no-op.
+- The new readiness fixture initially failed compilation and was corrected. Strict
+  Release verification now passes. Native attempt desktop-ui-20260922-185315-2646a9cb
+  completed 43 appearance, 24 integration and 29 settings lifecycle checks, then failed
+  placement assertion 42: its comparison included window size after warning text resized
+  the window. The fixture now compares Left/Top; production code was unchanged by that
+  correction. The later 18/43/24/29/49 native run above passes; the failed attempt is
+  retained and is not counted as a complete run.
 - Prior expanded UI attempt hit its 15-second deadline after all 33 appearance checks;
   it had no completed integration artifact. Retained at desktop-ui-20260922-164249-5578a5c9.
   The supervisor first increased its deadline to 30 seconds and now uses 40 seconds
@@ -65,8 +90,8 @@ remaining CPU cost is still under investigation.
   The subsequent 33-assertion run completed its UI stages in 4.790 s and 1.984 s.
 - The later desktop-ui-20260922-174634-ef0f4899 attempt ran both application processes
   successfully with 43 appearance assertions, but its supervisor failed on the stale
-  expected count of 37. That failure remains retained; the corrected 12/12 run above
-  validates the updated supervisor and settings recovery.
+  expected count of 37. That failure remains retained; subsequent corrected 12/12
+  runs validated the supervisor and settings recovery before the current 17/17 expansion.
 - First performance run completed but is **not a controlled idle baseline**: settings
   were saved during measurement. Keep performance-20260922-164711-eccda553 as rejected
   evidence. The already-running old supervisor returned 0; that does not override the
@@ -85,14 +110,15 @@ remaining CPU cost is still under investigation.
   bytes). It recorded 10/0/0 completed blinks and zero owned animation clocks. The
   combined renderer/lifetime changes improved reduced/hidden CPU; no single cause is
   proven. This failed result is retained without overhead subtraction.
-- The final ten-second-blink run, performance-20260922-175657-e7f2743d, also **failed**:
+- The pre-experiment ten-second-blink run, performance-20260922-175657-e7f2743d, **failed**:
   visible CPU was **1.041400%**; reduced-motion **0.520719%** and hidden **0.390566%**
   passed. All memory intervals passed (62,914,560 / 64,225,280 / 66,539,520 peak private
   bytes), with 6/0/0 completed blinks and zero owned animation clocks. The supervisor
   correctly exited 1 and retained budget-evaluation.json. The cadence is frozen;
   neither another unchanged repeat nor a relaxed threshold is used to claim a pass.
 - Supported Computer Use window discovery failed because its native helper pipe was
-  unavailable, including after reinitialization. No actual mouse/keyboard input was
+  unavailable (OS error 2), including after updated skill guidance and a fresh reset.
+  No actual mouse/keyboard input was
   attempted this turn. Programmatic HWND checks do not replace this evidence.
 - Production idle rendering now waits ten seconds between 120 ms blinks with no animation clocks.
   Native checks prove eyelid transitions, completed-blink counting, interrupted-blink
@@ -100,6 +126,31 @@ remaining CPU cost is still under investigation.
   at 20 FPS, explicitly removed on Stop; closing disposes the renderer. The ten-second
   cadence passes native regression but fails the visible-idle CPU budget. The cadence
   decision preceded its single clean measurement; the harness and limits are unchanged.
+- The predeclared **A/B/B/A** observer comparison completed under
+  docs/qa/PHASE_2_OBSERVER_PROTOCOL.md. A uses the default `threads` observer; B uses
+  `process`, omitting only two boundary thread snapshots per interval. The production
+  cadence, warmup, native counters, calibration and limits stay fixed; no overhead is
+  subtracted. Five binary hashes and the protocol/supervisor hashes are frozen. Every
+  valid pass/failure is retained, technical failures stop the sequence, and both B
+  replicates had to pass every interval. All four runs were valid and passed all CPU
+  and memory intervals. A visible CPU values were **0.885254% / 0.989278%**; B values
+  were **0.755076% / 0.703079%**. This is evidence for that earlier frozen binary,
+  not an isolated product optimization or statistical confidence claim. All results remain in
+  artifacts/qa/observer-d217a835e8bc4ec9b6f27b98637024fd/comparison.json.
+- The separately declared docs/qa/PHASE_2_FINAL_BUILD_PROTOCOL.md requires exactly two
+  process-only B runs after the readiness fixes, both passing every unchanged limit.
+  Its frozen SHA256 is 217CD856232210092F15773DE19062F6FB12A35B0185393C64EB771FB49CE174.
+  The completed final-build sequence is retained at
+  artifacts/qa/final-build-1ca3041a363849aabc6b2c4e2170ce6f/comparison.json.
+  **Aggregate result: FAIL.** Both runs are valid, but both were required to pass.
+  Run 1, performance-20260922-185649-ab4dbf46, measured **1.978694% visible,
+  1.015400% reduced-motion and 0.364563% hidden** one-core CPU; the first two fail.
+  Run 2, performance-20260922-190004-0f75069d, passed at **0.755208% / 0.598859% /
+  0.364527%**. All memory intervals pass; peak private bytes were respectively
+  64,974,848 / 65,224,704 / 62,337,024 and 63,119,360 / 64,102,400 / 63,520,768.
+  Each run records 6/0/0 completed blinks and zero owned clocks. The first failure,
+  exact binary identity and unchanged acceptance rule are preserved; no replacement
+  run or overhead subtraction is used. Development approval does not change this failure.
 
 Historical Phase 1 evidence remains: Release/Debug 38 tests each, 11 architecture
 checks, 9 negative controls and 9 UI/process checks, plus attributed actual input.
@@ -115,24 +166,27 @@ frame-time percentile or long-running memory certification is claimed.
 | Phase 2 first appearance increment | Independent phase2_review | Unscored historical checkpoint | INCOMPLETE |
 | Phase 2 desktop integration | Independent phase0_qa | 8.0/10 | FAIL; docs/qa/PHASE_2_REVIEW.md |
 | Phase 2 resumed validation | Independent phase0_qa | 8.6/10 | FAIL phase exit; docs/qa/PHASE_2_FOLLOWUP_REVIEW.md |
+| Phase 2 resource/lifecycle review | Independent phase0_qa | 8.7/10 | PASS development; resource confirmation FAIL; docs/qa/PHASE_2_RESOURCE_REVIEW.md |
 
-The latest independent score is 8.6/10 (86/100, exact arithmetic), exceeding 8.5.
-Required phase-exit evidence still fails: visible-idle CPU exceeds its limit and the
-physical display/input/accessibility matrix remains incomplete. The earlier 8.0/10
-failed checkpoint is preserved. Phase 1 remains the last completed passing phase.
-Current evidence and ranked work are in docs/qa/PHASE_2_FOLLOWUP_REVIEW.md; no advancement
-is permitted. Physical scenarios are enumerated in docs/qa/PHASE_2_MANUAL_MATRIX.md.
+The latest independent score is **8.7/10 (87/100)**, strictly greater than 8.5, and
+Phase 2 is complete as a development milestone. Historical 8.0 and 8.6 failed exits
+remain unchanged. The later observer experiment passed on its own binary, while
+final-build resource confirmation failed. The explicitly post-result sequencing
+decision moves CPU qualification to mandatory Phase 12 release work; it is not a
+resource pass. Performance remains **7/10**, including **zero** for the budget criterion.
+The earlier physical/input/sign-in sequence decision also retains every unexecuted
+manual-matrix case as mandatory before release. See docs/qa/PHASE_2_RESOURCE_REVIEW.md.
 
 ## Pending work / known limitations
 
-1. Profile the remaining visible-idle CPU cost, make an evidence-backed change and
-   measure against unchanged limits; preserve all failed results and harness overhead.
-2. Execute actual mouse/keyboard/tray recovery and accessibility scenarios, and the
-   physical mixed-DPI/negative-coordinate/disconnected-monitor matrix.
-3. Validate actual Windows sign-in behavior with a disposable user; the isolated
-   registry adapter's 13 native cases now pass.
-4. Re-review after the required fixes and evidence are complete. A numeric score above
-   8.5 alone does not finalize the phase or permit Phase 3.
+1. Begin Phase 3's real provider/conversation slice: bounded streaming, safe credentials,
+   chat UI and normal/temporary persistence with independent QA. No AI is implemented yet.
+2. Before release, diagnose CPU cost and complete a separately predeclared Phase 12
+   repeat protocol controlling actual presentation/occlusion, warmup and observer cost.
+   Limits remain strictly below 1% of one logical processor and 150,000,000 private bytes;
+   retain every failure and exact binary identity without overhead subtraction.
+3. Before release in Phases 11/12, execute physical display/input/accessibility and
+   actual Windows sign-in qualification with suitable hardware and a disposable user.
 
 Arrows are constrained to the current monitor; dragging or Ctrl+Shift+M can move
 between monitors. Actual multi-monitor behavior remains unverified on this one-display setup.
@@ -145,8 +199,7 @@ release license and all AI/conversation/voice/memory/tool features remain later 
 ## Source checkpoint and next objective
 
 Phase 1 is committed at 532879c and identified by refs/checkpoints/phase-1; Phase 0's
-checkpoint is retained. This Phase 2 source snapshot is **IN PROGRESS** and preserves
-the implementation, independent reviews and verification instructions. It does not
-finalize Phase 2; no Phase 2 completion ref or remote CI run is claimed.
-The next objective remains visible-idle
-CPU diagnosis and required physical validation; Phase 3 remains deferred.
+checkpoint is retained. Commit **6306ec9** preserves the earlier **IN PROGRESS** Phase 2
+source and 8.6 failed-exit review. The current verified development milestone uses the
+local source checkpoint refs/checkpoints/phase-2. No remote CI run or release is claimed. The next
+objective is Phase 3's provider, streaming conversation and persistence implementation.

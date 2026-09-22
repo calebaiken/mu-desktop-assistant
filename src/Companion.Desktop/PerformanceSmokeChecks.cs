@@ -16,7 +16,7 @@ internal static class PerformanceSmokeChecks
     private static readonly TimeSpan Interval = TimeSpan.FromSeconds(60);
 
     internal static async Task RunAsync(CompanionWindow window, CompanionSettings settings,
-        string dataDirectory, CancellationToken cancellationToken)
+        string dataDirectory, PerformanceObserver observer, CancellationToken cancellationToken)
     {
         var wasVisible = window.IsVisible;
         var originalState = window.WindowState;
@@ -45,16 +45,16 @@ internal static class PerformanceSmokeChecks
             MarkMeasurement();
             window.Show();
             await Task.Delay(Warmup, cancellationToken);
-            samples.Add(await MeasureAsync(window, "visible-idle", cancellationToken));
+            samples.Add(await MeasureAsync(window, "visible-idle", observer, cancellationToken));
 
             window.Apply(settings with { ReducedMotion = true });
             MarkMeasurement();
-            samples.Add(await MeasureAsync(window, "visible-reduced-motion", cancellationToken));
+            samples.Add(await MeasureAsync(window, "visible-reduced-motion", observer, cancellationToken));
 
             window.Apply(settings with { ReducedMotion = false });
             MarkMeasurement();
             window.Hide();
-            samples.Add(await MeasureAsync(window, "hidden", cancellationToken));
+            samples.Add(await MeasureAsync(window, "hidden", observer, cancellationToken));
 
             var report = new
             {
@@ -75,7 +75,11 @@ internal static class PerformanceSmokeChecks
                 avatarOpacity = settings.AvatarOpacity,
                 trayEnabled = false,
                 settingsAndMovementDisabled = true,
-                method = "60-second intervals; one-second direct GetProcessTimes/K32GetProcessMemoryInfo samples; thread snapshots at interval boundaries; no forced garbage collection; CPU includes harness overhead",
+                observerMode = observer.ToString().ToLowerInvariant(),
+                threadSnapshotCaptureAttempts = samples.Sum(sample => sample.ThreadSnapshotCaptureAttempts),
+                method = "60-second intervals; one-second direct GetProcessTimes/K32GetProcessMemoryInfo samples; " +
+                    (observer == PerformanceObserver.Threads ? "thread snapshots at interval boundaries; " : "no thread snapshots; ") +
+                    "no forced garbage collection; CPU includes all enabled harness overhead",
                 idleAnimationMethod = "Ten-second wait then 120-millisecond blink; no idle animation clocks; animation flags describe enabled motion policy, completed blink deltas record actual timed visual-property transitions",
                 cpuFormula = "oneCorePercent = cpuSeconds / elapsedSeconds * 100; machinePercent = oneCorePercent / logicalProcessorCount",
                 counterCalibration,
@@ -105,13 +109,20 @@ internal static class PerformanceSmokeChecks
         }
     }
 
-    private static async Task<IntervalSample> MeasureAsync(CompanionWindow window, string mode,
+    private static async Task<IntervalSample> MeasureAsync(CompanionWindow window, string mode, PerformanceObserver observer,
         CancellationToken cancellationToken)
     {
         var stopwatch = Stopwatch.StartNew();
         var first = ProcessResourceSampler.Capture();
         var cpuStart = first.CpuTime;
-        var threadsAtStart = ThreadCpuDiagnostic.Capture();
+        var threadSnapshotCaptureAttempts = 0;
+        List<ThreadCpuReading>? CaptureThreads()
+        {
+            if (observer != PerformanceObserver.Threads) return null;
+            threadSnapshotCaptureAttempts++;
+            return ThreadCpuDiagnostic.Capture();
+        }
+        var threadsAtStart = CaptureThreads();
         var privateStart = first.PrivateBytes;
         var privatePeak = privateStart;
         var workingSetPeak = first.WorkingSetBytes;
@@ -138,7 +149,7 @@ internal static class PerformanceSmokeChecks
             ownedClockPeak = Math.Max(ownedClockPeak, window.AvatarRenderer.OwnedAnimationClockCount);
             counterSamples++;
         }
-        var threadsAtEnd = ThreadCpuDiagnostic.Capture();
+        var threadsAtEnd = CaptureThreads();
         var last = ProcessResourceSampler.Capture();
         var elapsedSeconds = stopwatch.Elapsed.TotalSeconds;
         var cpuSeconds = (last.CpuTime - cpuStart).TotalSeconds;
@@ -154,6 +165,7 @@ internal static class PerformanceSmokeChecks
             visibleAtStart, window.IsVisible, stateAtStart, window.WindowState.ToString(),
             animationAtStart, window.IsIdleAnimationRunning, animationWasEnabled, animationWasDisabled,
             window.AvatarRenderer.CompletedBlinkCount - blinksAtStart, idleTimerObservedEnabled, ownedClockPeak,
+            threadSnapshotCaptureAttempts,
             threadsAtStart, threadsAtEnd);
     }
 
@@ -190,5 +202,6 @@ internal static class PerformanceSmokeChecks
         bool VisibleAtStart, bool VisibleAtEnd, string WindowStateAtStart, string WindowStateAtEnd,
         bool AnimationAtStart, bool AnimationAtEnd, bool AnimationObservedEnabled, bool AnimationObservedDisabled,
         long CompletedIdleBlinks, bool IdleTimerObservedEnabled, int OwnedAnimationClockPeak,
-        List<ThreadCpuReading> ThreadsAtStart, List<ThreadCpuReading> ThreadsAtEnd);
+        int ThreadSnapshotCaptureAttempts,
+        List<ThreadCpuReading>? ThreadsAtStart, List<ThreadCpuReading>? ThreadsAtEnd);
 }

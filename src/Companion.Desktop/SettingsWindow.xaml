@@ -41,7 +41,7 @@
               <StackPanel Margin="0,8,0,0">
                 <Label Content="_Summon shortcut" Target="{Binding ElementName=ShortcutInput}" Padding="0,0,0,6" />
                 <ComboBox x:Name="ShortcutInput" MinHeight="32" AutomationProperties.Name="Summon shortcut" />
-                <TextBlock Text="The shortcut and tray Show action restore mouse interaction. Starting the app again also recovers it."
+                <TextBlock Text="Save an available summon shortcut before enabling click-through or hiding. The shortcut, tray Show action, or starting the app again restores interaction."
                            TextWrapping="Wrap" Margin="0,6,0,8" />
                 <CheckBox x:Name="ClickThroughInput" Content="Let mouse clicks pass through the companion" MinHeight="32" />
                 <TextBlock Text="Applies for this session until you summon the companion."

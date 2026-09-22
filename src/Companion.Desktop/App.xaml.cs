@@ -66,6 +66,10 @@ public partial class App : System.Windows.Application
                 return;
             }
             companion.Show();
+            placement = new(companion, options.DataDirectory);
+            await placement.InitializeAsync();
+            if (stopping) return;
+            // Install tray actions only after initial placement is settled and interaction resumes.
             if (!options.IsTestSession)
             {
                 desktop = new(companion, OpenSettings, companion.ToggleSleep, () => companion.Close(),
@@ -79,16 +83,13 @@ public partial class App : System.Windows.Application
                 companion.HideRequested += (_, _) =>
                 {
                     if (desktop.RecoveryAvailable) desktop.Hide();
-                    else companion.ReportDesktopStatus("The tray and summon shortcut are unavailable. Keep this window open for recovery.");
+                    else companion.ReportDesktopStatus("Choose an available summon shortcut in Settings before hiding the companion.");
                 };
                 companion.SleepChanged += (_, _) => desktop.SetSleeping(companion.CurrentState == AvatarState.Sleeping);
             }
-            placement = new(companion, options.DataDirectory);
-            await placement.InitializeAsync();
-            if (stopping) return;
             if (options.PerformanceSmoke)
             {
-                await PerformanceSmokeChecks.RunAsync(companion, runtime.Settings, options.DataDirectory, runtime.Lifetime.Token);
+                await PerformanceSmokeChecks.RunAsync(companion, runtime.Settings, options.DataDirectory, options.Observer, runtime.Lifetime.Token);
                 await StopAsync(0);
                 return;
             }
@@ -105,6 +106,10 @@ public partial class App : System.Windows.Application
                 await RecordStage("appearance-complete");
                 await DesktopIntegrationSmokeChecks.RunAsync(options.DataDirectory);
                 await RecordStage("integration-complete");
+                await SettingsLifecycleSmokeChecks.RunAsync(runtime, options.DataDirectory);
+                await RecordStage("settings-lifecycle-complete");
+                await PlacementInitializationSmokeChecks.RunAsync(options.DataDirectory);
+                await RecordStage("placement-initialization-complete");
                 OpenSettings();
                 await Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
                 if (settingsWindow is null || new WindowInteropHelper(settingsWindow).Handle == IntPtr.Zero)
@@ -182,7 +187,7 @@ public partial class App : System.Windows.Application
         if (stopping) return;
         stopping = true;
         if (companion is not null) companion.IsEnabled = false;
-        if (settingsWindow is not null) settingsWindow.IsEnabled = false;
+        settingsWindow?.BeginShutdown();
         try { desktop?.Dispose(); }
         catch (Exception) { exitCode = 1; }
         if (placement is not null)

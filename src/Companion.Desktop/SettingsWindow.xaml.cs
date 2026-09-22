@@ -5,6 +5,7 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Threading;
 using Companion.Application.Configuration;
+using Companion.Core.Configuration;
 using Companion.Core.Desktop;
 using Companion.Infrastructure.Desktop;
 
@@ -15,18 +16,22 @@ public partial class SettingsWindow : Window
     private readonly CompanionRuntime runtime;
     private readonly CompanionWindow companion;
     private readonly DesktopIntegration? desktop;
+    private readonly Func<CompanionSettings, Task<bool>> saveOperation;
     private bool startupWasEnabled;
     private bool saving;
     private bool displayFitQueued;
     private bool closed;
+    private bool shuttingDown;
     private HwndSource? source;
 
-    internal SettingsWindow(CompanionRuntime runtime, CompanionWindow companion, DesktopIntegration? desktop = null, bool allowStartup = false)
+    internal SettingsWindow(CompanionRuntime runtime, CompanionWindow companion, DesktopIntegration? desktop = null,
+        bool allowStartup = false, Func<CompanionSettings, Task<bool>>? saveOperation = null)
     {
         InitializeComponent();
         this.runtime = runtime;
         this.companion = companion;
         this.desktop = desktop;
+        this.saveOperation = saveOperation ?? runtime.SaveAsync;
         NameInput.Text = runtime.Settings.CompanionName;
         TopmostInput.IsChecked = runtime.Settings.AlwaysOnTop;
         ScaleInput.Value = runtime.Settings.AvatarScale;
@@ -114,9 +119,21 @@ public partial class SettingsWindow : Window
         }));
     }
 
-    private async void Save_Click(object sender, RoutedEventArgs e)
+    internal void BeginShutdown()
     {
-        if (saving) return;
+        Dispatcher.VerifyAccess();
+        shuttingDown = true;
+        if (closed) return;
+        IsEnabled = false;
+        SaveButton.IsEnabled = false;
+    }
+
+    private async void Save_Click(object sender, RoutedEventArgs e) => await SaveChangesAsync();
+
+    internal async Task SaveChangesAsync()
+    {
+        Dispatcher.VerifyAccess();
+        if (saving || shuttingDown || closed || !runtime.LoadResult.CanSave) return;
         var settings = runtime.Settings with
         {
             CompanionName = NameInput.Text.Trim(),
@@ -129,11 +146,18 @@ public partial class SettingsWindow : Window
         };
         var errors = settings.Validate();
         if (errors.Count != 0) { StatusLabel.Text = errors[0]; NameInput.Focus(); return; }
+        // Native preference requests belong to the same Save action as the captured settings.
+        var requestedClickThrough = ClickThroughInput.IsChecked == true;
+        var requestedStartup = StartupInput.IsChecked == true;
+        var changeStartup = StartupInput.IsEnabled && requestedStartup != startupWasEnabled;
         saving = true;
         SaveButton.IsEnabled = false;
         try
         {
-            var logged = await runtime.SaveAsync(settings);
+            var logged = await saveOperation(settings);
+            // Runtime serialization owns the file commit. This window separately owns the later
+            // UI/native effects, which must not run after App begins disposing their resources.
+            if (shuttingDown || closed) return;
             companion.Apply(settings);
             StatusLabel.Text = logged ? "Saved." : "Settings saved, but the diagnostic log could not be written.";
             if (desktop is not null)
@@ -141,18 +165,19 @@ public partial class SettingsWindow : Window
                 if (!desktop.TryRegisterHotkey(settings.SummonShortcut, out var shortcutError))
                     StatusLabel.Text += " " + shortcutError;
                 companion.ReportShortcutStatus(shortcutError);
-                try { desktop.SetClickThrough(ClickThroughInput.IsChecked == true); }
+                ClickThroughInput.IsEnabled = desktop.RecoveryAvailable;
+                try { desktop.SetClickThrough(requestedClickThrough); }
                 catch (Exception ex) when (ex is Win32Exception or InvalidOperationException)
                 {
                     ClickThroughInput.IsChecked = desktop.IsClickThrough;
-                    StatusLabel.Text += " Mouse interaction could not be changed. Use Show in the tray to recover.";
+                    StatusLabel.Text += " Mouse interaction could not be changed. Use your summon shortcut to recover.";
                 }
             }
-            if (StartupInput.IsEnabled && StartupInput.IsChecked != startupWasEnabled)
+            if (changeStartup)
             {
                 try
                 {
-                    StartupRegistration.SetEnabled(StartupInput.IsChecked == true, Environment.ProcessPath!);
+                    StartupRegistration.SetEnabled(requestedStartup, Environment.ProcessPath!);
                     startupWasEnabled = StartupRegistration.IsEnabled(Environment.ProcessPath!);
                     StartupInput.IsChecked = startupWasEnabled;
                     StartupStatus.Text = startupWasEnabled ? "Startup is enabled for this application location." : "Startup is off.";
@@ -163,15 +188,28 @@ public partial class SettingsWindow : Window
                 }
             }
         }
-        catch (OperationCanceledException) { StatusLabel.Text = "Save cancelled before completion."; }
-        catch (IOException) { StatusLabel.Text = "Could not save. Check available disk space and try again. Your previous settings are preserved."; }
-        catch (UnauthorizedAccessException) { StatusLabel.Text = "Could not save. Check access to your companion data folder."; }
-        catch (InvalidOperationException) { StatusLabel.Text = "The settings file changed outside this window. Restart the companion before saving."; }
-        finally { saving = false; SaveButton.IsEnabled = runtime.LoadResult.CanSave; }
+        catch (OperationCanceledException)
+        { if (!shuttingDown && !closed) StatusLabel.Text = "Save cancelled before completion."; }
+        catch (IOException)
+        { if (!shuttingDown && !closed) StatusLabel.Text = "Could not save. Check available disk space and try again. Your previous settings are preserved."; }
+        catch (UnauthorizedAccessException)
+        { if (!shuttingDown && !closed) StatusLabel.Text = "Could not save. Check access to your companion data folder."; }
+        catch (InvalidOperationException)
+        { if (!shuttingDown && !closed) StatusLabel.Text = "The settings file changed outside this window. Restart the companion before saving."; }
+        finally
+        {
+            saving = false;
+            if (!shuttingDown && !closed) SaveButton.IsEnabled = runtime.LoadResult.CanSave;
+        }
     }
 
     private void Close_Click(object sender, RoutedEventArgs e) => Close();
-    internal void RefreshInteraction() => ClickThroughInput.IsChecked = desktop?.IsClickThrough == true;
+    internal void RefreshInteraction()
+    {
+        if (shuttingDown || closed) return;
+        ClickThroughInput.IsEnabled = desktop?.RecoveryAvailable == true;
+        ClickThroughInput.IsChecked = desktop?.IsClickThrough == true;
+    }
     private void Preview_Click(object sender, RoutedEventArgs e)
     {
         if (PreviewInput.SelectedItem is AvatarState state) companion.Preview(state);

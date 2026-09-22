@@ -61,14 +61,23 @@ never subtracted. The supervisor retains raw artifacts and fails on a breached b
 No forced GC, OS preference change or tray is involved. This is a process-counter
 baseline, not frame-time, compositor/GPU, startup-percentile or long-run leak evidence.
 
-Latest completed Release verification has **193/193 tests**, 11 architecture checks,
-composed smoke and zero warnings/errors. The suite predates the final cadence-only
-change; its TRX is preserved at
-`artifacts/qa/desktop-ui-20260922-175553-c176ac05/release-193-before-cadence-only-change.trx`.
-The final cadence has subsequent strict-build and native evidence. The latest native artifact,
-`artifacts/qa/desktop-ui-20260922-175553-c176ac05/profile`, has **12/12 process controls,
-43 appearance assertions and 18 integration assertions**, with no skips or adapter
-errors. Hidden/minimized settings reopening passes in both application runs. Timed
+Latest completed Release verification has **196/196 tests**, 11 architecture checks,
+composed smoke and zero warnings/errors, now including the final-source readiness
+fixes. The matching TRX is archived at
+`artifacts/qa/desktop-ui-20260922-185538-0c91126a/release-196-before-final-build-confirmation.trx`.
+Three added independent placement tests verify a
+cancelled queued waiter does not cancel its owner or poison later saves, cancellation
+after atomic commit reports success, and a failed writer preserves the known-good
+baseline for retry. The earlier pre-observer 196-case TRX is preserved at
+`artifacts/qa/desktop-ui-20260922-183217-1d198cb8/release-196-before-observer-abba.trx`;
+the historical 193-case artifact remains retained with its original scope.
+The latest native artifact, `artifacts/qa/desktop-ui-20260922-185538-0c91126a/profile`,
+has **18/18 process controls, 43 appearance, 24 integration, 29 settings lifecycle
+and 49 placement-initialization assertions**, with no skips or reported failures. Controlled pending
+saves cover committed, cancelled and I/O-failed completion during shutdown: committed
+data remains durable, the companion is not reapplied, native effects/status changes
+do not run late, and controls remain disabled. Hidden/minimized settings reopening
+also passes in both application runs. Timed
 eyelid property transitions prove completed idle blinks; interrupted blinks do not
 count. Idle owns no animation clocks, active expressions own at most two controlled
 clocks capped at 20 FPS, and stopping releases timers/clocks. These behavior checks
@@ -92,14 +101,71 @@ Combined blink/lifetime changes improved the reduced/hidden floor, but a single 
 is not established. No overhead is subtracted. The ten-second production decision was
 recorded before its single measurement, preserving this result and earlier failures.
 
-The final ten-second run, `performance-20260922-175657-e7f2743d`, also **fails**:
+The pre-experiment ten-second run, `performance-20260922-175657-e7f2743d`, **fails**:
 visible CPU is 1.041400%, reduced-motion 0.520719% and hidden 0.390566%. Reduced/hidden
 CPU and all memory intervals pass; peak private bytes are 62,914,560 / 64,225,280 /
 66,539,520, with 6/0/0 completed blinks and zero owned clocks. The supervisor exits 1
 and preserves `budget-evaluation.json`. The cadence is frozen; no unchanged rerun,
 threshold relaxation or overhead subtraction is used to manufacture a passing result.
-The independent score is **8.6/10**, but phase exit remains **FAIL** because visible-idle
-CPU and required physical display/input/accessibility evidence do not meet the gate.
+The resulting historical review scored **8.6/10** with a failed phase exit. That
+report and its resource failure remain unchanged by subsequent experiments.
+
+The [observer protocol](docs/qa/PHASE_2_OBSERVER_PROTOCOL.md) declares exactly **A/B/B/A**
+before execution: A is `measure-desktop.ps1 -Observer threads` (the legacy default),
+with two nonempty boundary thread snapshots per interval; B is `-Observer process`,
+which omits only those snapshots. Both use the same ten-second blink cadence, warmup,
+sixty-second intervals, native one-second counters, input freeze and calibration.
+No calibration or observer cost is subtracted. `measure-observer-comparison.ps1`
+requires the explicitly reviewed `-ExpectedProtocolSha256`, freezes five binary and
+protocol/supervisor hashes, uses four fresh profiles, and retains complete reports
+and budget results. Technical failures stop without substitution; budget failures
+remain valid results and never trigger retries. Acceptance requires both B runs to
+pass all intervals after all four valid runs complete. All A/B results must be
+reported, without claiming statistical significance or a product optimization.
+The completed comparison is
+`artifacts/qa/observer-d217a835e8bc4ec9b6f27b98637024fd/comparison.json`: all four runs
+are valid and all CPU/memory intervals pass. Visible one-core CPU is 0.885254% / 0.989278%
+for A and 0.755076% / 0.703079% for B. These results belong to the recorded earlier binary;
+they do not establish an isolated product optimization or statistical significance.
+
+The [final-build protocol](docs/qa/PHASE_2_FINAL_BUILD_PROTOCOL.md) declares exactly
+two B runs after startup-placement and confirmed-shortcut recovery fixes. Both must
+pass every unchanged limit with frozen binary/protocol/script hashes and no overhead
+subtraction. Use the comparison supervisor's `-FinalBuild` mode with the reviewed
+protocol SHA256. Technical failures stop without substitution; valid budget failures
+remain retained. The final-source strict build, 196-test suite and 18/43/24/29/49 native
+checks pass. Final measurements are retained at
+`artifacts/qa/final-build-1ca3041a363849aabc6b2c4e2170ce6f/comparison.json` and the aggregate
+result is **FAIL**: both valid B runs had to pass, but only the second does.
+
+| Final-build B run | Visible CPU | Reduced-motion CPU | Hidden CPU | Peak private bytes, corresponding modes | Result |
+|---|---:|---:|---:|---|---|
+| `performance-20260922-185649-ab4dbf46` | 1.978694% | 1.015400% | 0.364563% | 64,974,848 / 65,224,704 / 62,337,024 | Visible/reduced CPU FAIL; hidden CPU and all memory PASS |
+| `performance-20260922-190004-0f75069d` | 0.755208% | 0.598859% | 0.364527% | 63,119,360 / 64,102,400 / 63,520,768 | All intervals PASS |
+
+Each records 6/0/0 completed blinks and zero owned clocks. The first failure, exact
+source/binary attribution and aggregate rule remain unchanged; no substitute run,
+threshold relaxation or overhead subtraction follows. The independent development
+review passes at **8.7/10** under the explicitly post-result
+[resource sequence decision](docs/qa/PHASE_2_RESOURCE_SEQUENCE.md). Performance stays
+**7/10 with zero points for the failed budget criterion**; this experiment remains FAIL.
+
+The first new fixture build had a compile error, now corrected. Native attempt
+`desktop-ui-20260922-185315-2646a9cb` completed 43/24/29 checks, then failed placement
+assertion 42 because it compared size after warning text resized the window. The
+fixture now compares Left/Top; that correction changed no production code. The failed
+artifact remains retained; the subsequent full native run passes. No concurrent builds,
+app tests, traces or companion input are allowed during frozen resource sequences.
+
+The [validation sequence decision](docs/qa/PHASE_2_VALIDATION_SEQUENCE.md) moves the
+unavailable physical display/input/accessibility and actual sign-in matrix to mandatory
+Phase 11/12 pre-release qualification. The user has no second monitor and the supported
+native helper remains unavailable. These cases remain unexecuted, receive no passing
+credit, and must be completed before release. Phase 2 development completion does not
+approve release. Phase 12 must use a separately predeclared repeat protocol with actual
+presentation/occlusion, warmup, observer cost and scenario state recorded. The unchanged
+limits are strictly below 1% of one logical processor and 150,000,000 sampled private
+bytes; retain every valid failure and exact binary identity without overhead subtraction.
 
 - Settings explicit-save/round trip, malformed/duplicate/unknown/wrong-type schema,
   unsupported versions, oversized files, quarantine, valid backups and external
@@ -118,7 +184,8 @@ CPU and required physical display/input/accessibility evidence do not meet the g
 The interactive QA scenario uses the supported computer-use tools to change/save a name,
 reopen/relaunch, activate an existing instance and Exit. Phase 1's completed input
 evidence remains in `docs/qa/PHASE_1_REVIEW.md`. During resumed Phase 2 validation, the
-supported native helper pipe was unavailable even after reinitialization; no actual
+supported native helper pipe remained unavailable (OS error 2) after updated skill
+guidance and a fresh session reset; no actual
 mouse/keyboard actions were attempted. The process smoke alone does not prove user input, screen
 reader behavior, keyboard coverage, mixed DPI or compositor quality.
 
