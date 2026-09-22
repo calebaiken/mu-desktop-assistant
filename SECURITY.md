@@ -5,7 +5,7 @@ storage, content-free diagnostics and same-user activation IPC. There is still n
 client, tool execution, recording or conversation storage. Future controls below must
 pass negative tests before their feature is enabled.
 
-Implemented persistence is limited to nonsecret preferences under the selected data
+Implemented persistence is limited to nonsecret preferences and placement under the selected data
 directory. Secrets are not supported settings fields; unknown fields are rejected.
 One validated `.bak` and one latest `.invalid` settings file are retained until user
 removal; they are not forensic erasure mechanisms. Do not manually put keys in settings.
@@ -17,6 +17,32 @@ retention uses its filesystem modification time. No cleanup occurs while stopped
 Diagnostic channels default off; a damaged log is quarantined and recovery is shown.
 Atomic file operations prevent ordinary partial writes, not malicious same-user tampering.
 Current-user named pipes are not a defense against malware running as the same user.
+
+Phase 2 adds native integration limited to the application's own window. Click-through
+and Hide require an available tray or registered shortcut; Show, the shortcut and
+same-user activation restore interaction. Registration conflicts are visible, and
+shortcuts/menu/icon resources are released on close. Placement JSON has a 4 KiB limit,
+a closed versioned schema and finite normalized coordinates. Monitor identifiers are
+matched against enumerated displays, never used as file paths. Future or oversized
+placement files remain read-only; malformed bounded originals retain one quarantine.
+
+Sign-in startup changes only `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`'s
+`DesktopCompanion` value after an explicit changed preference is saved. It uses a
+validated quoted executable path without arguments or shell execution. Test/custom
+profiles cannot change startup through the settings UI. This development run tests
+command validation and the missing-executable failure without changing the user's
+startup registration. All thirteen native registry cases now pass against validated
+GUID keys under `HKCU\Software\DesktopCompanion.Tests`. They share the production read/write/delete implementation and
+remove only their own nonrecursive leaf. Actual sign-in behavior still needs a
+disposable-user validation run. Expression previews never activate capture or tools.
+Monitor cycling uses enumerated displays and the companion's owned HWND. Shortcut
+registration success clears its own status message without clearing storage failures.
+Hidden/minimized settings recovery now passes native checks. Closing disposes renderer
+resources; stopping clears timers and controlled clocks so late callbacks cannot render.
+Supported Computer Use input validation remains unavailable; programmatic native
+checks do not establish physical click-through delivery or accessibility behavior.
+The independent follow-up scores 8.6/10 but fails phase exit; that numeric result is
+not a security certification or authorization to advance past missing physical checks.
 
 ## Assets, actors and trust boundaries
 

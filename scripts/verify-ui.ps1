@@ -5,7 +5,7 @@ $workspaceRoot = Split-Path -Parent $PSScriptRoot
 $appPath = Join-Path $workspaceRoot "src\Companion.Desktop\bin\$Configuration\net10.0-windows\Companion.Desktop.exe"
 if (-not (Test-Path -LiteralPath $appPath -PathType Leaf)) { throw 'Build the desktop project before running UI process checks.' }
 $runId = (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [Guid]::NewGuid().ToString('N').Substring(0, 8)
-$evidenceRoot = Join-Path $workspaceRoot "artifacts\qa\phase1-ui-$runId"
+$evidenceRoot = Join-Path $workspaceRoot "artifacts\qa\desktop-ui-$runId"
 $profile = Join-Path $evidenceRoot 'profile'
 New-Item -ItemType Directory -Path $profile -Force | Out-Null
 $script:caseCount = 0
@@ -20,10 +20,10 @@ function Assert-AppExit {
     $process.StartInfo.CreateNoWindow = $true
     try {
         if (-not $process.Start()) { throw "$Name did not start." }
-        if (-not $process.WaitForExit(15000)) {
+        if (-not $process.WaitForExit(40000)) {
             $process.Kill()
             $process.WaitForExit()
-            throw "$Name exceeded its 15-second deadline."
+            throw "$Name exceeded its 40-second deadline."
         }
         if ($process.ExitCode -ne $ExpectedExit) {
             throw "$Name returned $($process.ExitCode); expected $ExpectedExit."
@@ -34,10 +34,50 @@ function Assert-AppExit {
 }
 
 # --ui-smoke executes real production initialization, HWND creation, settings-window
-# creation and window closing. It does not simulate user input or prove accessibility.
+# creation, appearance/placement assertions and window closing. It does not simulate
+# user input or prove accessibility, dragging or a physical mixed-DPI monitor matrix.
 $profileArgument = '--data-dir "{0}"' -f $profile
 Assert-AppExit 'visible-companion-settings-close' "--ui-smoke $profileArgument" 0
 Assert-AppExit 'same-profile-restart-after-close' "--ui-smoke $profileArgument" 0
+$appearance = Get-Content -LiteralPath (Join-Path $profile 'appearance-smoke.json') -Raw | ConvertFrom-Json
+if ('blinkChecksEnabled' -notin $appearance.PSObject.Properties.Name -or
+    'skipped' -notin $appearance.PSObject.Properties.Name) {
+    throw 'Appearance evidence must declare whether OS motion policy enabled blink checks and list skips.'
+}
+$expectedAppearanceCount = if ($appearance.blinkChecksEnabled) { 43 } else { 38 }
+$blinkAssertions = @('idle-blink-closes-without-animation-clocks', 'interrupted-blink-does-not-count',
+    'idle-blink-completes', 'speaking-owns-two-clocks', 'idle-releases-speaking-clocks')
+if ($appearance.count -ne $expectedAppearanceCount -or
+    @($appearance.passed).Count -ne $expectedAppearanceCount -or
+    @($appearance.passed | Select-Object -Unique).Count -ne $expectedAppearanceCount) {
+    throw "Expected $expectedAppearanceCount distinct real-window appearance, state, placement and animation assertions."
+}
+foreach ($assertion in $blinkAssertions) {
+    if (($assertion -in $appearance.passed) -ne [bool]$appearance.blinkChecksEnabled) {
+        throw "Conditional animation assertion disagrees with the recorded motion policy: $assertion"
+    }
+}
+if ('hidden-releases-animation-resources' -notin $appearance.passed -or
+    ($appearance.blinkChecksEnabled -and @($appearance.skipped).Count -ne 0) -or
+    (-not $appearance.blinkChecksEnabled -and @($appearance.skipped).Count -ne 1)) {
+    throw 'Appearance evidence has incomplete animation resource coverage or inconsistent skip metadata.'
+}
+$script:caseCount++
+Write-Output "PASS $expectedAppearanceCount real-window appearance-state-placement-animation assertions"
+foreach ($limit in $appearance.skipped) { Write-Output "LIMIT: $limit" }
+$integration = Get-Content -LiteralPath (Join-Path $profile 'desktop-integration-smoke.json') -Raw | ConvertFrom-Json
+if ($integration.failure -or @($integration.adapterErrors).Count -gt 0 -or $integration.count -lt 13) {
+    throw 'Desktop integration evidence is incomplete or reports an adapter failure.'
+}
+$script:caseCount++
+Write-Output "PASS $($integration.count) desktop recovery/tray/shortcut assertions"
+foreach ($limit in $integration.skipped) { Write-Output "LIMIT: $limit" }
+$stages = @(Get-Content -LiteralPath (Join-Path $profile 'ui-stages.txt'))
+if (@($stages | Where-Object { $_ -like 'settings-recovery-complete:*' }).Count -ne 2) {
+    throw 'Both visible runs must recover hidden and minimized settings.'
+}
+$script:caseCount++
+Write-Output 'PASS hidden-and-minimized-settings-recovery'
 Assert-AppExit 'headless-composed-lifecycle' "--smoke $profileArgument" 0
 Assert-AppExit 'reject-forward-slash-unc' '--smoke --data-dir "//invalid-host.invalid/share"' 2
 Assert-AppExit 'reject-backslash-unc' '--smoke --data-dir "\\invalid-host.invalid\share"' 2

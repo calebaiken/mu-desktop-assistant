@@ -3,9 +3,12 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
   <ItemGroup>
+    <Using Remove="System.Drawing" />
+    <Using Remove="System.Windows.Forms" />
     <ProjectReference Include="../Companion.Core/Companion.Core.csproj" />
     <ProjectReference Include="../Companion.Application/Companion.Application.csproj" />
     <ProjectReference Include="../Companion.Infrastructure/Companion.Infrastructure.csproj" />

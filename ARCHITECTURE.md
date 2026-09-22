@@ -1,6 +1,6 @@
 # Architecture
 
-Status: Phase 1 implementation complete; independent QA passed at 9.0/10. Configuration, log ports/adapters, instance
+Status: Phase 1 complete at independent QA 9.0/10; Phase 2 desktop interactions in progress. Configuration, log ports/adapters, instance
 activation and WPF shell now exist. Conversation, voice, memory, tools and rendering
 extensions below remain intended architecture. Review date: 2026-09-21; status synchronized 2026-09-22.
 
@@ -126,12 +126,24 @@ and branch navigation receive UI and persistence tests in Phase 3.
 
 ## Avatar and desktop integration
 
-`IAvatarRenderer` accepts semantic state, expression, elapsed time and normalized
-customization, not conversation text or permissions. Initial renderer: a small WPF
-DrawingVisual/vector or raster sprite scene; the first asset pack must be fully usable.
-States: idle, listening, thinking, working, speaking, notifying, sleeping and error.
-Priority: explicit mute/sleep and error override transient activity; speaking follows
-actual playback, not receipt of text. Reduce animation for accessibility and power.
+Implemented `IAvatarRenderer` accepts semantic state and animation/high-contrast policy,
+without conversation text or permissions. The default WPF vector control owns its
+timelines and facial geometry; the host owns input, scale and placement. Eight states
+are implemented: idle, listening, thinking, working, speaking, notifying, sleeping and
+error. Scoped activity ownership prevents late completion from clearing newer work.
+Sleep invalidates all visual leases; otherwise priority is error, listening, speaking,
+working, thinking, notifying, idle. Future audio/conversation callers must cancel work
+before entering sleep and derive speaking from actual playback. Current expression
+previews are visibly labeled, last four seconds, and start no microphone or provider.
+Idle uses one dispatcher timer: wait ten seconds, close the eyes for 120 milliseconds,
+then reopen. Existing eye transforms change only at these transitions; idle owns no
+WPF animation clocks. Active expressions use at most two capped 20-fps controllable
+clocks, explicitly stopped, removed and detached on a state or motion-policy change.
+Hide, sleep, reduced motion and unload stop the timer too; window close disposes the
+renderer. The harness distinguishes enabled motion policy from completed timed blinks.
+The ten-second cadence was selected before the next controlled run after the six-second
+version measured 1.093335% visible-idle CPU against the unchanged exclusive 1% budget.
+The closure duration and measurement method remain unchanged; earlier failures are retained.
 
 Asset manifests declare schema version, ID, attribution/license, layers (body, face,
 eyes, hair, clothing, accessories), palette, anchors, animation clips, frame bounds and
@@ -145,13 +157,30 @@ Dragging uses device-independent coordinates converted at the monitor boundary;
 persist monitor identity plus relative position, re-clamp on display/DPI/work-area
 changes, including negative coordinates and disconnected screens. Edge snapping uses
 work areas, not total monitor bounds. The per-monitor-v2 manifest is present, but
-actual mixed-DPI behavior remains untested until Phase 2.
+actual mixed-DPI behavior remains a pending Phase 2 validation matrix. Placement stores
+device identity and fractions of available travel `(position-origin)/(work-size)`;
+an oversized axis anchors to its work-area origin. Restore first moves to the selected
+monitor, lets WPF process DPI/layout, then uses the actual new HWND size for placement.
+A separate bounded atomic `placement.json` prevents move autosave from overwriting
+explicit preference edits. Moves capture a normal-state snapshot before debouncing,
+so immediate Hide/minimize/Exit can still flush that move. Unsupported/oversized files
+remain untouched. Native behavior follows Microsoft's [DPI notification contract](https://learn.microsoft.com/en-us/windows/win32/hidpi/wm-dpichanged).
+Ctrl+Shift+M and Next display cycle a deterministic top/left/device-ID monitor order,
+preserve relative placement and use the same two-step DPI restore. One available
+display produces a visible no-op status; physical cross-display validation is pending.
 
 Tray menu and a registered, user-changeable hotkey always recover a hidden/click-through
 companion. Handle hotkey conflicts visibly. No focus stealing on notifications.
 Single-instance activation uses a current-user named pipe and a restricted message
-schema. Startup registration is opt-in and reversible. Pause animations when hidden,
-sleeping or occluded; small idle timeline updates, not a permanent busy render loop.
+schema. Startup registration is opt-in and reversible through an explicit settings save;
+it writes one quoted, argument-free executable command under HKCU Run. The adapter is
+never invoked automatically from preferences load. Tray uses the framework's NotifyIcon
+with deterministic icon/menu disposal; no package is added. Click-through sets
+WS_EX_TRANSPARENT only on the owned layered HWND, consistent with Microsoft's
+[layered-window hit testing](https://learn.microsoft.com/en-us/windows/win32/winmsg/window-features).
+Recovery clears it before showing the window. Hidden/minimized/disabled/sleep states
+stop animation. General occlusion detection is not implemented; an occluded visible
+window may continue its capped animation. It remains a measured optimization follow-up.
 Short speech bubbles are length/time bounded and dismissible; long content opens the
 panel only on user action. Screen readers receive text state labels, not color alone.
 
@@ -250,12 +279,20 @@ file contents, credentials, headers and URL query strings by default. Local rota
 retention limits and explicit redacted diagnostic export; no silent telemetry upload.
 Phase 11 verifies redaction and privacy paths, not just documentation.
 
-Initial performance targets (unmeasured): cold launch p95 under 2 s on declared reference
-hardware, hidden/idle host CPU under 1% averaged 60 s, idle private bytes under 150 MB
+Performance targets: cold launch p95 under 2 s on declared reference
+hardware, hidden/idle host CPU under 1% of one logical processor averaged 60 s,
+idle private bytes under 150,000,000 bytes (decimal MB)
 excluding a documented on-demand chat process budget, visible animation p95 frame under
 33 ms, cancel feedback under 250 ms. Capture baseline environment and trace files in
 Phase 2/12; change targets only with evidence and a recorded decision. Avoid claiming
 WebView2 resource use fits these targets before profiling.
+
+Before the resumed controlled measurement on 2026-09-22, independent QA and the
+implementation agent resolved the previously ambiguous CPU/MB denominators
+conservatively: CPU is `100 * process CPU seconds / elapsed seconds`, without dividing
+by processor count, and memory uses decimal bytes. Machine-normalized CPU and MiB
+remain supplementary reporting. This keeps the budget comparable across core counts;
+it is not permission to select a friendlier denominator after seeing measurements.
 
 Phase 12 produces a signed per-user installer, dependency/license inventory, update
 manifest/signature validation, staged downloads, user-controlled restart, rollback and

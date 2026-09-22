@@ -1,9 +1,11 @@
 using System.IO;
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Threading;
 using Companion.Application.Configuration;
 using Companion.Application.Diagnostics;
+using Companion.Core.Desktop;
 using Companion.Infrastructure.Lifetime;
 
 namespace Companion.Desktop;
@@ -14,6 +16,8 @@ public partial class App : System.Windows.Application
     private CompanionWindow? companion;
     private SettingsWindow? settingsWindow;
     private StartupOptions? options;
+    private DesktopIntegration? desktop;
+    private PlacementSession? placement;
     private bool stopping;
 
     protected override async void OnStartup(StartupEventArgs e)
@@ -28,7 +32,7 @@ public partial class App : System.Windows.Application
             if (instance is null)
             {
                 var activated = await SingleInstanceCoordinator.ActivateExistingAsync(options.DataDirectory, CancellationToken.None);
-                if (!activated && !options.Smoke && !options.UiSmoke)
+                if (!activated && !options.IsTestSession)
                     MessageBox.Show("The companion is already running but could not be reached. Try again shortly.", "Desktop Companion");
                 Shutdown(activated ? 0 : 3);
                 return;
@@ -37,6 +41,7 @@ public partial class App : System.Windows.Application
             await runtime.InitializeAsync();
             companion = new();
             companion.Apply(runtime.Settings);
+            if (options.IsTestSession) companion.ShowActivated = false;
             MainWindow = companion;
             companion.SettingsRequested += (_, _) => OpenSettings();
             companion.Closing += (_, closing) =>
@@ -48,9 +53,8 @@ public partial class App : System.Windows.Application
             instance.StartListening(() => Dispatcher.BeginInvoke(new Action(() =>
             {
                 if (stopping) return;
-                companion.Show();
-                companion.WindowState = WindowState.Normal;
-                companion.Activate();
+                if (desktop is not null) desktop.Recover();
+                else { companion.Show(); companion.WindowState = WindowState.Normal; companion.Activate(); }
             })));
             _ = ObserveListenerAsync(instance);
             if (options.Smoke)
@@ -62,15 +66,63 @@ public partial class App : System.Windows.Application
                 return;
             }
             companion.Show();
+            if (!options.IsTestSession)
+            {
+                desktop = new(companion, OpenSettings, companion.ToggleSleep, () => companion.Close(),
+                    companion.ReportDesktopStatus, () =>
+                    {
+                        companion.ConstrainToWorkArea(false);
+                        settingsWindow?.RefreshInteraction();
+                    });
+                if (!desktop.TryRegisterHotkey(runtime.Settings.SummonShortcut, out var error))
+                    companion.ReportShortcutStatus(error);
+                companion.HideRequested += (_, _) =>
+                {
+                    if (desktop.RecoveryAvailable) desktop.Hide();
+                    else companion.ReportDesktopStatus("The tray and summon shortcut are unavailable. Keep this window open for recovery.");
+                };
+                companion.SleepChanged += (_, _) => desktop.SetSleeping(companion.CurrentState == AvatarState.Sleeping);
+            }
+            placement = new(companion, options.DataDirectory);
+            await placement.InitializeAsync();
+            if (stopping) return;
+            if (options.PerformanceSmoke)
+            {
+                await PerformanceSmokeChecks.RunAsync(companion, runtime.Settings, options.DataDirectory, runtime.Lifetime.Token);
+                await StopAsync(0);
+                return;
+            }
             if (options.UiSmoke)
             {
+                var smokeTime = Stopwatch.StartNew();
+                async Task RecordStage(string stage) => await File.AppendAllTextAsync(
+                    Path.Combine(options.DataDirectory, "ui-stages.txt"), $"{stage}: {smokeTime.Elapsed.TotalSeconds:F3}s{Environment.NewLine}");
+                await RecordStage("start");
                 await Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
                 if (new WindowInteropHelper(companion).Handle == IntPtr.Zero || !companion.IsVisible)
                     throw new InvalidOperationException("Presentation source unavailable.");
+                await AppearanceSmokeChecks.RunAsync(companion, runtime.Settings, options.DataDirectory);
+                await RecordStage("appearance-complete");
+                await DesktopIntegrationSmokeChecks.RunAsync(options.DataDirectory);
+                await RecordStage("integration-complete");
                 OpenSettings();
                 await Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
                 if (settingsWindow is null || new WindowInteropHelper(settingsWindow).Handle == IntPtr.Zero)
                     throw new InvalidOperationException("Settings presentation source unavailable.");
+                AppearanceSmokeChecks.CheckSettingsLayout(settingsWindow);
+                var existingSettings = settingsWindow;
+                existingSettings.Hide();
+                OpenSettings();
+                await Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
+                if (!ReferenceEquals(settingsWindow, existingSettings) || !existingSettings.IsVisible)
+                    throw new InvalidOperationException("Hidden settings could not be recovered.");
+                existingSettings.WindowState = WindowState.Minimized;
+                OpenSettings();
+                await Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
+                if (!existingSettings.IsVisible || existingSettings.WindowState != WindowState.Normal)
+                    throw new InvalidOperationException("Minimized settings could not be recovered.");
+                await RecordStage("settings-recovery-complete");
+                await RecordStage("settings-complete");
                 settingsWindow.Close();
                 companion.Close();
             }
@@ -79,7 +131,7 @@ public partial class App : System.Windows.Application
         }
         catch (Exception)
         {
-            if (options is { Smoke: false, UiSmoke: false })
+            if (options is { IsTestSession: false })
                 MessageBox.Show("The companion could not start. Check access and available space in its data folder. No settings were overwritten.",
                     "Desktop Companion", MessageBoxButton.OK, MessageBoxImage.Error);
             await StopAsync(1);
@@ -89,8 +141,16 @@ public partial class App : System.Windows.Application
     private void OpenSettings()
     {
         if (stopping || runtime is null || companion is null) return;
-        if (settingsWindow is not null) { settingsWindow.Activate(); return; }
-        settingsWindow = new(runtime, companion) { Owner = companion };
+        if (options?.PerformanceSmoke == true) return;
+        desktop?.Recover();
+        if (settingsWindow is not null)
+        {
+            settingsWindow.Show();
+            settingsWindow.WindowState = WindowState.Normal;
+            settingsWindow.Activate();
+            return;
+        }
+        settingsWindow = new(runtime, companion, desktop, options is { IsTestSession: false, IsDefaultProfile: true }) { Owner = companion };
         settingsWindow.Closed += (_, _) => settingsWindow = null;
         settingsWindow.Show();
     }
@@ -102,7 +162,7 @@ public partial class App : System.Windows.Application
         {
             if (!stopping)
             {
-                if (options is { Smoke: false, UiSmoke: false })
+                if (options is { IsTestSession: false })
                     MessageBox.Show("The companion's activation service stopped. Please restart the companion.", "Desktop Companion");
                 await StopAsync(1);
             }
@@ -112,7 +172,7 @@ public partial class App : System.Windows.Application
     private void OnUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
         e.Handled = true;
-        if (options is { Smoke: false, UiSmoke: false })
+        if (options is { IsTestSession: false })
             MessageBox.Show("An unexpected error occurred. The companion will close; saved settings are preserved.", "Desktop Companion");
         _ = StopAsync(1);
     }
@@ -123,6 +183,13 @@ public partial class App : System.Windows.Application
         stopping = true;
         if (companion is not null) companion.IsEnabled = false;
         if (settingsWindow is not null) settingsWindow.IsEnabled = false;
+        try { desktop?.Dispose(); }
+        catch (Exception) { exitCode = 1; }
+        if (placement is not null)
+        {
+            try { await placement.DisposeAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(3)); }
+            catch (Exception) { exitCode = 1; }
+        }
         if (runtime is not null)
         {
             try

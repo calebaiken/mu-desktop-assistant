@@ -106,8 +106,22 @@ public sealed class JsonSettingsStore : ISettingsStore, IDisposable
                 if (!names.Add(property.Name)) return (null, true, false);
             if (!document.RootElement.TryGetProperty("SchemaVersion", out var schema) ||
                 schema.ValueKind != JsonValueKind.Number || !schema.TryGetInt32(out var version)) return (null, true, false);
-            if (version != CompanionSettings.CurrentVersion) return (null, true, true);
+            if (version is not (1 or CompanionSettings.CurrentVersion)) return (null, true, true);
+            // Version 1 has a closed schema of its own. Do not interpret new fields
+            // as legacy preferences just because the current record knows them.
+            if (version == 1 && names.Any(name => name is not
+                ("SchemaVersion" or "CompanionName" or "AlwaysOnTop" or "ReducedMotion" or "DiagnosticsEnabled")))
+                return (null, true, false);
             var settings = document.Deserialize<CompanionSettings>(JsonOptions);
+            // Migration is in memory only. Explicit SaveAsync commits version 2,
+            // using the same migrated value for backup and external-edit checks.
+            if (version == 1 && settings is not null)
+                settings = settings with
+                {
+                    SchemaVersion = CompanionSettings.CurrentVersion,
+                    AvatarScale = 1,
+                    AvatarOpacity = 1
+                };
             return settings is not null && settings.Validate().Count == 0
                 ? (settings, true, false) : (null, true, false);
         }

@@ -1,7 +1,7 @@
 # Implementation roadmap
 
 This is a staged delivery plan, not a list of completed capabilities. **Phase 0 passed
-at 9.4/10; Phase 1 independently passed at 9.0/10. Phase 2 is next.** Every phase gets an independent QA report;
+at 9.4/10; Phase 1 independently passed at 9.0/10. Phase 2 is in progress.** Every phase gets an independent QA report;
 none advances with a score of 8.5 or lower. Cross-cutting security is designed now,
 implemented with each feature and adversarially tested again in Phase 11.
 
@@ -26,6 +26,28 @@ deferred. Minimal SQLite conversation storage belongs in Phase 3, with advanced 
 storage in Phase 6. Permission boundaries are mandatory before any Phase 8 tool ships.
 Deterministic calculation introduced earlier, if needed, inherits Phase 9 numerical QA
 immediately; an LLM-only calculator never counts as complete.
+
+Phase 2 now implements appearance migration/controls, an eight-state vector renderer,
+scoped activity arbitration, drag/keyboard movement, work-area snapping, durable
+monitor-relative placement, tray/hotkey recovery, session click-through and explicit
+startup registration, plus a deterministic next-display command (Ctrl+Shift+M).
+Release verification passes 193 tests and 11 architecture checks before the final
+cadence-only change; the subsequent strict build passes, and native checks pass
+12 process controls, 43 appearance assertions and 18 integration assertions, including
+hidden/minimized settings recovery and actual timed blink transitions. The
+observed display is a single monitor at 125% scale; actual multi-monitor transfer and
+physical input/accessibility remain unverified. Thirteen isolated-registry cases pass;
+actual sign-in remains pending. Two controlled baselines of the earlier renderer pass
+memory and fail all CPU modes against unchanged limits. A six-second blink passes
+reduced/hidden CPU and memory, but visible CPU still fails at 1.093335%. Production
+now uses a ten-second wait and 120 ms blink without animation clocks. Native regression
+passes; its single clean baseline still fails visible CPU at 1.041400%, while reduced/
+hidden CPU and memory pass. The cadence and resource limits are frozen; all prior
+failures remain preserved. The [follow-up review](docs/qa/PHASE_2_FOLLOWUP_REVIEW.md)
+scores **8.6/10**, but **phase exit remains FAIL**. The earlier 8.0 failed checkpoint is
+historical. Remaining work is visible-idle CPU diagnosis, physical display/input/
+accessibility validation and actual sign-in testing before the required phase gate.
+Implementation alone does not complete the phase.
 
 First useful release candidate follows Phases 1–8 with validated simple calculation,
 then technical depth/customization and release hardening. A phase pass is not automatic
