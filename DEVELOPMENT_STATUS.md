@@ -1,6 +1,7 @@
 # Development status
 
-Updated: 2026-09-22. **Phase 3 local chat increment passed independent QA at 9.0/10; full Phase 3 remains incomplete.**
+Updated: 2026-09-22. **Compact surface increment passed independent QA at 9.1/10;
+local chat increment passed at 9.0/10; full Phase 3 remains incomplete.**
 Phase 0 passed at 9.4/10 and Phase 1 passed at 9.0/10. Phase 2's final resource
 confirmation remains **FAIL**, and release is not approved. Phase 3 now implements
 pretrained local inference and a bounded in-memory plain-text chat window.
@@ -11,6 +12,18 @@ places unresolved CPU qualification in the user's Phase 12 optimization work. Pe
 remains 7/10 with zero budget-criterion points; neither limits nor measurements changed.
 
 ## Completed implementation
+
+- Replaced the large companion card with the user-requested character-only resting
+  surface and compact hover/keyboard Chat, Settings and More controls. Default
+  character size is 112×88 DIPs; stable 136×132-DIP window bounds prevent hover
+  displacement. Mouse focus does not latch controls; Escape dismisses them.
+- Compact UI regression: 224/224 tests, 11/11 architecture checks, composed WPF
+  smoke and zero warnings/errors; 20/20 native process controls, including 51 new
+  reviewer-authored compact assertions. Native input sampled Chat/Settings/More,
+  pointer exit after mouse focus, Tab/Shift+Tab/Enter/Escape at saved 75% scale on
+  the single 125%-DPI display. Full input/accessibility/display qualification remains.
+  See [surface review](docs/qa/COMPACT_AVATAR_REVIEW.md) and
+  [build evidence](docs/qa/COMPACT_AVATAR_BUILD_EVIDENCE.md).
 
 - Implemented the user's final model choice: pretrained Qwen3-0.6B Q8_0, fully local
   llama.cpp CPU inference, no API key or cloud fallback. The briefly explored
@@ -79,7 +92,7 @@ requested tray visibility. Settings refresh click-through availability after sho
 
 ## Test status and evidence
 
-- Latest executed full Release verification: **196 passed, 0 failed, 0 skipped**, 11
+- Historical Phase 2 Release verification: **196 passed, 0 failed, 0 skipped**, 11
   architecture checks, composed smoke, zero compiler warnings/errors. The final-source
   verification covers both readiness fixes; its retained TRX is
   artifacts/qa/desktop-ui-20260922-185538-0c91126a/release-196-before-final-build-confirmation.trx.

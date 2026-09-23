@@ -50,8 +50,8 @@ internal static class AppearanceSmokeChecks
         {
             window.Apply(original with { AvatarScale = scale, AvatarOpacity = 0.4, ReducedMotion = true });
             await SettleAsync();
-            Check($"avatar-size-{scale}", Math.Abs(window.AvatarVisual.ActualWidth - 140 * scale) < 0.01 &&
-                Math.Abs(window.AvatarVisual.ActualHeight - 110 * scale) < 0.01 &&
+            Check($"avatar-size-{scale}", Math.Abs(window.AvatarVisual.ActualWidth - 112 * scale) < 0.01 &&
+                Math.Abs(window.AvatarVisual.ActualHeight - 88 * scale) < 0.01 &&
                 window.DragSurface.ActualHeight >= window.AvatarVisual.ActualHeight);
             Check($"opacity-and-reduced-motion-{scale}",
                 window.Opacity == (SystemParameters.HighContrast ? 1 : 0.4) && !window.IsIdleAnimationRunning);

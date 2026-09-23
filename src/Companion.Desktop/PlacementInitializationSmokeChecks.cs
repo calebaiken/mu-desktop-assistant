@@ -139,7 +139,7 @@ internal static class PlacementInitializationSmokeChecks
                 case "io-failure":
                     check("io-failure-restores-input-with-warning", window.IsEnabled &&
                         window.DesktopStatus.Text.Contains("could not be loaded", StringComparison.Ordinal));
-                    // Reporting the warning intentionally increases window height (UpdateHeight).
+                    // Reporting a warning must not move the companion while initialization is pending.
                     // Compare position, not dimensions, to detect an unwanted saved-position restore.
                     var failureBounds = DesktopWindowPlacement.ReadBounds(handle).Window;
                     check("io-failure-position-not-restored", failureBounds.Left == before.Left && failureBounds.Top == before.Top);

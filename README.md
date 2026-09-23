@@ -3,13 +3,20 @@
 A Windows-first personal AI companion built in C#/.NET 10 and WPF.
 
 **Local pretrained chat passed independent QA at 9.0/10; full Phase 3 remains in progress.** The app opens a small transparent
-companion and a settings window. Drag the character to move it and snap to a display's
+character with no surrounding card. Hover over it to reveal **Chat**, **Settings**
+and **More**; the controls disappear when the pointer leaves. Keyboard navigation
+also reveals them: Tab through the character and buttons, Enter to activate, Escape
+to dismiss. More/right-click contains Hide, Sleep/Wake and Exit. At default size the
+character is 112×88 DIPs, inside a stable 136×132 transparent window so revealing
+controls never moves it. Drag the character to move it and snap to a display's
 work-area edges, or focus it with Tab and use arrow keys (Shift moves farther) within
 the current display. **Ctrl+Shift+M**, while the companion is focused, or the
 next-display menu action cycles through available displays. Settings control its name, avatar size (75–150%), opacity
 (40–100%), reduced motion, topmost behavior and content-free diagnostics.
 Settings persist locally with validated backups and corruption recovery. A second
 launch activates the existing instance.
+The [compact surface review](docs/qa/COMPACT_AVATAR_REVIEW.md) passed at 9.1/10,
+including 51 native layout/disclosure assertions and a sampled real-input check.
 
 The built-in vector character supports eight semantic expressions and a brief idle blink
 about every ten seconds. Motion stops while hidden/minimized, sleeping, with reduced motion or when Windows disables
@@ -24,7 +31,7 @@ remain mandatory before release under the recorded validation sequence. No API c
 read or required.
 
 For local AI, run `scripts/setup-local-ai.ps1` once, then `scripts/run-local-chat.ps1`
-after building. Open **Chat** from the companion/tray menu or press **Ctrl+Shift+C**
+after building. Open **Chat** from the hover strip, companion/tray menu or press **Ctrl+Shift+C**
 with the companion focused. Closing chat discards its history and unloads the model.
 The small model can make mistakes. See [local AI setup and limits](docs/LOCAL_AI.md).
 The [increment review](docs/qa/PHASE_3_LOCAL_INCREMENT_REVIEW.md) verifies 224 tests,

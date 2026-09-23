@@ -1,5 +1,7 @@
 using System.ComponentModel;
 using System.Windows;
+using System.Windows.Automation;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -28,8 +30,10 @@ public partial class CompanionWindow : Window
     private string desktopMessage = string.Empty;
     private string shortcutMessage = string.Empty;
     private bool changingMonitor;
+    private bool keyboardNavigation;
     internal bool IsIdleAnimationRunning => AvatarRenderer.IsAnimating;
     internal AvatarState CurrentState => states.Current;
+    internal bool ControlsVisible => HoverControls.Visibility == Visibility.Visible;
 
     public CompanionWindow()
     {
@@ -41,16 +45,31 @@ public partial class CompanionWindow : Window
             source = HwndSource.FromHwnd(new WindowInteropHelper(this).Handle);
             source?.AddHook(WindowMessage);
         };
-        Loaded += (_, _) => { QueuePlacement(); UpdateMotion(); };
+        Loaded += (_, _) => { QueuePlacement(); UpdateMotion(); RefreshControlsVisibility(); };
+        MouseEnter += (_, _) => RefreshControlsVisibility();
+        MouseLeave += (_, _) => RefreshControlsVisibility();
+        PreviewMouseDown += (_, _) => { keyboardNavigation = false; RefreshControlsVisibility(); };
+        IsKeyboardFocusWithinChanged += (_, _) => RefreshControlsVisibility();
+        CompanionRoot.IsEnabledChanged += (_, _) => RefreshControlsVisibility();
+        Deactivated += (_, _) => { keyboardNavigation = false; RefreshControlsVisibility(); };
+        ContextMenu.Opened += (_, _) => RefreshControlsVisibility();
+        ContextMenu.Closed += (_, _) => RefreshControlsVisibility();
+        ContextMenuOpening += (_, _) =>
+        {
+            ContextMenu.PlacementTarget = DragSurface;
+            ContextMenu.Placement = PlacementMode.MousePoint;
+        };
         SizeChanged += (_, _) => QueuePlacement();
         DpiChanged += (_, _) => QueuePlacement();
-        IsVisibleChanged += (_, _) => UpdateMotion();
-        IsEnabledChanged += (_, _) => UpdateMotion();
-        StateChanged += (_, _) => { UpdateMotion(); QueuePlacement(); };
+        IsVisibleChanged += (_, _) => { UpdateMotion(); RefreshControlsVisibility(); };
+        IsEnabledChanged += (_, _) => { UpdateMotion(); RefreshControlsVisibility(); };
+        StateChanged += (_, _) => { UpdateMotion(); QueuePlacement(); RefreshControlsVisibility(); };
         SystemParameters.StaticPropertyChanged += SystemPreferencesChanged;
         Closed += (_, _) =>
         {
             closed = true;
+            ContextMenu.IsOpen = false;
+            RefreshControlsVisibility();
             previewTimer.Stop();
             SystemParameters.StaticPropertyChanged -= SystemPreferencesChanged;
             if (source is { IsDisposed: false }) source.RemoveHook(WindowMessage);
@@ -67,10 +86,10 @@ public partial class CompanionWindow : Window
         NameLabel.Text = settings.CompanionName;
         Title = settings.CompanionName + " · Desktop Companion";
         Topmost = settings.AlwaysOnTop;
-        AvatarVisual.Width = 140 * settings.AvatarScale;
-        AvatarVisual.Height = 110 * settings.AvatarScale;
+        AvatarVisual.Width = 112 * settings.AvatarScale;
+        AvatarVisual.Height = 88 * settings.AvatarScale;
         // Scale the character while keeping keyboard/button targets at their normal size.
-        Width = Math.Max(260, AvatarVisual.Width + 104);
+        Width = Math.Max(136, AvatarVisual.Width + 16);
         UpdateHeight();
         Opacity = SystemParameters.HighContrast ? 1 : settings.AvatarOpacity;
         UpdateMotion();
@@ -84,7 +103,29 @@ public partial class CompanionWindow : Window
             !settings.ReducedMotion && SystemParameters.ClientAreaAnimation && !SystemParameters.HighContrast;
         var state = preview ?? states.Current;
         StateLabel.Text = preview.HasValue ? "Preview · " + state : state == AvatarState.Idle ? "Ready" : state.ToString();
+        RefreshAccessibleDetails();
         AvatarRenderer.Render(state, animate, SystemParameters.HighContrast);
+    }
+
+    private void RefreshControlsVisibility() =>
+        ApplyControlsVisibility(IsMouseOver, IsKeyboardFocusWithin, keyboardNavigation, ContextMenu.IsOpen);
+
+    internal void ApplyControlsVisibility(bool pointerWithin, bool keyboardWithin, bool keyboardNavigation, bool menuOpen)
+    {
+        var usable = !closed && IsLoaded && IsVisible && IsEnabled &&
+            Content is not UIElement { IsEnabled: false } && WindowState == WindowState.Normal;
+        var show = usable && (pointerWithin || (keyboardWithin && keyboardNavigation) || menuOpen);
+        HoverControls.Visibility = show ? Visibility.Visible : Visibility.Hidden;
+        HoverControls.IsHitTestVisible = show;
+    }
+
+    private void RefreshAccessibleDetails()
+    {
+        var details = $"{NameLabel.Text} · {StateLabel.Text}\n{MovementStatus.Text}\nTab for controls · Right-click for more";
+        if (!string.IsNullOrEmpty(DesktopStatus.Text)) details += "\n" + DesktopStatus.Text;
+        DragSurface.ToolTip = details;
+        AutomationProperties.SetName(this, $"{NameLabel.Text} · {StateLabel.Text}");
+        AutomationProperties.SetHelpText(this, details);
     }
 
     internal void Preview(AvatarState state)
@@ -110,9 +151,8 @@ public partial class CompanionWindow : Window
 
     private void UpdateHeight()
     {
-        DesktopStatus.Measure(new Size(Math.Max(1, Width - 66), double.PositiveInfinity));
-        Height = 352 + 110 * (settings.AvatarScale - 1) +
-            (string.IsNullOrEmpty(DesktopStatus.Text) ? 0 : DesktopStatus.DesiredSize.Height + 8);
+        // Reserve the small control strip so hovering never changes placement or size.
+        Height = AvatarVisual.Height + 44;
     }
 
     internal void ReportDesktopStatus(string message)
@@ -131,7 +171,12 @@ public partial class CompanionWindow : Window
     {
         DesktopStatus.Text = string.Join(Environment.NewLine,
             new[] { desktopMessage, shortcutMessage }.Where(message => !string.IsNullOrEmpty(message)));
-        UpdateHeight();
+        var noticeVisible = !string.IsNullOrEmpty(DesktopStatus.Text);
+        StatusBadge.Visibility = noticeVisible ? Visibility.Visible : Visibility.Collapsed;
+        NoticeMenuItem.Visibility = noticeVisible ? Visibility.Visible : Visibility.Collapsed;
+        NoticeMenuText.Text = DesktopStatus.Text;
+        AutomationProperties.SetHelpText(StatusBadge, DesktopStatus.Text);
+        RefreshAccessibleDetails();
     }
 
     internal async Task MoveToNextMonitorAsync()
@@ -152,12 +197,22 @@ public partial class CompanionWindow : Window
             MovementStatus.Text = "Moved to the next display.";
         }
         catch (Win32Exception) { MovementStatus.Text = "The display changed. Try moving to the next display again."; }
-        finally { changingMonitor = false; }
+        finally { changingMonitor = false; RefreshAccessibleDetails(); }
     }
 
     private async void Window_PreviewKeyDown(object sender, KeyEventArgs e)
     {
         if (!IsEnabled || Content is UIElement { IsEnabled: false }) return;
+        keyboardNavigation = e.Key != Key.Escape;
+        if (e.Key == Key.Escape)
+        {
+            ContextMenu.IsOpen = false;
+            DragSurface.Focus();
+            RefreshControlsVisibility();
+            e.Handled = true;
+            return;
+        }
+        RefreshControlsVisibility();
         if (e.Key == Key.C && Keyboard.Modifiers == (ModifierKeys.Control | ModifierKeys.Shift))
         {
             e.Handled = true;
@@ -214,6 +269,7 @@ public partial class CompanionWindow : Window
         {
             MovementStatus.Text = "Could not adjust to this display. Try moving the companion again.";
         }
+        RefreshAccessibleDetails();
     }
 
     private void DragSurface_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -264,7 +320,15 @@ public partial class CompanionWindow : Window
             CommitPlacement();
         }
         catch (Win32Exception) { MovementStatus.Text = "Could not move the companion on this display."; }
+        RefreshAccessibleDetails();
         e.Handled = true;
+    }
+
+    private void More_Click(object sender, RoutedEventArgs e)
+    {
+        ContextMenu.PlacementTarget = MoreButton;
+        ContextMenu.Placement = PlacementMode.Top;
+        ContextMenu.IsOpen = true;
     }
 
     private void Settings_Click(object sender, RoutedEventArgs e) => SettingsRequested?.Invoke(this, EventArgs.Empty);

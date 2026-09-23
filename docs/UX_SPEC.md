@@ -1,6 +1,32 @@
 # Companion interaction design
 
-Phase 0 specification; the foundation window is only a build check.
+The roadmap below began in Phase 0. Implemented behavior and the latest user-directed
+surface revision are recorded first; roadmap interactions are not all implemented.
+
+## Current compact companion surface (2026-09-22)
+
+At rest only the character is painted on the transparent, borderless desktop window.
+The old card, name heading, state text, movement instructions and permanent buttons
+are removed from the visual layout. The default character is 112×88 DIPs, scaled by
+the existing 75–150% preference; the window reserves 136×132 DIPs at default scale.
+Windows may round these bounds to whole physical pixels.
+
+Hover reveals three 32-DIP icon targets in a small strip: Chat, Settings, More. The
+strip overlaps the character's lower edge to maintain a continuous pointer path.
+It hides after pointer exit. Keyboard navigation reveals the same controls; Tab and
+Shift+Tab traverse them, Enter activates, Escape dismisses and focuses the character.
+Mouse-derived focus does not keep the strip open. Opening a menu keeps controls
+available until the menu closes. Reveal/dismiss never changes the HWND bounds.
+
+More and right-click offer Chat, Settings, Hide, Next display, Sleep/Wake and Exit.
+Existing drag/arrow movement, tray recovery and shortcuts remain. Name, state and
+movement help are available through the character tooltip and window automation
+metadata. A small notice badge, tooltip and menu text expose storage/shortcut warnings
+without enlarging the window. Full screen-reader announcement qualification is pending.
+Hover controls use system colors; existing high-contrast and reduced-motion handling
+remain. No hover polling or extra animation timer is introduced.
+
+## Remaining roadmap
 
 Default product name is a working repository name; companion name is user-editable.
 Begin with one friendly, simple 2D character, restrained movement, medium scale, full

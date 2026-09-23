@@ -117,6 +117,8 @@ public partial class App : System.Windows.Application
                 await Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
                 if (new WindowInteropHelper(companion).Handle == IntPtr.Zero || !companion.IsVisible)
                     throw new InvalidOperationException("Presentation source unavailable.");
+                await CompactAvatarSmokeChecks.RunAsync(companion, runtime.Settings, options.DataDirectory);
+                await RecordStage("compact-avatar-complete");
                 await AppearanceSmokeChecks.RunAsync(companion, runtime.Settings, options.DataDirectory);
                 await RecordStage("appearance-complete");
                 await DesktopIntegrationSmokeChecks.RunAsync(options.DataDirectory);

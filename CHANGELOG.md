@@ -1,5 +1,21 @@
 # Changelog
 
+## Unreleased — Compact companion surface (2026-09-22, independent QA 9.1/10 PASS)
+
+- Replaced the large card with a smaller character on a transparent desktop surface.
+- Added Chat, Settings and More icon buttons that appear on hover or keyboard
+  navigation. Pointer exit hides them; mouse-derived focus does not keep them open.
+- Kept fixed window bounds and a continuous painted path onto the buttons so
+  disclosure does not move the companion. Escape dismisses keyboard controls.
+- Retained name/state/help in tooltips and automation metadata; warnings use a
+  small notice badge and menu text without expanding the window.
+- Passed 224 regression tests, 11 architecture checks, 20 native process controls
+  and 51 independent compact-layout/disclosure assertions. Actual native input
+  verified menu access, Chat/Settings, Tab/Shift+Tab and Escape at the saved scale.
+  Unpressed hover travel across all scales and full accessibility remain unqualified.
+  See [review](docs/qa/COMPACT_AVATAR_REVIEW.md) and
+  [evidence](docs/qa/COMPACT_AVATAR_BUILD_EVIDENCE.md). Release blockers remain.
+
 ## Unreleased — Phase 3 local chat increment (2026-09-22, independent QA 9.0/10 PASS)
 
 - Adopted the user's pretrained-local-model choice, without API keys or cloud inference.

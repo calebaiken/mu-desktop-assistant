@@ -88,6 +88,14 @@ $script:caseCount++
 Write-Output "PASS $($integration.count) desktop recovery/tray/shortcut assertions"
 foreach ($limit in $integration.skipped) { Write-Output "LIMIT: $limit" }
 $stages = @(Get-Content -LiteralPath (Join-Path $profile 'ui-stages.txt'))
+$compactAvatar = Get-Content -LiteralPath (Join-Path $profile 'compact-avatar-smoke.json') -Raw | ConvertFrom-Json
+if ($compactAvatar.failure -or $compactAvatar.count -ne 51 -or
+    @($compactAvatar.passed | Select-Object -Unique).Count -ne 51 -or
+    @($stages | Where-Object { $_ -like 'compact-avatar-complete:*' }).Count -ne 2) {
+    throw 'Both native runs must complete all 51 compact avatar layout and disclosure-policy assertions.'
+}
+$script:caseCount++
+Write-Output 'PASS 51 compact avatar layout/disclosure-policy assertions'
 if (@($stages | Where-Object { $_ -like 'settings-recovery-complete:*' }).Count -ne 2) {
     throw 'Both visible runs must recover hidden and minimized settings.'
 }
