@@ -12,6 +12,11 @@ public sealed class LocalChatModel : IChatModel, IDisposable
 {
     internal const int MaximumMessageBytes = 32 * 1024;
     internal const int MaximumEventBytes = 64 * 1024;
+    internal const int ContextTokens = 2048;
+    internal const int MaximumOutputTokens = 256;
+    internal const int MaximumPromptTokens = ContextTokens - MaximumOutputTokens;
+    internal const int MaximumPreflightBytes = 256 * 1024;
+    internal const int MaximumFormattedPromptBytes = 64 * 1024;
     private static readonly UTF8Encoding StrictUtf8 = new(false, true);
     private readonly HttpClient client;
     private readonly Uri endpoint;
@@ -59,28 +64,23 @@ public sealed class LocalChatModel : IChatModel, IDisposable
         if (Interlocked.CompareExchange(ref active, 1, 0) != 0) throw new ChatModelException(ChatFailure.Busy);
         try
         {
-            var requestMessages = SnapshotMessages(messages);
+            var snapshot = SnapshotMessages(messages);
             using var turn = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, lifetime.Token);
             turn.CancelAfter(turnTimeout);
             using var idle = CancellationTokenSource.CreateLinkedTokenSource(turn.Token);
+            var requestMessages = await AdmitContextAsync(snapshot, idle, cancellationToken).ConfigureAwait(false);
             using var request = new HttpRequestMessage(HttpMethod.Post, endpoint);
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", sessionToken);
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));
             request.Content = new ByteArrayContent(JsonSerializer.SerializeToUtf8Bytes(new
             {
-                model = "local", messages = requestMessages, stream = true, max_tokens = 256,
+                model = "local", messages = requestMessages, stream = true, max_tokens = MaximumOutputTokens,
                 cache_prompt = false, temperature = 0.7, top_k = 20, top_p = 0.8, min_p = 0.0,
                 presence_penalty = 1.5, chat_template_kwargs = new { enable_thinking = false }
             }));
             request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
             using var response = await SendAsync(request, idle, cancellationToken).ConfigureAwait(false);
-            if (response.StatusCode is HttpStatusCode.BadRequest or HttpStatusCode.RequestEntityTooLarge or HttpStatusCode.UnprocessableEntity)
-                throw new ChatModelException(ChatFailure.InvalidRequest);
-            if (!response.IsSuccessStatusCode) throw new ChatModelException(ChatFailure.Unavailable);
-            if (response.RequestMessage?.RequestUri is { } actual && actual != endpoint)
-                throw new ChatModelException(ChatFailure.Protocol);
-            if (response.Content.Headers.ContentType?.MediaType != "text/event-stream")
-                throw new ChatModelException(ChatFailure.Protocol);
+            ValidateResponse(response, endpoint, "text/event-stream");
             using var stream = await OpenStreamAsync(response, idle, cancellationToken).ConfigureAwait(false);
             var reader = new BoundedLineReader(stream, this, idle, cancellationToken);
             var data = new StringBuilder();
@@ -139,22 +139,145 @@ public sealed class LocalChatModel : IChatModel, IDisposable
         finally { Interlocked.Exchange(ref active, 0); }
     }
 
-    private static object[] SnapshotMessages(IReadOnlyList<ChatMessage> messages)
+    private sealed record WireMessage(string role, string content);
+
+    private static WireMessage[] SnapshotMessages(IReadOnlyList<ChatMessage> messages)
     {
         if (messages is null || messages.Count is < 1 or > 32)
             throw new ChatModelException(ChatFailure.InvalidRequest);
-        var result = new object[messages.Count];
+        var result = new WireMessage[messages.Count];
         var bytes = 0;
+        var expected = ChatRole.User;
         for (var index = 0; index < result.Length; index++)
         {
             var message = messages[index];
             if (message is null) throw new ChatModelException(ChatFailure.InvalidRequest);
+            if (!(index == 0 && message.Role == ChatRole.System))
+            {
+                if (message.Role != expected) throw new ChatModelException(ChatFailure.InvalidRequest);
+                expected = expected == ChatRole.User ? ChatRole.Assistant : ChatRole.User;
+            }
             try { bytes += StrictUtf8.GetByteCount(message.Content); }
             catch (EncoderFallbackException) { throw new ChatModelException(ChatFailure.InvalidRequest); }
             if (bytes > MaximumMessageBytes) throw new ChatModelException(ChatFailure.InvalidRequest);
-            result[index] = new { role = message.Role.ToString().ToLowerInvariant(), content = message.Content };
+            result[index] = new(message.Role.ToString().ToLowerInvariant(), message.Content);
         }
+        if (result[^1].role != "user") throw new ChatModelException(ChatFailure.InvalidRequest);
         return result;
+    }
+
+    private async Task<WireMessage[]> AdmitContextAsync(WireMessage[] messages,
+        CancellationTokenSource idle, CancellationToken caller)
+    {
+        // b10964 /apply-template and /v1/chat/completions both call
+        // oaicompat_chat_params_parse. Completion tokenization uses add_special=true,
+        // parse_special=true; use the same flags, template kwargs and actual worker vocabulary.
+        // https://github.com/ggml-org/llama.cpp/blob/b10964/tools/server/server-context.cpp
+        var systemCount = messages[0].role == "system" ? 1 : 0;
+        while (true)
+        {
+            using var formatted = await PostJsonAsync("/apply-template", new
+            {
+                model = "local", messages, chat_template_kwargs = new { enable_thinking = false }
+            }, idle, caller).ConfigureAwait(false);
+            string prompt;
+            try
+            {
+                prompt = formatted.RootElement.GetProperty("prompt").GetString()
+                    ?? throw new ChatModelException(ChatFailure.Protocol);
+                if (prompt.Length == 0 || StrictByteCount(prompt) > MaximumFormattedPromptBytes)
+                    throw new ChatModelException(ChatFailure.Protocol);
+            }
+            catch (Exception error) when (error is InvalidOperationException or KeyNotFoundException)
+            { throw new ChatModelException(ChatFailure.Protocol); }
+
+            using var tokenized = await PostJsonAsync("/tokenize", new
+            {
+                content = prompt, add_special = true, parse_special = true, with_pieces = false
+            }, idle, caller).ConfigureAwait(false);
+            var count = CountTokens(tokenized.RootElement);
+            if (count <= MaximumPromptTokens) return messages;
+            // Preserve the optional system instruction and newest user prompt. A historical
+            // turn is evicted only as a complete user/assistant pair, never partial text.
+            if (messages.Length - systemCount <= 1)
+                throw new ChatModelException(ChatFailure.InvalidRequest);
+            messages = messages.Take(systemCount).Concat(messages.Skip(systemCount + 2)).ToArray();
+        }
+    }
+
+    private static int CountTokens(JsonElement root)
+    {
+        try
+        {
+            var tokens = root.GetProperty("tokens");
+            if (tokens.ValueKind != JsonValueKind.Array || tokens.GetArrayLength() is < 1 or > MaximumFormattedPromptBytes)
+                throw new ChatModelException(ChatFailure.Protocol);
+            foreach (var token in tokens.EnumerateArray())
+                if (!token.TryGetInt32(out var id) || id < 0)
+                    throw new ChatModelException(ChatFailure.Protocol);
+            return tokens.GetArrayLength();
+        }
+        catch (Exception error) when (error is InvalidOperationException or KeyNotFoundException)
+        { throw new ChatModelException(ChatFailure.Protocol); }
+    }
+
+    private async Task<JsonDocument> PostJsonAsync(string path, object payload,
+        CancellationTokenSource idle, CancellationToken caller)
+    {
+        var target = new Uri(endpoint, path);
+        using var request = new HttpRequestMessage(HttpMethod.Post, target);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", sessionToken);
+        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        var body = JsonSerializer.SerializeToUtf8Bytes(payload);
+        // JSON escapes can expand a bounded UTF8 prompt; still impose a wire-size ceiling.
+        if (body.Length > 512 * 1024) throw new ChatModelException(ChatFailure.InvalidRequest);
+        request.Content = new ByteArrayContent(body);
+        request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+        using var response = await SendAsync(request, idle, caller).ConfigureAwait(false);
+        ValidateResponse(response, target, "application/json");
+        if (response.Content.Headers.ContentLength is > MaximumPreflightBytes)
+            throw new ChatModelException(ChatFailure.Protocol);
+        using var stream = await OpenStreamAsync(response, idle, caller).ConfigureAwait(false);
+        using var data = new MemoryStream();
+        var buffer = new byte[4096];
+        while (true)
+        {
+            int count;
+            try
+            {
+                idle.CancelAfter(idleTimeout);
+                idle.Token.ThrowIfCancellationRequested();
+                count = await stream.ReadAsync(buffer, idle.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) { throw CancellationFailure(caller); }
+            catch (Exception error) when (error is HttpRequestException or IOException or ObjectDisposedException)
+            { throw new ChatModelException(ChatFailure.Unavailable); }
+            if (count == 0) break;
+            if (data.Length + count > MaximumPreflightBytes) throw new ChatModelException(ChatFailure.Protocol);
+            data.Write(buffer, 0, count);
+        }
+        JsonDocument? document = null;
+        try
+        {
+            document = JsonDocument.Parse(data.GetBuffer().AsMemory(0, (int)data.Length), new JsonDocumentOptions { MaxDepth = 16 });
+            RejectDuplicateProperties(document.RootElement);
+            if (document.RootElement.ValueKind != JsonValueKind.Object || document.RootElement.TryGetProperty("error", out _))
+                throw new ChatModelException(ChatFailure.Protocol);
+            return document;
+        }
+        catch (JsonException) { document?.Dispose(); throw new ChatModelException(ChatFailure.Protocol); }
+        catch { document?.Dispose(); throw; }
+    }
+
+    private static void ValidateResponse(HttpResponseMessage response, Uri expected, string mediaType)
+    {
+        if (response.StatusCode is HttpStatusCode.BadRequest or HttpStatusCode.RequestEntityTooLarge or HttpStatusCode.UnprocessableEntity)
+            throw new ChatModelException(ChatFailure.InvalidRequest);
+        if (!response.IsSuccessStatusCode) throw new ChatModelException(ChatFailure.Unavailable);
+        if (response.RequestMessage?.RequestUri is { } actual && actual != expected)
+            throw new ChatModelException(ChatFailure.Protocol);
+        if (response.Content.Headers.ContentType?.MediaType != mediaType)
+            throw new ChatModelException(ChatFailure.Protocol);
     }
 
     private static (string Text, ChatFinishReason? Finish) ParseChunk(string payload)

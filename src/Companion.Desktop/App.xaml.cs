@@ -80,6 +80,11 @@ public partial class App : System.Windows.Application
                 await StopAsync(0);
                 return;
             }
+            if (options.PrivateHistorySmoke)
+            {
+                await TemporaryPrivacySmokeChecks.WaitForPrivacyTerminationAsync(options.DataDirectory);
+                return;
+            }
             companion.Show();
             placement = new(companion, options.DataDirectory);
             await placement.InitializeAsync();
@@ -129,6 +134,12 @@ public partial class App : System.Windows.Application
                 await RecordStage("placement-initialization-complete");
                 await ChatLifecycleSmokeChecks.RunAsync(options.DataDirectory);
                 await RecordStage("chat-lifecycle-complete");
+                await ChatHistorySmokeChecks.RunAsync(options.DataDirectory);
+                await RecordStage("chat-history-complete");
+                await SafeChatDocumentSmokeChecks.RunAsync(options.DataDirectory);
+                await RecordStage("safe-chat-document-complete");
+                await CompanionReplySmokeChecks.RunAsync(companion, runtime.Settings, options.DataDirectory);
+                await RecordStage("companion-reply-complete");
                 OpenSettings();
                 await Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
                 if (settingsWindow is null || new WindowInteropHelper(settingsWindow).Handle == IntPtr.Zero)
@@ -182,6 +193,7 @@ public partial class App : System.Windows.Application
     private void OpenChat()
     {
         if (stopping || companion is null || options is null || options.IsTestSession) return;
+        companion.DismissReplyPreview();
         desktop?.Recover();
         if (chatWindow is not null)
         {
@@ -202,8 +214,14 @@ public partial class App : System.Windows.Application
         localModelHost = host;
         chatWindow = new ChatWindow(token => host is null
             ? Task.FromException<IChatModel>(new ChatModelException(ChatFailure.Unavailable))
-            : host.GetModelAsync(token)) { Owner = companion };
+            : host.GetModelAsync(token), new SqliteConversationStore(options.DataDirectory)) { Owner = companion };
         var window = chatWindow;
+        window.ReplyCompleted += reply =>
+        {
+            if (!stopping && !window.IsActive && companion.IsVisible)
+                companion.ShowReplyPreview(reply);
+        };
+        window.Activated += (_, _) => companion.DismissReplyPreview();
         IDisposable? thinking = null;
         window.GenerationChanged += (_, _) =>
         {
@@ -218,6 +236,7 @@ public partial class App : System.Windows.Application
         };
         chatWindow.Closed += (_, _) =>
         {
+            companion.DismissReplyPreview();
             thinking?.Dispose();
             chatWindow = null;
             if (ReferenceEquals(localModelHost, host)) localModelHost = null;

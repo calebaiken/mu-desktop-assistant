@@ -27,16 +27,28 @@ dependency metadata remain archived. Close an already-running companion before l
 single-instance activation does not reconfigure the running instance.
 
 The desktop starts with `--local-model-dir` pointing to these files. Open Chat from
-the companion menu. The first increment offers plain-text streaming,
-Send/Stop and an in-memory conversation. Closing chat discards that conversation
-and unloads its worker. Persistent history, branches, search, rich Markdown/code/
-LaTeX rendering and all voice/tool/memory features remain later Phase 3+ work.
+the hover buttons, menu or Ctrl+Shift+C. Chat starts in Temporary mode; closing it
+discards that session and unloads its worker. Choose Saved chats to start a separate,
+persistent conversation. Titles, literal search, delete, edit/regenerate branches,
+Stop and retry are available. Earlier branches remain selectable and unchanged.
+Markdown, highlighted code and a bounded LaTeX subset render locally in WPF; Plain
+text remains available. Voice, tools and approved long-term memory remain later work.
+
+Saved prompts commit before inference; final, stopped and failed replies finalize
+the stored turn. After an abrupt exit, a pending turn reopens as interrupted and is
+excluded from later model context. Stream fragments not yet finalized can be lost.
+On a save failure, the reply remains visible: Retry saving or Continue temporarily.
+That explicit temporary continuation does not erase earlier saved messages.
 
 ## Process and privacy boundaries
 
 The app verifies pinned model/runtime hashes before launching the worker. The
 worker runs only when chat needs it, with a 2,048-token context, two CPU threads,
-one request slot and at most 256 generated tokens per reply. A Windows job object
+one request slot and at most 256 generated tokens per reply. The client applies the
+worker's actual chat template and tokenizer before inference, reserving 256 tokens
+and fitting the prompt to 1,792 tokens by dropping oldest complete pairs. The latest
+user message is retained; if it alone cannot fit, the UI asks for a shorter message.
+Byte limits remain additional bounds. A Windows job object
 limits worker committed memory to 2 GiB and terminates assigned processes when its
 handle closes. Process creation and job assignment are separate operations; a
 parent crash in that brief interval is not yet eliminated by suspended creation.
@@ -46,7 +58,8 @@ The app verifies that the listening socket belongs to its child process. A rando
 per-launch secret protects this local connection; it is created internally, never
 entered by the user, persisted, or used with a cloud provider. Web UI, exposed slot
 monitoring, disk prompt caching and runtime logs are disabled. Output is untrusted
-plain text and grants no access to files, shell commands, tools or desktop control.
+text and grants no access to files, shell commands, tools or desktop control. Rich
+display has no active HTML, remote images, navigation or executable content.
 
 No cloud fallback exists. Setup needs internet access to download software and
 weights; installed inference does not require it. This is a local application

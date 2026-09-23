@@ -6,7 +6,10 @@ none advances with a score of 8.5 or lower. Cross-cutting security is designed n
 implemented with each feature and adversarially tested again in Phase 11.
 
 Phase 3's first **local pretrained chat increment passed at 9.0/10**. This approves
-the bounded in-memory chat slice; full Phase 3 remains incomplete. See the
+the bounded in-memory chat slice. History, branching/search, separate temporary mode,
+exact token admission and native Markdown/code/math now pass the
+[Phase 3 development review](docs/qa/PHASE_3_HISTORY_REVIEW.md) at **9.5/10**.
+Phase 4 starts with [explicit local speech output](docs/PHASE_4_VOICE_PLAN.md). See the
 [independent increment review](docs/qa/PHASE_3_LOCAL_INCREMENT_REVIEW.md).
 
 | Phase | Delivery | Exit evidence (in addition to independent score >8.5) |
@@ -71,7 +74,8 @@ intervals and all memory intervals pass, but the required aggregate remains **FA
 The [final development review](docs/qa/PHASE_2_RESOURCE_REVIEW.md) passes at **8.7/10**.
 Historical 8.0/8.6 failed exits and source checkpoint 6306ec9 remain preserved. Phase 3
 has begun with the user's selected [pretrained local model path](docs/LOCAL_AI.md);
-the first increment targets in-memory plain-text chat. Full history and rich rendering remain. Physical display/input/
+the first increment supplied in-memory plain-text chat; history and rich rendering
+passed final development review at 9.5/10. Physical display/input/
 accessibility, sign-in and unchanged resource qualification remain mandatory before release in Phases 11/12.
 Implementation alone does not complete the phase.
 

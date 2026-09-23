@@ -20,10 +20,10 @@ function Assert-AppExit {
     $process.StartInfo.CreateNoWindow = $true
     try {
         if (-not $process.Start()) { throw "$Name did not start." }
-        if (-not $process.WaitForExit(40000)) {
+        if (-not $process.WaitForExit(60000)) {
             $process.Kill()
             $process.WaitForExit()
-            throw "$Name exceeded its 40-second deadline."
+            throw "$Name exceeded its 60-second deadline."
         }
         if ($process.ExitCode -ne $ExpectedExit) {
             throw "$Name returned $($process.ExitCode); expected $ExpectedExit."
@@ -38,6 +38,10 @@ function Assert-AppExit {
 # user input or prove accessibility, dragging or a physical mixed-DPI monitor matrix.
 $profileArgument = '--data-dir "{0}"' -f $profile
 Assert-AppExit 'visible-companion-settings-close' "--ui-smoke $profileArgument" 0
+$firstRun = Join-Path $evidenceRoot 'first-run'
+New-Item -ItemType Directory -Path $firstRun -Force | Out-Null
+Get-ChildItem -LiteralPath $profile -File | Where-Object { $_.Name -like '*smoke.json' -or $_.Extension -eq '.png' } |
+    Copy-Item -Destination $firstRun
 Assert-AppExit 'same-profile-restart-after-close' "--ui-smoke $profileArgument" 0
 $appearance = Get-Content -LiteralPath (Join-Path $profile 'appearance-smoke.json') -Raw | ConvertFrom-Json
 if ('blinkChecksEnabled' -notin $appearance.PSObject.Properties.Name -or
@@ -125,6 +129,19 @@ if ($chatLifecycle.failure -or $chatLifecycle.count -ne 54 -or
 }
 $script:caseCount++
 Write-Output 'PASS 54 local chat lifecycle/history/layout assertions'
+foreach ($suite in @(@('chat-history', 50), @('safe-chat-document', 46), @('companion-reply', 34))) {
+    $name = [string]$suite[0]
+    $expected = [int]$suite[1]
+    foreach ($folder in @($firstRun, $profile)) {
+        $report = Get-Content -LiteralPath (Join-Path $folder ($name + '-smoke.json')) -Raw | ConvertFrom-Json
+        if ($report.failure -or $report.count -ne $expected -or @($report.passed | Select-Object -Unique).Count -ne $expected) {
+            throw "Expected $expected distinct $name assertions in both native runs."
+        }
+    }
+    if (@($stages | Where-Object { $_ -like ($name + '-complete:*') }).Count -ne 2) { throw "$name stages incomplete." }
+    $script:caseCount++
+    Write-Output "PASS $expected $name assertions in both independently retained runs"
+}
 Assert-AppExit 'headless-composed-lifecycle' "--smoke $profileArgument" 0
 Assert-AppExit 'reject-forward-slash-unc' '--smoke --data-dir "//invalid-host.invalid/share"' 2
 Assert-AppExit 'reject-backslash-unc' '--smoke --data-dir "\\invalid-host.invalid\share"' 2
@@ -135,6 +152,12 @@ Assert-AppExit 'reject-observer-without-performance-mode' "--smoke --performance
 Assert-AppExit 'reject-unknown-observer' "--performance-smoke --performance-observer unknown $profileArgument" 2
 Assert-AppExit 'reject-missing-observer-value' '--performance-smoke --performance-observer' 2
 Assert-AppExit 'reject-duplicate-observer' "--performance-smoke --performance-observer threads --performance-observer process $profileArgument" 2
+Assert-AppExit 'reject-private-smoke-without-explicit-profile' '--private-history-smoke' 2
+Assert-AppExit 'reject-private-smoke-conflict' "--private-history-smoke --smoke $profileArgument" 2
+Assert-AppExit 'reject-private-smoke-duplicate' "--private-history-smoke --private-history-smoke $profileArgument" 2
+Assert-AppExit 'reject-private-smoke-model-directory' "--private-history-smoke --local-model-dir `"$profile`" $profileArgument" 2
+$normalProfile = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'DesktopCompanion'
+Assert-AppExit 'reject-private-smoke-default-profile' "--private-history-smoke --data-dir `"$normalProfile`"" 2
 
 $logPath = Join-Path $profile 'logs\application.jsonl'
 $events = @(Get-Content -LiteralPath $logPath | ForEach-Object { $_ | ConvertFrom-Json })

@@ -1,10 +1,11 @@
 # Development status
 
-Updated: 2026-09-22. **Compact surface increment passed independent QA at 9.1/10;
-local chat increment passed at 9.0/10; full Phase 3 remains incomplete.**
+Updated: 2026-09-22. **Phase 3 development passed independent QA at 9.5/10;
+the preceding local chat increment passed at 9.0/10 and compact surface at 9.1/10.**
 Phase 0 passed at 9.4/10 and Phase 1 passed at 9.0/10. Phase 2's final resource
 confirmation remains **FAIL**, and release is not approved. Phase 3 now implements
-pretrained local inference and a bounded in-memory plain-text chat window.
+pretrained local inference, optional SQLite history, separate temporary sessions,
+branching/search and bounded native rich chat rendering.
 The recorded validation sequence moves unavailable physical/input/sign-in qualification
 to mandatory Phase 11/12 pre-release gates without marking any missing check passed.
 The separate, explicitly post-result decision in docs/qa/PHASE_2_RESOURCE_SEQUENCE.md
@@ -12,6 +13,25 @@ places unresolved CPU qualification in the user's Phase 12 optimization work. Pe
 remains 7/10 with zero budget-criterion points; neither limits nor measurements changed.
 
 ## Completed implementation
+
+- Phase 3 history: explicit Saved chats mode, title/search/delete, immutable edited
+  and regenerated branches, pending-prompt commits and interrupted-turn recovery.
+  Temporary is the default and uses a separate in-memory store. Save failures retain
+  visible output and offer retry or explicit temporary continuation.
+- Exact local chat-template/tokenizer admission fits 1,792 prompt tokens plus a
+  256-token response reserve; it drops oldest complete pairs and retains the latest
+  user message. Native Markdown/code/math rendering has shared bounds and no active
+  HTML, remote assets or model-supplied XAML. Reply previews keep the avatar compact.
+- The pre-recovery/pre-preview source passed 267 tests, 11 architecture checks,
+  50 native history and 46 native rich-document assertions in both retained runs.
+  Abrupt-exit temporary sentinel and real-model context/restart checks passed.
+  Independent review then found a hot-journal admission bug; the fix and final
+  regression are recorded separately in the Phase 3 history evidence and review.
+  Final Release passes **272/272 tests**, **11/11 architecture checks**, zero warnings/
+  errors and composed WPF smoke. Native passes **28/28 process controls**, both
+  50-case history, 46-case renderer and 34-case reply-preview suites. Final abrupt-
+  exit privacy probe passes. Independent review scores **95/100 (9.5/10)** with no
+  critical remaining defect in the Phase 3 development scope.
 
 - Replaced the large companion card with the user-requested character-only resting
   surface and compact hover/keyboard Chat, Settings and More controls. Default
@@ -61,8 +81,9 @@ remains 7/10 with zero budget-criterion points; neither limits nor measurements 
 ## Architecture decisions
 
 C#/.NET 10 WPF; Core values and pure math, Application ports, Infrastructure adapters,
-Desktop composition. Managed production assemblies have no NuGet dependencies; the
-reviewed native llama.cpp worker and Qwen weights are explicit Phase 3 dependencies.
+Desktop composition. Infrastructure owns Microsoft.Data.Sqlite; Desktop owns Markdig
+and WpfMath. Core/Application remain package-free. The reviewed native llama.cpp
+worker and Qwen weights are explicit Phase 3 dependencies. See docs/DEPENDENCIES.md.
 The framework's Windows Forms
 NotifyIcon supplies the tray; WPF still owns the companion and settings. Typed logs
 cannot accept conversation text. No AI credentials, external application network calls,
@@ -202,6 +223,7 @@ frame-time percentile or long-running memory certification is claimed.
 | Phase 2 resumed validation | Independent phase0_qa | 8.6/10 | FAIL phase exit; docs/qa/PHASE_2_FOLLOWUP_REVIEW.md |
 | Phase 2 resource/lifecycle review | Independent phase0_qa | 8.7/10 | PASS development; resource confirmation FAIL; docs/qa/PHASE_2_RESOURCE_REVIEW.md |
 | Phase 3 local pretrained chat increment | Independent local_model_qa | 9.0/10 | PASS bounded increment; full Phase 3 incomplete; docs/qa/PHASE_3_LOCAL_INCREMENT_REVIEW.md |
+| Phase 3 history/rendering development exit | Independent local_model_adapter | 9.5/10 | PASS development; release gates retained; docs/qa/PHASE_3_HISTORY_REVIEW.md |
 
 The latest Phase 2 independent score is **8.7/10 (87/100)**, strictly greater than 8.5, and
 Phase 2 is complete as a development milestone. Historical 8.0 and 8.6 failed exits
@@ -214,10 +236,8 @@ manual-matrix case as mandatory before release. See docs/qa/PHASE_2_RESOURCE_REV
 
 ## Pending work / known limitations
 
-1. The local chat increment passed at **9.0/10 (90/100)**. Continue Phase 3 history,
-   branches/search/private-session behavior, rich Markdown/code/LaTeX rendering and
-   tokenizer-aware context admission. The model currently rejects oversized token
-   contexts visibly; UTF-8 bounds are not exact token counts. The 0.6B model has only
+1. Phase 3 development is complete at **9.5/10**. Begin Phase 4 with explicit installed-
+   voice Read aloud/Stop, then offline push-to-talk. The 0.6B model has only
    narrow fixture evidence, not general assistant or scientific accuracy qualification.
 2. Before release, diagnose CPU cost and complete a separately predeclared Phase 12
    repeat protocol controlling actual presentation/occlusion, warmup and observer cost.
@@ -232,7 +252,7 @@ A companion larger than a work area anchors to its origin; tray settings/Exit re
 recovery routes. General occlusion detection is not implemented; visible occluded
 avatars can keep animating. Local storage is not encrypted and same-user malware
 remains outside the protection boundary. Asset packs, signing, installer/updater,
-release license and persistent conversation/voice/memory/tool features remain later work.
+release license and voice/approved long-term memory/tool features remain later work.
 
 ## Source checkpoint and next objective
 
@@ -241,5 +261,7 @@ checkpoint is retained. Commit **6306ec9** preserves the earlier **IN PROGRESS**
 source and 8.6 failed-exit review. The current verified development milestone uses the
 local source checkpoint refs/checkpoints/phase-2. No remote CI run or release is claimed. The
 local pretrained chat increment has its own source checkpoint at
-refs/checkpoints/phase-3-local-chat-increment. The next objective is Phase 3's
-persistence, branching, search and richer rendering. No hosted provider is planned.
+refs/checkpoints/phase-3-local-chat-increment. Phase 3 history/rendering is retained at
+refs/checkpoints/phase-3. The next objective is Phase 4 local voice under
+docs/PHASE_4_VOICE_PLAN.md, with its own independent review before advancement.
+No hosted provider is planned.

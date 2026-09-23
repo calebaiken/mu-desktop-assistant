@@ -9,7 +9,7 @@ using Companion.Infrastructure.Desktop;
 
 namespace Companion.Desktop;
 
-/// <summary>A bounded, plain-text conversation. Neither prompts nor replies are persisted.</summary>
+/// <summary>Bounded local chat with explicitly separate saved and temporary sessions.</summary>
 public partial class ChatWindow : Window
 {
     private const int MaximumInputCharacters = 2000;
@@ -23,11 +23,12 @@ public partial class ChatWindow : Window
     private string? retryPrompt;
     private bool stopping;
 
-    public ChatWindow(Func<CancellationToken, Task<IChatModel>> modelFactory)
+    public ChatWindow(Func<CancellationToken, Task<IChatModel>> modelFactory, IConversationStore? savedStore = null)
     {
         ArgumentNullException.ThrowIfNull(modelFactory);
         this.modelFactory = modelFactory;
         InitializeComponent();
+        InitializeHistory(savedStore);
         Loaded += (_, _) =>
         {
             try { DesktopWindowPlacement.Constrain(new WindowInteropHelper(this).Handle, false); }
@@ -39,12 +40,13 @@ public partial class ChatWindow : Window
 
     public bool IsGenerating { get; private set; }
     public event EventHandler? GenerationChanged;
+    public event Action<string>? ReplyCompleted;
     internal IReadOnlyList<ChatMessage> ConversationContext => history.AsReadOnly();
 
     internal async Task SendMessageAsync()
     {
         Dispatcher.VerifyAccess();
-        if (stopping || activeTurn is not null) return;
+        if (!CanSend) return;
         var prompt = MessageInput.Text.Trim();
         if (prompt.Length == 0) return;
         if (prompt.Length > MaximumInputCharacters)
@@ -59,6 +61,7 @@ public partial class ChatWindow : Window
         using var cancellation = new CancellationTokenSource();
         activeTurn = cancellation;
         SetGenerating(true);
+        SetHistoryInteraction(false);
         MessageInput.Clear();
         retryPrompt = null;
         RetryButton.Visibility = Visibility.Collapsed;
@@ -74,8 +77,12 @@ public partial class ChatWindow : Window
         var output = new StringBuilder();
         var completed = false;
         var lengthLimited = false;
+        var publishReply = false;
         try
         {
+            request = (await PrepareHistoryTurnAsync(prompt, cancellation.Token)).ToList();
+            if (!MayUpdate(cancellation)) return;
+            RenderPendingBranch(prompt, reply);
             var model = await modelFactory(cancellation.Token);
             if (!MayUpdate(cancellation)) return;
             cancellation.Token.ThrowIfCancellationRequested();
@@ -106,26 +113,49 @@ public partial class ChatWindow : Window
             cancellation.Token.ThrowIfCancellationRequested();
             if (!completed || string.IsNullOrWhiteSpace(output.ToString()))
                 throw new ChatModelException(ChatFailure.Protocol);
+            if (!await CompleteHistoryTurnAsync(output.ToString(), TurnOutcome.Completed))
+            {
+                if (MayUpdate(cancellation)) { reply.Label = "Companion · not saved"; RenderTranscript(); }
+                return;
+            }
+            if (!MayUpdate(cancellation)) return;
             history.Clear();
             history.AddRange(request);
             history.Add(new(ChatRole.Assistant, output.ToString()));
             while (history.Count > MaximumContextMessages || ContextBytes(history) > MaximumContextBytes)
                 history.RemoveRange(0, 2);
             reply.Label = lengthLimited ? "Companion · response limit reached" : "Companion";
-            StatusLabel.Text = lengthLimited ? "The reply reached its response limit. You can ask a follow-up." : "Ready. This conversation is not saved.";
+            StatusLabel.Text = lengthLimited ? "The reply reached its response limit. You can ask a follow-up." : IsTemporary ? "Ready. This conversation is not saved." : "Ready. Saved on this PC.";
             RenderTranscript();
+            publishReply = true;
         }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
         {
-            if (MayUpdate(cancellation)) MarkIncomplete(reply, prompt, "stopped", "Stopped. This interrupted turn will not be included in the next message.");
+            if (MayUpdate(cancellation))
+            {
+                await CompleteHistoryTurnAsync(output.ToString(), TurnOutcome.Interrupted);
+                if (MayUpdate(cancellation)) MarkIncomplete(reply, prompt, "stopped", "Stopped. This interrupted turn will not be included in the next message.");
+            }
         }
         catch (ChatModelException error)
         {
-            if (MayUpdate(cancellation)) MarkIncomplete(reply, prompt, "incomplete", FailureMessage(error.Failure));
+            if (MayUpdate(cancellation))
+            {
+                await CompleteHistoryTurnAsync(output.ToString(), TurnOutcome.Failed);
+                if (MayUpdate(cancellation)) MarkIncomplete(reply, prompt, "incomplete", FailureMessage(error.Failure));
+            }
+        }
+        catch (ConversationStoreException error)
+        {
+            if (MayUpdate(cancellation)) MarkIncomplete(reply, prompt, "not saved", StoreFailureMessage(error));
         }
         catch (Exception)
         {
-            if (MayUpdate(cancellation)) MarkIncomplete(reply, prompt, "incomplete", "The local reply could not finish. Edit and retry your message.");
+            if (MayUpdate(cancellation))
+            {
+                await CompleteHistoryTurnAsync(output.ToString(), TurnOutcome.Failed);
+                if (MayUpdate(cancellation)) MarkIncomplete(reply, prompt, "incomplete", "The local reply could not finish. Edit and retry your message.");
+            }
         }
         finally
         {
@@ -135,14 +165,16 @@ public partial class ChatWindow : Window
                 if (!stopping)
                 {
                     SetGenerating(false);
+                    SetHistoryInteraction(true);
                     MessageInput.IsReadOnly = false;
-                    NewConversationButton.IsEnabled = true;
+                    NewConversationButton.IsEnabled = CanSend;
                     StopButton.IsEnabled = false;
-                    SendButton.IsEnabled = !string.IsNullOrWhiteSpace(MessageInput.Text);
+                    SendButton.IsEnabled = CanSend && !string.IsNullOrWhiteSpace(MessageInput.Text);
                     MessageInput.Focus();
                 }
             }
         }
+        if (publishReply && !stopping) ReplyCompleted?.Invoke(output.ToString());
     }
 
     public void BeginShutdown()
@@ -158,6 +190,7 @@ public partial class ChatWindow : Window
         history.Clear();
         transcript.Clear();
         retryPrompt = null;
+        ShutdownHistory();
     }
 
     internal void StopGeneration()
@@ -175,6 +208,7 @@ public partial class ChatWindow : Window
     {
         if (IsGenerating == value) return;
         IsGenerating = value;
+        UpdateTranscriptView();
         GenerationChanged?.Invoke(this, EventArgs.Empty);
     }
 
@@ -184,7 +218,7 @@ public partial class ChatWindow : Window
         if (reply.Content.Length == 0) reply.Content = "(No reply received.)";
         retryPrompt = prompt;
         RetryButton.Visibility = Visibility.Visible;
-        StatusLabel.Text = status;
+        StatusLabel.Text = HasPendingSave ? "This reply is still here, but could not be saved. Choose Retry saving before continuing." : status;
         RenderTranscript();
     }
 
@@ -195,6 +229,20 @@ public partial class ChatWindow : Window
         var followEnd = TranscriptText.VerticalOffset + TranscriptText.ViewportHeight >= TranscriptText.ExtentHeight - 24;
         TranscriptText.Text = string.Join("\n\n", transcript.Select(entry => entry.Label + "\n" + entry.Content));
         if (followEnd) TranscriptText.ScrollToEnd();
+        UpdateTranscriptView();
+    }
+
+    private void TranscriptView_Changed(object sender, RoutedEventArgs e) => UpdateTranscriptView();
+
+    private void UpdateTranscriptView()
+    {
+        if (TranscriptText is null || FormattedTranscript is null || stopping) return;
+        var plain = IsGenerating || PlainTextToggle.IsChecked == true;
+        // Streaming remains cheap and selectable; rich parsing runs only on settled views.
+        TranscriptText.Visibility = plain ? Visibility.Visible : Visibility.Hidden;
+        FormattedTranscript.Visibility = plain ? Visibility.Hidden : Visibility.Visible;
+        if (!plain)
+            FormattedTranscript.Document = SafeChatDocumentRenderer.RenderConversation(transcript.Select(entry => (entry.Label, entry.Content)).ToArray());
     }
 
     private static int ContextBytes(IEnumerable<ChatMessage> messages) => messages.Sum(message => Encoding.UTF8.GetByteCount(message.Content));
@@ -223,25 +271,18 @@ public partial class ChatWindow : Window
     private void MessageInput_TextChanged(object sender, TextChangedEventArgs e)
     {
         if (SendButton is not null)
-            SendButton.IsEnabled = !stopping && activeTurn is null && !string.IsNullOrWhiteSpace(MessageInput.Text);
+            SendButton.IsEnabled = CanSend && !string.IsNullOrWhiteSpace(MessageInput.Text);
     }
 
     private void NewConversation_Click(object sender, RoutedEventArgs e)
     {
-        if (stopping || activeTurn is not null) return;
-        history.Clear();
-        transcript.Clear();
-        TranscriptText.Clear();
-        MessageInput.Clear();
-        retryPrompt = null;
-        RetryButton.Visibility = Visibility.Collapsed;
-        StatusLabel.Text = "New conversation. History is not saved.";
-        MessageInput.Focus();
+        if (!CanSend) return;
+        ResetConversation();
     }
 
     private void Retry_Click(object sender, RoutedEventArgs e)
     {
-        if (stopping || activeTurn is not null || retryPrompt is null) return;
+        if (!CanSend || retryPrompt is null) return;
         MessageInput.Text = retryPrompt;
         MessageInput.CaretIndex = MessageInput.Text.Length;
         MessageInput.Focus();

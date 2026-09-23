@@ -33,7 +33,7 @@ public sealed class IndependentLocalChatModelTests
     public async Task RequestUtf8BudgetAcceptsExactly32768BytesAndRejects32769BeforeSend()
     {
         var exact = new[] { new ChatMessage(ChatRole.User, new string('€', 8192)),
-            new ChatMessage(ChatRole.Assistant, new string('é', 4096)) };
+            new ChatMessage(ChatRole.Assistant, new string('é', 4095)), new ChatMessage(ChatRole.User, "AB") };
         Assert.AreEqual(32768, exact.Sum(message => Encoding.UTF8.GetByteCount(message.Content)));
         var sends = 0;
         using var handler = new CallbackHandler((_, _) =>
@@ -44,7 +44,8 @@ public sealed class IndependentLocalChatModelTests
         using var client = new HttpClient(handler);
         using var model = new LocalChatModel(client, Endpoint, Secret);
         Assert.IsInstanceOfType<ChatCompleted>((await CollectAsync(model, exact))[^1]);
-        var over = exact.Append(new ChatMessage(ChatRole.User, "A")).ToArray();
+        var over = exact.ToArray();
+        over[^1] = new(ChatRole.User, "ABC");
         var error = await Assert.ThrowsExactlyAsync<ChatModelException>(() => CollectAsync(model, over));
         Assert.AreEqual(ChatFailure.InvalidRequest, error.Failure);
         Assert.AreEqual(1, sends);
@@ -182,7 +183,8 @@ public sealed class IndependentLocalChatModelTests
     }
     private sealed class CallbackHandler(Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> send) : HttpMessageHandler
     {
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) => send(request, cancellationToken);
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+            LocalChatPreflightFixture.Reply(request) is { } preflight ? Task.FromResult(preflight) : send(request, cancellationToken);
     }
     private sealed class FragmentedStream(byte[] bytes, int fragmentSize) : MemoryStream(bytes)
     {

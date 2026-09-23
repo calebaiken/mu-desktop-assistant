@@ -2,7 +2,7 @@
 
 A Windows-first personal AI companion built in C#/.NET 10 and WPF.
 
-**Local pretrained chat passed independent QA at 9.0/10; full Phase 3 remains in progress.** The app opens a small transparent
+**Phase 3 development passed independent QA at 9.5/10.** The app opens a small transparent
 character with no surrounding card. Hover over it to reveal **Chat**, **Settings**
 and **More**; the controls disappear when the pointer leaves. Keyboard navigation
 also reveals them: Tab through the character and buttons, Enter to activate, Escape
@@ -23,16 +23,22 @@ about every ten seconds. Motion stops while hidden/minimized, sleeping, with red
 animations. High contrast uses system colors and keeps the companion opaque. Tray
 actions and a configurable summon shortcut recover hidden or click-through windows.
 Monitor-relative position persists separately from preferences. The first chat increment
-uses a pretrained Qwen model entirely on this PC: streaming plain text, Stop, retry and
-in-memory conversation context. Persistent history, rich rendering, voice, custom
-avatar packs, tools and memory remain unimplemented. Resource confirmation failed;
+uses a pretrained Qwen model entirely on this PC: streaming, Stop, retry, saved or
+temporary conversations, search, titles and preserved edit/regenerate branches.
+Markdown, highlighted code and a bounded LaTeX subset render in native WPF, with a
+plain-text switch and Copy reply. Voice, custom avatar packs, tools and long-term
+memory remain unimplemented. Resource confirmation failed;
 CPU qualification remains a release blocker. Physical display, actual input, accessibility and sign-in qualification
 remain mandatory before release under the recorded validation sequence. No API credentials are
 read or required.
 
 For local AI, run `scripts/setup-local-ai.ps1` once, then `scripts/run-local-chat.ps1`
 after building. Open **Chat** from the hover strip, companion/tray menu or press **Ctrl+Shift+C**
-with the companion focused. Closing chat discards its history and unloads the model.
+with the companion focused. Chat starts in **Temporary** mode: closing it discards
+that session and unloads the model. Choose **Saved chats** to keep conversations in
+the local profile; this starts a separate conversation and does not copy temporary
+messages. Saved history survives restart. Replies completed while chat is inactive
+briefly appear beside the character; opening chat or dismissing the preview clears it.
 The small model can make mistakes. See [local AI setup and limits](docs/LOCAL_AI.md).
 The [increment review](docs/qa/PHASE_3_LOCAL_INCREMENT_REVIEW.md) verifies 224 tests,
 54 native chat assertions and real local inference/cancellation. This is a development
@@ -42,8 +48,10 @@ increment, not a finished assistant or release.
 
 Prerequisites: Windows 11 x64 and .NET SDK **10.0.401** (later patches in the same
 feature band allowed), including WindowsDesktop reference packs. Production projects
-have no external NuGet packages. MSTest dependencies are pinned, test-only and restored
-from NuGet.org; first restore and vulnerability auditing require network access.
+use pinned Microsoft.Data.Sqlite, Markdig and WpfMath dependencies in their owning
+layers. Core and Application remain package-free. All package versions are locked;
+first restore and vulnerability auditing require network access. See the
+[dependency inventory](docs/DEPENDENCIES.md).
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify.ps1
@@ -115,6 +123,9 @@ allows development to continue while keeping CPU qualification mandatory in Phas
 Performance scored 7/10, with no points for the failed budget criterion.
 The [validation sequence decision](docs/qa/PHASE_2_VALIDATION_SEQUENCE.md) moves unavailable
 physical/input/sign-in qualification to mandatory pre-release gates. No missing check
-is counted as passed. Development approval is not release approval; full Phase 3 remains incomplete.
+is counted as passed. Development approval is not release approval. Phase 3's
+[history and rendering review](docs/qa/PHASE_3_HISTORY_REVIEW.md) passes at **9.5/10**,
+with 272 tests, 11 architecture checks and 28 native process controls. Phase 4 local
+voice is next; see the [voice plan](docs/PHASE_4_VOICE_PLAN.md).
 No installer, remote repository or published release
 exists. No release license has been selected.

@@ -1,5 +1,21 @@
 # Changelog
 
+## Unreleased — Phase 3 history and rich chat (2026-09-22, independent QA 9.5/10 PASS)
+
+- Added optional local saved history with titles, search, delete and preserved edit/
+  regenerate branches; Temporary mode remains separate and is selected by default.
+- Commit saved prompts before inference, recover interrupted turns and retain visible
+  replies on write failure with retry or explicit temporary recovery.
+- Added exact worker-template/tokenizer admission, bounded native Markdown, highlighted
+  code and a LaTeX subset, plain-text fallback, Copy reply and brief character-anchored
+  completion previews. No API key, cloud provider or active web content is introduced.
+- Added independent rollback/SQLite page-limit FULL/corruption tests, native history and
+  rendering checks, abrupt-exit temporary sentinel and real local context/worker
+  restart probes. Hot-journal review found and prompted a guarded recovery fix.
+- Final verification passes 272 tests, 11 architecture checks, 28 native process
+  controls and both 50 history / 46 renderer / 34 reply-preview checks. Abrupt-exit
+  temporary privacy passes. Phase 3 development is complete; release gates remain.
+
 ## Unreleased — Compact companion surface (2026-09-22, independent QA 9.1/10 PASS)
 
 - Replaced the large card with a smaller character on a transparent desktop surface.

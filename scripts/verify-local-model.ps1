@@ -7,12 +7,14 @@ New-Item -ItemType Directory -Path $evidence -Force | Out-Null
 $appDirectory = Join-Path $repo 'src/Companion.Desktop/bin/Release/net10.0-windows'
 $app = Join-Path $appDirectory 'Companion.Desktop.exe'
 $protocol = Join-Path $repo 'docs/qa/PHASE_3_LOCAL_MODEL_PROTOCOL.md'
+$contextProtocol = Join-Path $repo 'docs/qa/PHASE_3_CONTEXT_MODEL_PROTOCOL.md'
 $identities = @{}
 foreach ($name in @('Companion.Desktop.exe','Companion.Desktop.dll','Companion.Application.dll','Companion.Core.dll','Companion.Infrastructure.dll')) {
     $identities[$name] = (Get-FileHash -LiteralPath (Join-Path $appDirectory $name) -Algorithm SHA256).Hash
 }
 $plan = [ordered]@{
     schemaVersion = 1; startedUtc = [DateTime]::UtcNow.ToString('o'); protocolSha256 = (Get-FileHash -LiteralPath $protocol -Algorithm SHA256).Hash
+    contextProtocolSha256 = (Get-FileHash -LiteralPath $contextProtocol -Algorithm SHA256).Hash
     binaries = $identities; modelSha256 = (Get-FileHash -LiteralPath (Join-Path $ModelDirectory 'Qwen3-0.6B-Q8_0.gguf') -Algorithm SHA256).Hash
     maximumSeconds = 390; sourceCheckpoint = (& git -C $repo rev-parse HEAD)
     sourceState = 'Working tree increment; binary hashes above freeze the executed build.'

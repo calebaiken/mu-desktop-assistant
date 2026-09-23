@@ -1,19 +1,35 @@
 # Testing
 
-The local pretrained chat increment adds scripted SSE/host adversarial tests and real
-WPF chat lifecycle/layout fixtures. Current strict Release verification passes 224
-tests and 11 architecture checks. `scripts/verify-local-model.ps1` separately runs the
+Phase 3 verification covers bounded local SSE/context admission, owned worker lifetime,
+SQLite history and branch recovery, separate temporary sessions, native Markdown/math
+rendering and the compact reply preview. The first history regression passed 267/267
+tests; that retained artifact predates later rendering/recovery/preview edits and is
+not a pass claim for the final source. The [Phase 3 review](docs/qa/PHASE_3_HISTORY_REVIEW.md)
+tracks executed artifacts, failed attempts and the final independent verdict. Earlier
+224-test local-chat and compact-surface evidence keeps its original, narrower scope.
+
+`scripts/verify-local-model.ps1` separately runs the
 [frozen real-model protocol](docs/qa/PHASE_3_LOCAL_MODEL_PROTOCOL.md), retaining binary
-identities, public fixture responses, errors, cancellation and worker-cleanup outcomes
-in a unique directory. It requires `scripts/setup-local-ai.ps1` first. The first live
-run passed; this small prompt set does not establish broad assistant quality.
-`scripts/verify-ui.ps1` now requires 54 distinct chat assertions in both native runs.
-Native method checks do not establish actual keyboard/mouse or screen-reader usability.
+identities, public fixture responses, errors, actual token-admission observations,
+cancellation and worker cleanup/restart outcomes in a unique directory. It requires
+`scripts/setup-local-ai.ps1` first. The expanded recorded run in
+`artifacts/qa/local-model-20260922-214337-9c4ffcd3` reports protocol PASS; its small public
+prompt set does not establish broad assistant quality, and manual content criteria
+remain distinct from structural protocol checks.
+
+`scripts/verify-ui.ps1` requires two native runs with 54 chat lifecycle, 50 history,
+46 document and 34 reply-preview assertions alongside earlier desktop suites. These
+are expected counts enforced by the current supervisor, not proof that a particular
+binary completed them. Native method/property checks do not establish actual
+keyboard/mouse or screen-reader usability. Renderer notation is not numerical validation.
 
 Use Windows 11 x64 and .NET SDK 10.0.401. All builds enable nullable checks, built-in
-analyzers, deterministic output and warnings as errors. Production has no third-party
-packages; MSTest TestFramework/TestAdapter 4.4.1 and Microsoft.NET.Test.Sdk 18.10.0 are
-pinned test-only dependencies with lock files. NuGet vulnerability auditing remains on.
+analyzers, deterministic output and warnings as errors. Core and Application remain
+package-free. Infrastructure owns Microsoft.Data.Sqlite 10.0.12; Desktop owns Markdig
+1.3.2 and WpfMath 2.1.0. Their exact resolved transitives and content hashes are locked.
+MSTest TestFramework/TestAdapter 4.4.1 and Microsoft.NET.Test.Sdk 18.10.0 remain pinned
+test-only dependencies. See the [complete dependency inventory](docs/DEPENDENCIES.md).
+NuGet vulnerability auditing remains on.
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify.ps1
@@ -52,7 +68,7 @@ state priority/lease/sleep/concurrency checks, appearance migration/ranges, plac
 schema/recovery/conflict/cancellation tests and startup command validation. The latest
 13 registry integration cases use only validated unique HKCU test keys and all pass.
 Startup tests never write the user's Run value or simulate a Windows sign-in.
-`verify-ui.ps1` uses a 40-second per-process deadline for expanded real-HWND checks,
+`verify-ui.ps1` uses a 60-second per-process deadline for expanded real-HWND checks,
 including eight explicitly labeled previews, native capture/restore/fallback, pending
 move–Hide–Exit persistence and native click-through/tray/hotkey conflict/release.
 It retains stage timings and named assertions. Shortcut subchecks report a limitation
@@ -71,7 +87,7 @@ never subtracted. The supervisor retains raw artifacts and fails on a breached b
 No forced GC, OS preference change or tray is involved. This is a process-counter
 baseline, not frame-time, compositor/GPU, startup-percentile or long-run leak evidence.
 
-Latest completed Release verification has **196/196 tests**, 11 architecture checks,
+The retained final Phase 2 Release verification has **196/196 tests**, 11 architecture checks,
 composed smoke and zero warnings/errors, now including the final-source readiness
 fixes. The matching TRX is archived at
 `artifacts/qa/desktop-ui-20260922-185538-0c91126a/release-196-before-final-build-confirmation.trx`.
@@ -81,7 +97,7 @@ after atomic commit reports success, and a failed writer preserves the known-goo
 baseline for retry. The earlier pre-observer 196-case TRX is preserved at
 `artifacts/qa/desktop-ui-20260922-183217-1d198cb8/release-196-before-observer-abba.trx`;
 the historical 193-case artifact remains retained with its original scope.
-The latest native artifact, `artifacts/qa/desktop-ui-20260922-185538-0c91126a/profile`,
+The corresponding Phase 2 native artifact, `artifacts/qa/desktop-ui-20260922-185538-0c91126a/profile`,
 has **18/18 process controls, 43 appearance, 24 integration, 29 settings lifecycle
 and 49 placement-initialization assertions**, with no skips or reported failures. Controlled pending
 saves cover committed, cancelled and I/O-failed completion during shutdown: committed
@@ -92,7 +108,7 @@ eyelid property transitions prove completed idle blinks; interrupted blinks do n
 count. Idle owns no animation clocks, active expressions own at most two controlled
 clocks capped at 20 FPS, and stopping releases timers/clocks. These behavior checks
 cover the current ten-second blink cadence and 120 ms closure, using bounded 13-second
-blink waits. The latest Release build has zero warnings/errors. The single clean
+blink waits. That Release build has zero warnings/errors. The single clean
 resource run for this cadence completed with the unchanged limits and failed visible CPU.
 
 Both controlled resource runs of the earlier renderer, `performance-20260922-172039-f052a9fb` and
@@ -206,19 +222,29 @@ headless CI. Do not equate a configuration file with a successful CI run.
 
 ## Dependency review
 
-Selected Microsoft's maintained test stack, MIT-licensed upstream projects, compatible
-with this .NET target, with test-only PrivateAssets and a dedicated source configuration.
+The runtime package allowlist is limited to SQLite in Infrastructure and native rich
+rendering in Desktop. Transitive package versions, package-supplied repository commits,
+declared licenses and WpfMath font notices are recorded in
+[docs/DEPENDENCIES.md](docs/DEPENDENCIES.md). Production has no browser-rendering or
+hosted-provider package. Core/Application dependency rules still prohibit package references.
+
+The test stack uses Microsoft's MIT-licensed projects, compatible with this .NET target,
+with test-only PrivateAssets and a dedicated source configuration.
 Version sources: [MSTest framework](https://www.nuget.org/packages/MSTest.TestFramework/4.4.1),
 [adapter](https://www.nuget.org/packages/MSTest.TestAdapter/4.4.1),
 [test SDK](https://www.nuget.org/packages/Microsoft.NET.Test.Sdk/18.10.0).
 Transitive versions/content hashes are recorded in packages.lock.json; review lock diffs.
-Keep normal restore audit enabled; report network audit failures rather than suppressing
-NU1900. This is not a guarantee of absence of unknown vulnerabilities.
+The 2026-09-22 `dotnet list Companion.slnx package --vulnerable --include-transitive`
+check completed across all six projects without a reported known-vulnerable package.
+This is a query of the configured NuGet advisory feed, not a source audit, exploitability
+assessment or scan of the separately downloaded model/native worker. Keep normal
+restore audit enabled; report network audit failures rather than suppressing NU1900.
+It does not establish absence of unknown vulnerabilities.
 
 ## Future gates
 
 Each owning phase adds unit, integration, UI, security, recovery and performance cases.
-Use mock HTTP/SSE and real SQLite integration before provider/storage rollout; no live
+Extend the existing mock HTTP/SSE and real SQLite integration cases with each worker/storage change; no live
 paid API tests without explicit configuration. Voice requires PCM plus physical-device
 fixtures. Tools require schema/permission/replay/TOCTOU/cancellation/audit tests. Temporary
 mode requires sentinel scans of DB/WAL/log/cache after crash and restart. See ROADMAP.md.
@@ -232,6 +258,8 @@ No scientific calculation is implemented or verified yet. QA arithmetic uses exa
 decimals and the strict score >8.5 condition; 8.5 fails.
 
 Tests use isolated temporary directories with guarded cleanup, never the user's actual
-profile. Keep failed-review history and specific commands/results. Native C++ additions
-require sanitizer/resource checks; none exists yet. Repeat relevant tests after fixes,
+profile. Keep failed-review history and specific commands/results. Repository-authored
+native C++ additions require sanitizer/resource checks; there are none yet. The external
+llama.cpp worker has its separately pinned installation and runtime protocol checks.
+Repeat relevant tests after fixes,
 not to manufacture evidence by rerunning unchanged successful suites.

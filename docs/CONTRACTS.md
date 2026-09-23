@@ -9,9 +9,29 @@ future context. The local adapter bounds requests to 32 messages / 32 KiB UTF-8,
 individual SSE events to 64 KiB, output to 8,192 characters / 32 KiB, response idle
 to 30 s and turns to 120 s. One request runs per instance. These are actual limits,
 distinct from the future general contracts below. The CPU worker context is 2,048
-tokens with 256 output tokens; byte bounds do not constitute exact token preflight.
-The native chat stores only completed pairs in memory and never writes a transcript.
+tokens with 256 output tokens. Exact preflight uses the authenticated worker's
+apply-template and tokenize endpoints with the same nonthinking template settings
+as inference. At most 16 candidates are admitted under the same turn deadline;
+oldest complete pairs are removed until the prompt fits 1,792 tokens. The latest
+user message is never trimmed; an oversized sole prompt is InvalidRequest.
 There is no tool-call event or executable model authority in this increment.
+
+`IConversationStore` supplies list/search, create/load, append/complete, branch
+selection, rename and delete. Immutable snapshots contain a turn tree and selected
+leaf. Saved prompts commit as InProgress before inference; only that pending turn
+can become Completed, Interrupted or Failed. Terminal turns are immutable. Loading
+an idle conversation recovers pending turns as Interrupted; callers must not Load
+during active generation. Context includes completed ancestors only, bounded to
+24 messages / 24 KiB before exact token admission. Editing/regenerating appends a
+new sibling and preserves the original. Limits: 100 conversations, 256 turns each,
+4,000,000 UTF-16 characters overall, 2,000-character prompts and 8,192-character replies.
+
+`InMemoryConversationStore` has no filesystem dependency. It is selected by default
+for Temporary chat; switching to Saved starts separately. `SqliteConversationStore`
+uses a fixed local profile path, schema/application ID validation, transactions,
+foreign keys, bounded reads and a 64 MiB database ceiling. Future/corrupt originals
+are preserved and visible failures are content-free. The UI retains unsaved output
+and blocks subsequent saved sends until Retry saving or explicit temporary recovery.
 
 ## Remaining proposed contracts
 
@@ -29,7 +49,6 @@ explicitly disposable buffers. No secrets in DTOs, exception text or `ToString`.
 | `ITool` | descriptor + `Validate(input) → ValidationResult`; internal `ExecuteAsync(AuthorizedContext, validatedInput, CancellationToken) → ToolResult`; raw implementations unavailable to model/UI bridge |
 | `IPermissionService` | evaluate normalized intent/resources; issue opaque single-use grant after trusted UI decision; revalidate/consume atomically at execution |
 | `IMemoryProvider` | query by explicit scope; create/update/delete with revision and approval provenance; no automatic cross-project retrieval |
-| `IConversationRepository` | transactional turn/message append, branch, page, search and delete; in-memory implementation selected for temporary mode |
 | `ISpeechToTextProvider` | transcribe bounded PCM stream with format/device metadata; partial/final transcript events and cancellation |
 | `ITextToSpeechProvider` | list voices; synthesize text/settings into disposable audio chunks plus timing if supported; cancellation |
 | `IAudioCapture` / `IAudioPlayback` | enumerate devices, bounded capture/playback, explicit mute/stop/device-lost events; playback clock drives speaking |

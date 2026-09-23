@@ -219,7 +219,8 @@ public sealed class LocalChatModelTests
 
     private sealed class Handler(Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> send) : HttpMessageHandler
     {
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) => send(request, cancellationToken);
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+            LocalChatPreflightFixture.Reply(request) is { } preflight ? Task.FromResult(preflight) : send(request, cancellationToken);
     }
 
     private sealed class FragmentedStream(byte[] data, int maximumRead) : MemoryStream(data)

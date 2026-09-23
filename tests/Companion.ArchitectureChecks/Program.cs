@@ -50,7 +50,14 @@ foreach (var (layer, dependencies) in expected)
         var allowed = dependencies.Select(name => $"../Companion.{name}/Companion.{name}.csproj")
             .Order(StringComparer.Ordinal).ToArray();
         Require(actual.SequenceEqual(allowed), "Unexpected reference direction or path.");
-        Require(!doc.Descendants("PackageReference").Any(), "Production packages require architecture review.");
+        var packages = doc.Descendants("PackageReference")
+            .Select(node => ((string?)node.Attribute("Include"), (string?)node.Attribute("Version"))).ToArray();
+        var reviewedPackages = layer == "Infrastructure"
+            ? new[] { ((string?)"Microsoft.Data.Sqlite", (string?)"10.0.12") }
+            : layer == "Desktop"
+                ? new[] { ((string?)"Markdig", (string?)"1.3.2"), ((string?)"WpfMath", (string?)"2.1.0") }
+                : [];
+        Require(packages.SequenceEqual(reviewedPackages), "Production package inventory differs from reviewed pins.");
     });
 }
 

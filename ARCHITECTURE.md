@@ -3,8 +3,9 @@
 Status: Phase 2 desktop interactions complete as a development milestone at independent
 QA 8.7/10; resource and physical qualification still block release. Configuration, log ports/adapters, instance
 activation and WPF shell now exist. Phase 3 adds owned local model inference and
-in-memory plain-text chat. Persistent conversation features, voice, memory, tools and
-rich rendering below remain intended architecture. Review date: 2026-09-21; status synchronized 2026-09-22.
+SQLite history and branches, separate temporary sessions, exact local token admission,
+and bounded native rich rendering. Voice, long-term memory and tools below remain
+intended architecture. Review date: 2026-09-21; status synchronized 2026-09-22.
 
 ## Phase 1 implementation decisions
 
@@ -33,7 +34,8 @@ rich rendering below remain intended architecture. Review date: 2026-09-21; stat
   acknowledgment. No commands, paths or free-form payload cross that IPC boundary.
 - `--data-dir` selects an explicit absolute local test/development profile; UNC/device
   paths are rejected after normalization. Smoke modes exercise real composed services.
-- MSTest is now a pinned test-only dependency. Runtime assemblies remain package-free.
+- MSTest is a pinned test-only dependency. Phase 3 introduces an exact owning-layer
+  allowlist for SQLite and native rich rendering; Core and Application remain package-free.
   The dependency-free repository checks remain alongside standard test discovery/TRX.
 
 ## Technology decisions
@@ -64,12 +66,10 @@ A pinned llama.cpp C++ worker supplies tensor inference outside the WPF UI; ther
 no Python or training dependency in this path. The earlier Python experiment is
 paused. See [the local AI decision](docs/LOCAL_AI.md).
 
-Use SQLite via Microsoft.Data.Sqlite for structured state when storage is implemented,
-with explicit SQL and migrations rather than an ORM at this scale. Use versioned JSON
-for human-readable nonsecret preferences and manifests. Introduce pinned NuGet packages
-only in their owning phase, with source/license/advisory review and lock files. The
-baseline has no third-party packages; chat rendering, audio and scientific dependency
-versions will be verified at implementation time rather than guessed now.
+Phase 3 uses SQLite via Microsoft.Data.Sqlite with explicit SQL and a closed versioned
+schema. Versioned JSON remains appropriate for nonsecret preferences and manifests.
+Pinned packages are introduced only in their owning phase, with provenance, license,
+advisory review and lock files. See [dependency inventory](docs/DEPENDENCIES.md).
 
 ## Dependency structure
 
@@ -101,40 +101,50 @@ The executor authorizes each tool operation separately. A model cannot approve i
 own proposal. A runtime quality evaluator can check citations and call deterministic
 validators; it is distinct from the mandatory independent **development QA agent**.
 
-Provider-independent messages contain role, typed content parts, IDs, parent/branch
-IDs and provenance. Stream events carry turn ID, sequence, text deltas, tool proposals,
-usage, completion or typed failure. Adapters map provider protocols to these values.
-No provider SDK types or raw chain-of-thought leak into UI/domain contracts. Capability
-discovery declares vision, tools, reasoning controls, temperature and stream support.
-Unsupported settings cause a visible validation error instead of silently changing
-meaning. Store credential references separately from endpoint/model options.
+The implemented `IChatModel` boundary accepts bounded role/text messages and emits
+typed text deltas and completion; failures use fixed application errors. Conversation
+snapshots separately own stable conversation/turn IDs, branch parents and terminal
+outcomes. No provider SDK types or raw chain-of-thought enter UI/domain contracts.
+Future multimodal/tool adapters may add typed content parts, capability discovery,
+turn sequencing and usage events. Those extensions are not capabilities of the
+current local text worker.
 
 The user selected a pretrained model running locally without an API key. Phase 3
-begins with an owned llama.cpp CPU worker, bounded loopback streaming and in-memory
-plain-text chat. History, branches, search and rich rendering remain subsequent
-increments. There is no cloud fallback. The provider-independent port is an
+uses an owned llama.cpp CPU worker, bounded authenticated loopback streaming,
+separate temporary and SQLite-backed saved conversations, title/search/delete,
+edit/regenerate branches and native rich rendering. There is no cloud fallback.
+The provider-independent port is an
 architecture boundary, not a hosted-service requirement. Downloaded model weights
 come from their original publisher; the user controls local inference and data.
 This supersedes both the provider-first and briefly considered from-scratch plans.
 
-Conversation streams use bounded channels, batched UI deltas (target 30–60 ms), one
-active turn per conversation and a per-turn cancellation source. A global concurrency
-limit prevents runaway provider calls. New/edit/regenerate forks conversation branches;
-late events from older turns are discarded by ID. Preserve partial output with an
-interrupted marker; never automatically replay a partially executed tool. Bound input
-and output by tokens and bytes; provider-specific token counters are estimates unless
-verified. Summarization cannot silently promote content to approved memory.
+One active turn owns a cancellation source and window lifetime guard. The adapter
+also admits only one concurrent stream; closing chat cancels work and unloads its
+worker. Saved prompts commit before inference, followed by a completed, interrupted
+or failed terminal update. An abandoned in-progress turn reopens as interrupted.
+Stream fragments not yet finalized may be lost on a crash. Editing or regenerating
+creates a new branch, preserving previous turns; partial replies remain visible but
+are excluded from model context. A save failure offers explicit retry or temporary
+continuation. Context first obeys message/UTF8 bounds, then the owned worker's actual
+chat template and tokenizer. Oldest complete pairs are removed until the prompt fits
+1,792 tokens, leaving 256 output tokens in the 2,048-token context. A latest prompt
+that cannot fit fails before generation. Bounded SSE parsing, idle and absolute turn
+deadlines include this admission work. Future stream batching and summarization must
+preserve cancellation and may not promote content to approved memory.
 
-Chat uses a native WPF input/history shell and a lazily loaded WebView2 response view
-for bundled Markdown, syntax highlighting and KaTeX. Separate it from the transparent
-avatar window: WebView airspace and transparency are integration risks. Raw HTML is
-disabled, output sanitized, remote assets/network navigation blocked, and no generic
-host objects exposed. Links require explicit user activation and URI validation.
-Use a narrow origin-checked copy/math-render message channel, with length/schema limits.
-Follow [WebView2 security guidance](https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/security).
-No CDN scripts. Virtualize history; defer WebView disposal/suspension decisions to
-measured hide/show behavior. Search, copy, stop, retry, titles, edit/resubmit, regenerate
-and branch navigation receive UI and persistence tests in Phase 3.
+Chat uses a native WPF input/history shell and `FlowDocument` response display.
+Markdig parses a fixed Markdown subset; application code creates only approved WPF
+nodes. Code highlighting uses a bounded scanner. WpfMath renders an allowlisted
+LaTeX subset into frozen local geometry, which displays notation without verifying
+its mathematics. Every message has a literal role label and a separately parsed
+body, preventing an unfinished fence from changing the next message. Shared limits
+cover 48 KiB of input, 2,000 AST nodes, nesting depth 16 and 32 math expressions;
+individual formulas allow at most 512 characters and 64 approved commands. Unsupported
+syntax is literal. HTML, links and remote image markup have no executable or navigation
+behavior; there is no web runtime or external resource loader. Streaming stays plain
+text; completed display can switch between formatted and plain text. The formatted
+view keeps the newest bounded messages and discloses omissions. Search, stop, retry,
+titles, edit/resubmit, regenerate and branch navigation have dedicated UI/storage fixtures.
 
 ## Avatar and desktop integration
 
@@ -231,21 +241,32 @@ Retrieval uses conversation/project scope and enabled-category filters before ma
 Start with SQLite full-text search; embeddings are optional later and carry provider,
 model and dimension metadata, consent and deletion lifecycle.
 
-Schema plan: `schema_migrations`, `conversations`, `messages`, `turns`,
-`memory_entries`, `memory_scope_links`, `memory_approvals`, `projects`, `notes`,
-`tasks`, `reminders`, `tool_audit`. IDs are stable; UTC instants plus user timezone for
-scheduling. Messages store branch ancestry and interrupted state. Transactions enforce
-write consistency; parameterized SQL, foreign keys and explicit indexes. A serialized
-background database queue owns writes; bounded reads avoid UI blocking. Microsoft.Data.Sqlite
-async calls execute synchronously, so merely awaiting them is insufficient
+Implemented conversation storage is `conversations.db` under the selected local
+profile, with `conversations` and `turns` tables, a fixed application ID and SQLite
+`user_version=1`. Turns store ancestry, text and outcome; transactions, foreign keys,
+parameterized SQL and explicit indexes protect consistent branch changes. The store
+bounds 100 conversations, 256 turns per conversation, four million stored text
+characters and a 64 MiB database. Search is bounded, ordinal case-insensitive literal
+matching, not full-text indexing. A serialized gate runs SQLite work on a background
+task: Microsoft.Data.Sqlite's asynchronous methods alone do not move synchronous
+database work off the dispatcher
 ([SQLite async limitations](https://learn.microsoft.com/en-us/dotnet/standard/data/sqlite/async)).
 
-Data under `%LOCALAPPDATA%/DesktopCompanion/`: settings JSON, database, bounded logs,
-reviewed assets and nonsecret cache. Settings are atomic temp-write/replace with a
-last-known-good backup and visible recovery on invalid input. Migrations are versioned,
-transactional where supported, preceded by a coherent database backup and refuse newer
-unknown schemas. SQLite WAL files are handled as part of backup/restore. Database
-corruption offers read-only recovery/export; never overwrite the only copy silently.
+Existing data is inspected read-only before write access; unknown schema versions,
+corruption, oversized files and reparse-point paths fail visibly. New databases use
+SQLite's default rollback journaling; the store does not enable WAL. Hot-journal
+recovery first validates a bounded isolated copy and rechecks source identities before
+admitting recovery writes. A hot recovery mixed with WAL/SHM files is refused. This
+recovery path is not a general import, backup/export or schema migration service.
+Settings remain atomic JSON with a last-known-good backup, alongside bounded
+content-free logs under `%LOCALAPPDATA%/DesktopCompanion/` or the explicit test profile.
+
+Later memory/productivity phases may add `schema_migrations`, separate messages,
+memory entries/scopes/approvals, projects, notes, tasks, reminders and tool audit.
+Versioned transactional migrations, coherent backups including any SQLite sidecars,
+read-only recovery/export and advanced indexes remain future storage work. Stable IDs,
+UTC instants and explicit user timezones will govern scheduled data. No migration may
+silently replace an unknown or corrupt sole copy.
 
 Temporary conversations use an in-memory repository and exclude persisted chat,
 summaries, memories, embeddings, attachment caches and content-bearing logs. Disable
@@ -303,8 +324,9 @@ hardware, hidden/idle host CPU under 1% of one logical processor averaged 60 s,
 idle private bytes under 150,000,000 bytes (decimal MB)
 excluding a documented on-demand chat process budget, visible animation p95 frame under
 33 ms, cancel feedback under 250 ms. Capture baseline environment and trace files in
-Phase 2/12; change targets only with evidence and a recorded decision. Avoid claiming
-WebView2 resource use fits these targets before profiling.
+Phase 2/12; change targets only with evidence and a recorded decision. Native rich
+rendering and on-demand model inference require measured workload budgets; earlier
+avatar-only measurements do not qualify the current chat workload.
 
 Before the resumed controlled measurement on 2026-09-22, independent QA and the
 implementation agent resolved the previously ambiguous CPU/MB denominators

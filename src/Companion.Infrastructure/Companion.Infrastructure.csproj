@@ -3,6 +3,7 @@
     <TargetFramework>net10.0-windows</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.12" />
     <EmbeddedResource Include="Conversation/local-runtime-hashes.json" />
     <ProjectReference Include="../Companion.Core/Companion.Core.csproj" />
     <ProjectReference Include="../Companion.Application/Companion.Application.csproj" />

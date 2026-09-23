@@ -38,6 +38,7 @@ public partial class CompanionWindow : Window
     public CompanionWindow()
     {
         InitializeComponent();
+        InitializeReplyPreview();
         states.Changed += (_, _) => UpdateMotion();
         previewTimer.Tick += (_, _) => EndPreview();
         SourceInitialized += (_, _) =>

@@ -122,8 +122,8 @@ public sealed class LocalModelHost : IAsyncDisposable
         start.Environment["PATH"] = Environment.SystemDirectory;
         start.Environment["LLAMA_API_KEY"] = secret; // ephemeral local IPC guard, never a provider credential
         string[] arguments = ["--model", modelPath, "--host", "127.0.0.1", "--port", port.ToString(System.Globalization.CultureInfo.InvariantCulture),
-            "--ctx-size", "2048", "--threads", "2", "--threads-batch", "2", "--batch-size", "128", "--ubatch-size", "128",
-            "--parallel", "1", "--n-predict", "256", "--gpu-layers", "0", "--device", "none", "--poll", "0", "--poll-batch", "0",
+            "--ctx-size", LocalChatModel.ContextTokens.ToString(System.Globalization.CultureInfo.InvariantCulture), "--threads", "2", "--threads-batch", "2", "--batch-size", "128", "--ubatch-size", "128",
+            "--parallel", "1", "--n-predict", LocalChatModel.MaximumOutputTokens.ToString(System.Globalization.CultureInfo.InvariantCulture), "--gpu-layers", "0", "--device", "none", "--poll", "0", "--poll-batch", "0",
             "--offline", "--no-webui", "--no-slots", "--no-context-shift", "--cache-ram", "0", "--log-disable",
             "--reasoning", "off", "--chat-template-kwargs", "{\"enable_thinking\":false}"];
         foreach (var argument in arguments) start.ArgumentList.Add(argument);

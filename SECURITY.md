@@ -2,8 +2,8 @@
 
 Living threat model, not a security certification. Phase 1 adds explicit local preference
 storage, content-free diagnostics and same-user activation IPC. Phase 3 adds an owned
-local model process and bounded loopback chat client. There is no cloud inference,
-tool execution, recording or persistent conversation storage. Future controls below must
+local model process, bounded loopback chat client and optional saved conversations.
+There is no cloud inference, tool execution or recording. Future controls below must
 pass negative tests before their feature is enabled.
 
 Local inference admits only the pinned official runtime/model, verifies every bundled
@@ -11,13 +11,26 @@ executable/DLL and holds read leases while running. The host validates loopback 
 ownership before authentication, ignores inherited provider/runtime configuration,
 disables remote fetching/UI/slot APIs/logging and uses an internal per-launch secret.
 This is not a user API key or a defense against malicious code running as the same
-Windows user. Runtime output is plain text with no authority to execute tools. Windows
+Windows user. Runtime output has no authority to execute tools. Native Markdown/code/
+math rendering creates only fixed WPF document elements; HTML, images and links are
+inert text, with no browser, remote asset requests or model-supplied XAML. Windows
 job cleanup begins after assignment; the brief create-to-assign crash gap remains.
-Chat history exists only in the window/process memory; OS paging/dumps and copies
-outside the app are not erased on close. [Local AI boundaries](docs/LOCAL_AI.md) apply.
+Chat starts in a separate in-memory Temporary repository. Saved chats requires an
+explicit mode change and stores plaintext in the profile's conversations.db. Temporary
+text never enters that repository or content-free logs; switching modes does not copy
+it. OS paging/dumps and copies outside the app are not erased on close. Saved messages
+remain after continuing a failed saved turn temporarily, as the UI discloses.
+[Local AI boundaries](docs/LOCAL_AI.md) apply.
 
-Implemented persistence is limited to nonsecret preferences and placement under the selected data
-directory. Secrets are not supported settings fields; unknown fields are rejected.
+Implemented persistence includes nonsecret preferences, placement and explicitly saved
+conversation history under the selected data directory. Deleting a conversation is a
+logical database deletion, not forensic erasure of free pages, backups or OS copies.
+Secrets are not supported settings fields; unknown fields are rejected.
+Hot-journal recovery first validates a bounded SQLite copy named
+`conversations.recovery.db` with its sidecars and `conversations.recovery.owner`.
+Normal completion removes these files. A hard kill during validation can leave
+plaintext saved-history copies until a later recovery cleanup; they are not a backup.
+Unknown scratch files without a valid ownership marker are preserved and refused.
 One validated `.bak` and one latest `.invalid` settings file are retained until user
 removal; they are not forensic erasure mechanisms. Do not manually put keys in settings.
 Logs use closed typed payloads, 10 MiB × 5 files per channel plus one corrupt-log
@@ -124,8 +137,8 @@ mention in model text is not a grant. Consequential mutations always receive the
 trusted application preview required by their policy. Optional shell, email or calendar
 integrations remain absent until separately implemented/reviewed.
 
-Local chat history will persist in normal mode and must be clearly disclosed on first
-use; temporary mode is a separate repository, not a boolean applied after saving.
+Local chat history persists only after choosing Saved chats, with a persistent mode
+label; temporary mode is a separate repository, not a boolean applied after saving.
 Remote processing requires provider disclosure and sends only selected context. Local
 data is not encrypted by SQLite by default. Rely on OS user access controls and
 recommend OS disk encryption for at-rest protection; application-level DB encryption
