@@ -9,7 +9,10 @@ Phase 3's first **local pretrained chat increment passed at 9.0/10**. This appro
 the bounded in-memory chat slice. History, branching/search, separate temporary mode,
 exact token admission and native Markdown/code/math now pass the
 [Phase 3 development review](docs/qa/PHASE_3_HISTORY_REVIEW.md) at **9.5/10**.
-Phase 4 starts with [explicit local speech output](docs/PHASE_4_VOICE_PLAN.md). See the
+Phase 4A's [explicit local speech output](docs/qa/PHASE_4A_SPEECH_REVIEW.md) passes
+independent review at **9.0/10**. This covers manual Read aloud/Stop and session
+voice/speed controls; Phase 4B push-to-talk and the wider voice loop remain next
+under the [voice plan](docs/PHASE_4_VOICE_PLAN.md). See the
 [independent increment review](docs/qa/PHASE_3_LOCAL_INCREMENT_REVIEW.md).
 
 | Phase | Delivery | Exit evidence (in addition to independent score >8.5) |

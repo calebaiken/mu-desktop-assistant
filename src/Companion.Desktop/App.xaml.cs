@@ -9,6 +9,8 @@ using Companion.Core.Desktop;
 using Companion.Infrastructure.Lifetime;
 using Companion.Application.Conversation;
 using Companion.Infrastructure.Conversation;
+using Companion.Application.Voice;
+using Companion.Infrastructure.Voice;
 
 namespace Companion.Desktop;
 
@@ -19,6 +21,7 @@ public partial class App : System.Windows.Application
     private SettingsWindow? settingsWindow;
     private ChatWindow? chatWindow;
     private LocalModelHost? localModelHost;
+    private ISpeechOutput? localSpeechOutput;
     private StartupOptions? options;
     private DesktopIntegration? desktop;
     private PlacementSession? placement;
@@ -27,6 +30,14 @@ public partial class App : System.Windows.Application
     protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        if (e.Args is ["--speech-worker"])
+        {
+            var result = 1;
+            try { result = await SpeechWorker.RunAsync(); }
+            catch (Exception) { /* Private worker errors never show UI or content. */ }
+            Shutdown(result);
+            return;
+        }
         try { options = StartupOptions.Parse(e.Args); }
         catch (ArgumentException) { Shutdown(2); return; }
         DispatcherUnhandledException += OnUnhandledException;
@@ -51,7 +62,11 @@ public partial class App : System.Windows.Application
             companion.ChatRequested += (_, _) => OpenChat();
             companion.SleepChanged += (_, _) =>
             {
-                if (companion.CurrentState == AvatarState.Sleeping) chatWindow?.StopGeneration();
+                if (companion.CurrentState == AvatarState.Sleeping)
+                {
+                    chatWindow?.StopGeneration();
+                    chatWindow?.StopSpeech();
+                }
             };
             companion.Closing += (_, closing) =>
             {
@@ -83,6 +98,17 @@ public partial class App : System.Windows.Application
             if (options.PrivateHistorySmoke)
             {
                 await TemporaryPrivacySmokeChecks.WaitForPrivacyTerminationAsync(options.DataDirectory);
+                return;
+            }
+            if (options.PrivateSpeechSmoke)
+            {
+                await TemporarySpeechPrivacySmokeChecks.WaitForPrivacyTerminationAsync(options.DataDirectory);
+                return;
+            }
+            if (options.SpeechSmoke)
+            {
+                await SpeechOutputSmokeChecks.RunAsync(options.DataDirectory, options.SpeechPlayback);
+                await StopAsync(0);
                 return;
             }
             companion.Show();
@@ -140,6 +166,8 @@ public partial class App : System.Windows.Application
                 await RecordStage("safe-chat-document-complete");
                 await CompanionReplySmokeChecks.RunAsync(companion, runtime.Settings, options.DataDirectory);
                 await RecordStage("companion-reply-complete");
+                await SpeechUiSmokeChecks.RunAsync(options.DataDirectory);
+                await RecordStage("speech-ui-complete");
                 OpenSettings();
                 await Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
                 if (settingsWindow is null || new WindowInteropHelper(settingsWindow).Handle == IntPtr.Zero)
@@ -212,9 +240,11 @@ public partial class App : System.Windows.Application
             // Optional model setup must never prevent use of the companion itself.
         }
         localModelHost = host;
+        var speech = new WindowsSpeechOutput(Path.Combine(AppContext.BaseDirectory, "Companion.Desktop.exe"));
+        localSpeechOutput = speech;
         chatWindow = new ChatWindow(token => host is null
             ? Task.FromException<IChatModel>(new ChatModelException(ChatFailure.Unavailable))
-            : host.GetModelAsync(token), new SqliteConversationStore(options.DataDirectory)) { Owner = companion };
+            : host.GetModelAsync(token), new SqliteConversationStore(options.DataDirectory), speech) { Owner = companion };
         var window = chatWindow;
         window.ReplyCompleted += reply =>
         {
@@ -223,6 +253,18 @@ public partial class App : System.Windows.Application
         };
         window.Activated += (_, _) => companion.DismissReplyPreview();
         IDisposable? thinking = null;
+        IDisposable? speaking = null;
+        window.SpeechChanged += (_, _) =>
+        {
+            speaking?.Dispose();
+            speaking = null;
+            if (window.IsSpeaking && !stopping)
+            {
+                if (companion.CurrentState == AvatarState.Sleeping) companion.ToggleSleep();
+                companion.EndPreview();
+                speaking = companion.BeginActivity(AvatarState.Speaking);
+            }
+        };
         window.GenerationChanged += (_, _) =>
         {
             thinking?.Dispose();
@@ -238,9 +280,12 @@ public partial class App : System.Windows.Application
         {
             companion.DismissReplyPreview();
             thinking?.Dispose();
+            speaking?.Dispose();
             chatWindow = null;
             if (ReferenceEquals(localModelHost, host)) localModelHost = null;
             if (host is not null) _ = CloseModelAsync(host);
+            if (ReferenceEquals(localSpeechOutput, speech)) localSpeechOutput = null;
+            _ = CloseSpeechAsync(speech);
         };
         chatWindow.Show();
     }
@@ -249,6 +294,12 @@ public partial class App : System.Windows.Application
     {
         try { await host.DisposeAsync(); }
         catch (Exception) { /* Worker ownership cleanup is best effort; no content enters logs. */ }
+    }
+
+    private static async Task CloseSpeechAsync(ISpeechOutput output)
+    {
+        try { await output.DisposeAsync(); }
+        catch (Exception) { /* Owned speech-worker cleanup must not expose content in logs. */ }
     }
 
     private async Task ObserveListenerAsync(SingleInstanceCoordinator instance)
@@ -280,6 +331,11 @@ public partial class App : System.Windows.Application
         if (companion is not null) companion.IsEnabled = false;
         settingsWindow?.BeginShutdown();
         chatWindow?.BeginShutdown();
+        if (localSpeechOutput is not null)
+        {
+            try { await localSpeechOutput.DisposeAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(3)); }
+            catch (Exception) { exitCode = 1; }
+        }
         if (localModelHost is not null)
         {
             try { await localModelHost.DisposeAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(5)); }

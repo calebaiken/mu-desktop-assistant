@@ -32,7 +32,14 @@ discards that session and unloads its worker. Choose Saved chats to start a sepa
 persistent conversation. Titles, literal search, delete, edit/regenerate branches,
 Stop and retry are available. Earlier branches remain selectable and unchanged.
 Markdown, highlighted code and a bounded LaTeX subset render locally in WPF; Plain
-text remains available. Voice, tools and approved long-term memory remain later work.
+text remains available. Explicit Read aloud and Stop voice use an installed Microsoft
+voice on this PC; Voice options selects the voice and speed for this chat window.
+Playback stops on new sends, conversation changes, sleep or close and is capped at
+2,000 characters / 30 seconds. Only the selected completed reply is eligible, and
+the full text remains visible. No automatic speech or microphone capture is enabled.
+Mixed enabled third-party speech engines are unsupported by this first adapter;
+it changes no Windows voice settings and has no cloud fallback. Microphone/VAD/STT,
+device selection, tools and approved long-term memory remain later work.
 
 Saved prompts commit before inference; final, stopped and failed replies finalize
 the stored turn. After an abrupt exit, a pending turn reopens as interrupted and is

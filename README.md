@@ -26,7 +26,9 @@ Monitor-relative position persists separately from preferences. The first chat i
 uses a pretrained Qwen model entirely on this PC: streaming, Stop, retry, saved or
 temporary conversations, search, titles and preserved edit/regenerate branches.
 Markdown, highlighted code and a bounded LaTeX subset render in native WPF, with a
-plain-text switch and Copy reply. Voice, custom avatar packs, tools and long-term
+plain-text switch and Copy reply. Phase 4 adds explicit **Read aloud** / **Stop voice**
+using installed Microsoft voices, with session voice/speed controls under Voice options.
+It does not speak replies automatically. Microphone input, custom avatar packs, tools and long-term
 memory remain unimplemented. Resource confirmation failed;
 CPU qualification remains a release blocker. Physical display, actual input, accessibility and sign-in qualification
 remain mandatory before release under the recorded validation sequence. No API credentials are
@@ -39,7 +41,11 @@ that session and unloads the model. Choose **Saved chats** to keep conversations
 the local profile; this starts a separate conversation and does not copy temporary
 messages. Saved history survives restart. Replies completed while chat is inactive
 briefly appear beside the character; opening chat or dismissing the preview clears it.
-The small model can make mistakes. See [local AI setup and limits](docs/LOCAL_AI.md).
+The small model can make mistakes. Read aloud covers up to 2,000 characters or
+30 seconds; it preserves the full reply as text. This first voice adapter requires
+an installation with only Microsoft speech engines enabled and uses the default
+audio output. It does not change Windows voice or device settings.
+See [local AI setup and limits](docs/LOCAL_AI.md).
 The [increment review](docs/qa/PHASE_3_LOCAL_INCREMENT_REVIEW.md) verifies 224 tests,
 54 native chat assertions and real local inference/cancellation. This is a development
 increment, not a finished assistant or release.
@@ -48,7 +54,7 @@ increment, not a finished assistant or release.
 
 Prerequisites: Windows 11 x64 and .NET SDK **10.0.401** (later patches in the same
 feature band allowed), including WindowsDesktop reference packs. Production projects
-use pinned Microsoft.Data.Sqlite, Markdig and WpfMath dependencies in their owning
+use pinned Microsoft.Data.Sqlite, System.Speech, Markdig and WpfMath dependencies in their owning
 layers. Core and Application remain package-free. All package versions are locked;
 first restore and vulnerability auditing require network access. See the
 [dependency inventory](docs/DEPENDENCIES.md).
@@ -125,7 +131,10 @@ The [validation sequence decision](docs/qa/PHASE_2_VALIDATION_SEQUENCE.md) moves
 physical/input/sign-in qualification to mandatory pre-release gates. No missing check
 is counted as passed. Development approval is not release approval. Phase 3's
 [history and rendering review](docs/qa/PHASE_3_HISTORY_REVIEW.md) passes at **9.5/10**,
-with 272 tests, 11 architecture checks and 28 native process controls. Phase 4 local
-voice is next; see the [voice plan](docs/PHASE_4_VOICE_PLAN.md).
+with 272 tests, 11 architecture checks and 28 native process controls. Phase 4A's
+[speech-output increment](docs/qa/PHASE_4A_SPEECH_REVIEW.md) passes at **9.0/10**,
+with 305 tests, 38 native process controls and 84 speech UI checks in both runs.
+Microphone/VAD/STT and the complete
+voice loop remain unfinished. See the [voice plan](docs/PHASE_4_VOICE_PLAN.md).
 No installer, remote repository or published release
 exists. No release license has been selected.

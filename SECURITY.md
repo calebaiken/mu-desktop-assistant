@@ -6,6 +6,19 @@ local model process, bounded loopback chat client and optional saved conversatio
 There is no cloud inference, tool execution or recording. Future controls below must
 pass negative tests before their feature is enabled.
 
+Phase 4A adds manually requested local speech output. The adapter admits installed
+Microsoft voice metadata and refuses mixed enabled engines before APIs that could
+initialize another default voice. This is trusted OS registration data, not a defense
+against same-user forgery. Each operation owns a same-executable child with private,
+bounded stdio, a 30-second deadline and three-second cleanup bound. It sends literal
+text, never SSML, resource URLs, lexicons or commands. No text enters argv/environment,
+no audio file is created, and there is no automatic playback or microphone capture.
+The UI cancels on context changes, sleep and close; a cleanup failure prevents reuse.
+The short process-create/job-assignment gap remains a documented limitation. Native
+engine events and bounded-memory synthesis do not certify physical audibility or
+device removal. Temporary speech privacy probes cover app-controlled files, not OS
+paging, dumps or arbitrary external engine behavior.
+
 Local inference admits only the pinned official runtime/model, verifies every bundled
 executable/DLL and holds read leases while running. The host validates loopback socket
 ownership before authentication, ignores inherited provider/runtime configuration,

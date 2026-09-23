@@ -33,6 +33,18 @@ foreign keys, bounded reads and a 64 MiB database ceiling. Future/corrupt origin
 are preserved and visible failures are content-free. The UI retains unsaved output
 and blocks subsequent saved sends until Retry saving or explicit temporary recovery.
 
+## Implemented speech output contract
+
+Phase 4A also implements `ISpeechOutput`: cancellable installed-voice enumeration and
+`SpeakAsync(SpeechRequest, IProgress<SpeechOutputState>, CancellationToken)`, plus
+async disposal. Request text is literal, at most2,000 UTF-16 units with valid Unicode;
+voice identity is explicit and rate is -5..+5. Only one operation is active, with no
+queue, a30-second deadline and3-second owned cleanup bound. Speaking/Stopped are
+engine lifecycle observations; memory-only diagnostics emit no Speaking state.
+Typed fixed failures exclude input text and native exception payloads. Failed cleanup
+poisons the provider instance. Separate synthesis/capture/playback/recognition ports
+below remain the broader voice-loop design; this output slice does not implement them.
+
 ## Remaining proposed contracts
 
 These are design specifications, **not implemented interfaces**. Introduce code as each

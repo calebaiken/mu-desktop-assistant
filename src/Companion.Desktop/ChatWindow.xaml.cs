@@ -5,6 +5,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
 using Companion.Application.Conversation;
+using Companion.Application.Voice;
 using Companion.Infrastructure.Desktop;
 
 namespace Companion.Desktop;
@@ -23,12 +24,14 @@ public partial class ChatWindow : Window
     private string? retryPrompt;
     private bool stopping;
 
-    public ChatWindow(Func<CancellationToken, Task<IChatModel>> modelFactory, IConversationStore? savedStore = null)
+    public ChatWindow(Func<CancellationToken, Task<IChatModel>> modelFactory, IConversationStore? savedStore = null,
+        ISpeechOutput? speechOutput = null)
     {
         ArgumentNullException.ThrowIfNull(modelFactory);
         this.modelFactory = modelFactory;
         InitializeComponent();
         InitializeHistory(savedStore);
+        InitializeSpeech(speechOutput);
         Loaded += (_, _) =>
         {
             try { DesktopWindowPlacement.Constrain(new WindowInteropHelper(this).Handle, false); }
@@ -54,6 +57,7 @@ public partial class ChatWindow : Window
             StatusLabel.Text = "Shorten your message to 2,000 characters, then send it again.";
             return;
         }
+        StopSpeech();
 
         var request = new List<ChatMessage>(history) { new(ChatRole.User, prompt) };
         while (request.Count > 1 && (request.Count > MaximumContextMessages || ContextBytes(request) > MaximumContextBytes))
@@ -182,6 +186,7 @@ public partial class ChatWindow : Window
         Dispatcher.VerifyAccess();
         if (stopping) return;
         stopping = true;
+        ShutdownSpeech();
         IsEnabled = false;
         SendButton.IsEnabled = false;
         StopButton.IsEnabled = false;
@@ -208,6 +213,7 @@ public partial class ChatWindow : Window
     {
         if (IsGenerating == value) return;
         IsGenerating = value;
+        UpdateSpeechControls();
         UpdateTranscriptView();
         GenerationChanged?.Invoke(this, EventArgs.Empty);
     }

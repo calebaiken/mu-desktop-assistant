@@ -20,10 +20,10 @@ function Assert-AppExit {
     $process.StartInfo.CreateNoWindow = $true
     try {
         if (-not $process.Start()) { throw "$Name did not start." }
-        if (-not $process.WaitForExit(60000)) {
+        if (-not $process.WaitForExit(120000)) {
             $process.Kill()
             $process.WaitForExit()
-            throw "$Name exceeded its 60-second deadline."
+            throw "$Name exceeded its 120-second aggregate deadline."
         }
         if ($process.ExitCode -ne $ExpectedExit) {
             throw "$Name returned $($process.ExitCode); expected $ExpectedExit."
@@ -36,6 +36,10 @@ function Assert-AppExit {
 # --ui-smoke executes real production initialization, HWND creation, settings-window
 # creation, appearance/placement assertions and window closing. It does not simulate
 # user input or prove accessibility, dragging or a physical mixed-DPI monitor matrix.
+# Phase 4A adds 84 controlled speech assertions. Its first expanded run exhausted
+# the old 60-second aggregate budget after preceding stages consumed 52.516 seconds.
+# The new aggregate budget is 120 seconds; individual fixture and production speech
+# deadlines remain unchanged. The original timeout is retained in the QA evidence.
 $profileArgument = '--data-dir "{0}"' -f $profile
 Assert-AppExit 'visible-companion-settings-close' "--ui-smoke $profileArgument" 0
 $firstRun = Join-Path $evidenceRoot 'first-run'
@@ -129,7 +133,7 @@ if ($chatLifecycle.failure -or $chatLifecycle.count -ne 54 -or
 }
 $script:caseCount++
 Write-Output 'PASS 54 local chat lifecycle/history/layout assertions'
-foreach ($suite in @(@('chat-history', 50), @('safe-chat-document', 46), @('companion-reply', 34))) {
+foreach ($suite in @(@('chat-history', 50), @('safe-chat-document', 46), @('companion-reply', 34), @('speech-ui', 84))) {
     $name = [string]$suite[0]
     $expected = [int]$suite[1]
     foreach ($folder in @($firstRun, $profile)) {
@@ -158,6 +162,15 @@ Assert-AppExit 'reject-private-smoke-duplicate' "--private-history-smoke --priva
 Assert-AppExit 'reject-private-smoke-model-directory' "--private-history-smoke --local-model-dir `"$profile`" $profileArgument" 2
 $normalProfile = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'DesktopCompanion'
 Assert-AppExit 'reject-private-smoke-default-profile' "--private-history-smoke --data-dir `"$normalProfile`"" 2
+Assert-AppExit 'reject-worker-with-additional-options' "--speech-worker --smoke $profileArgument" 2
+Assert-AppExit 'reject-speech-without-explicit-profile' '--speech-smoke' 2
+Assert-AppExit 'reject-speech-default-profile' "--speech-smoke --data-dir `"$normalProfile`"" 2
+Assert-AppExit 'reject-playback-without-diagnostic' "--speech-playback $profileArgument" 2
+Assert-AppExit 'reject-duplicate-playback' "--speech-smoke --speech-playback --speech-playback $profileArgument" 2
+Assert-AppExit 'reject-private-speech-conflict' "--private-speech-smoke --speech-smoke $profileArgument" 2
+Assert-AppExit 'reject-speech-model-directory' "--speech-smoke --local-model-dir `"$profile`" $profileArgument" 2
+Assert-AppExit 'reject-private-speech-default-profile' "--private-speech-smoke --data-dir `"$normalProfile`"" 2
+Assert-AppExit 'reject-private-speech-without-profile' '--private-speech-smoke' 2
 
 $logPath = Join-Path $profile 'logs\application.jsonl'
 $events = @(Get-Content -LiteralPath $logPath | ForEach-Object { $_ | ConvertFrom-Json })

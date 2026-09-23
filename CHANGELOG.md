@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased — Phase 4A explicit local speech (2026-09-22, QA 9.0/10)
+
+- Added Read aloud / Stop voice for completed replies, installed Microsoft voice
+  selection and session speed controls. Replies remain silent until explicitly read.
+- Isolated speech in owned workers with strict private stdio, Unicode/text/time
+  bounds, cancellation and fixed failures. No API key, microphone, SSML or audio files.
+- Added protocol, PCM and voice-admission tests, controlled native UI/privacy probes
+  and an explicit real-engine diagnostic. Full Phase 4 voice input remains unfinished.
+
 ## Unreleased — Phase 3 history and rich chat (2026-09-22, independent QA 9.5/10 PASS)
 
 - Added optional local saved history with titles, search, delete and preserved edit/

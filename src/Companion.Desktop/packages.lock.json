@@ -62,6 +62,11 @@
           "SQLitePCLRaw.core": "2.1.12"
         }
       },
+      "System.Speech": {
+        "type": "Transitive",
+        "resolved": "10.0.12",
+        "contentHash": "IrIKdPfbeCtgDeKQvJE2EtS8sSLxxpBRzCCpkg/4jORLwmhSUrVZtIrnbbaWQxo3tjnXK6aHH6MNsvi3S3PuTg=="
+      },
       "XamlMath.Shared": {
         "type": "Transitive",
         "resolved": "2.1.0",
@@ -81,7 +86,8 @@
         "dependencies": {
           "Companion.Application": "[1.0.0, )",
           "Companion.Core": "[1.0.0, )",
-          "Microsoft.Data.Sqlite": "[10.0.12, )"
+          "Microsoft.Data.Sqlite": "[10.0.12, )",
+          "System.Speech": "[10.0.12, )"
         }
       }
     }

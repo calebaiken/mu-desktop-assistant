@@ -63,11 +63,40 @@
                      PreviewKeyDown="MessageInput_PreviewKeyDown" TextChanged="MessageInput_TextChanged"
                      AutomationProperties.AutomationId="ChatMessage"/>
             <TextBlock Text="Enter to send · Shift+Enter for a new line · Up to 2,000 characters" TextWrapping="Wrap" Margin="0,6,0,0"/>
+            <Expander x:Name="SpeechOptions" Header="Voice options" Margin="0,8,0,0" Expanded="SpeechOptions_Expanded"
+                      ToolTip="Uses installed Microsoft voices. This version cannot read aloud if another speech engine is enabled in Windows."
+                      AutomationProperties.HelpText="Uses installed Microsoft voices. Other enabled Windows speech engines are unsupported in this version.">
+                <WrapPanel Margin="0,6,0,0">
+                    <ComboBox x:Name="SpeechVoiceSelector" MinWidth="160" MaxWidth="310" MinHeight="28" DisplayMemberPath="Name"
+                              AutomationProperties.Name="Installed voice" Margin="0,0,8,4">
+                        <ComboBox.ItemContainerStyle>
+                            <Style TargetType="ComboBoxItem">
+                                <Setter Property="AutomationProperties.Name" Value="{Binding Name}"/>
+                            </Style>
+                        </ComboBox.ItemContainerStyle>
+                    </ComboBox>
+                    <ComboBox x:Name="SpeechRateSelector" MinWidth="110" MinHeight="28" DisplayMemberPath="Label" SelectedValuePath="Rate"
+                              AutomationProperties.Name="Speaking speed" Margin="0,0,0,4">
+                        <ComboBox.ItemContainerStyle>
+                            <Style TargetType="ComboBoxItem">
+                                <Setter Property="AutomationProperties.Name" Value="{Binding Label}"/>
+                            </Style>
+                        </ComboBox.ItemContainerStyle>
+                    </ComboBox>
+                </WrapPanel>
+            </Expander>
         </StackPanel>
-        <TextBlock Grid.Row="4" x:Name="StatusLabel" Text="The local model loads when you send your first message."
+        <StackPanel Grid.Row="4">
+        <TextBlock x:Name="StatusLabel" Text="The local model loads when you send your first message."
                    TextWrapping="Wrap" Margin="0,12,0,12" AutomationProperties.LiveSetting="Polite"
                    AutomationProperties.AutomationId="ChatStatus"/>
+        <TextBlock x:Name="SpeechStatusLabel" Visibility="Collapsed" TextWrapping="Wrap" Margin="0,0,0,8"
+                   AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="SpeechStatus"/>
+        </StackPanel>
         <WrapPanel Grid.Row="5" HorizontalAlignment="Right">
+            <Button x:Name="ReadAloudButton" Content="Read aloud" Click="ReadAloud_Click" IsEnabled="False" MinHeight="36" Padding="8,0" Margin="0,0,8,6"
+                    ToolTip="Read the selected completed reply using an installed Windows voice. Up to 2,000 characters or 30 seconds."/>
+            <Button x:Name="StopSpeechButton" Content="Stop voice" Click="StopSpeech_Click" Visibility="Collapsed" MinHeight="36" Padding="8,0" Margin="0,0,8,6"/>
             <Button x:Name="CopyReplyButton" Content="Copy reply" Click="CopyReply_Click" MinHeight="36" Padding="8,0" Margin="0,0,8,6"/>
             <Button x:Name="SaveRetryButton" Content="Retry saving" Click="SaveRetry_Click" Visibility="Collapsed" MinHeight="36" Padding="8,0" Margin="0,0,8,6"/>
             <Button x:Name="ContinueTemporaryButton" Content="Continue temporarily" Click="ContinueTemporary_Click" Visibility="Collapsed" MinHeight="36" Padding="8,0" Margin="0,0,8,6"

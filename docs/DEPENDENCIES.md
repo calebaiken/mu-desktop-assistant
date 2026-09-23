@@ -13,19 +13,24 @@ Exact resolved versions and NuGet content hashes are recorded in the
 [Desktop lock](../src/Companion.Desktop/packages.lock.json),
 [Infrastructure lock](../src/Companion.Infrastructure/packages.lock.json) and
 [test lock](../tests/Companion.Tests/packages.lock.json). Core and Application have
-no package dependencies. Desktop owns rendering packages; Infrastructure owns SQLite.
+no package dependencies. Desktop owns rendering packages; Infrastructure owns SQLite
+and the Windows speech adapter.
 
-For all **21 distinct restored package IDs** in the runtime/test graph, this inventory
+For all **22 distinct restored package IDs** in the runtime/test graph, this inventory
 check matched the archive SHA512 against its cache `.nupkg.sha512`, and independently
 matched `.nupkg.metadata` source/contentHash against the NuGet.org source and lock file.
 NuGet's content hash excludes signing material, so it must not be compared directly
 with the raw signed ZIP hash. See [NuGet's metadata format](https://github.com/NuGet/Home/wiki/Nupkg-Metadata-File).
-These local consistency checks are not a fresh signature/certificate-chain audit.
+The original Phase 3 check covered 21 IDs; the same two checks were also completed
+for the added System.Speech package. These local consistency checks are not a fresh
+signature/certificate-chain audit.
 
 The command `dotnet list Companion.slnx package --vulnerable --include-transitive`
-completed during this verification across all six projects and reported no known
-vulnerable package. This records a query of the configured NuGet advisory feed on
-that date. It does not establish absence of unknown vulnerabilities, assess
+completed after the Phase 4A package addition across all six projects and reported
+no known vulnerable package. The approved retry is retained at
+`artifacts/qa/phase4a-package-advisories.txt`; the initial restricted invocation exited
+1 without output and is not a successful check. This records a query of the configured
+NuGet advisory feed on that date. It does not establish absence of unknown vulnerabilities, assess
 exploitability, or scan the separately downloaded native inference runtime/model.
 Normal restore auditing remains enabled; unavailable advisory data must be reported,
 not suppressed. No redundant advisory rerun was performed for this document.
@@ -39,6 +44,7 @@ not suppressed. No redundant advisory rerun was performed for this document.
 | XamlMath.Shared | 2.1.0 | Transitive through WpfMath | MIT | [ForNeVeR/xaml-math](https://github.com/ForNeVeR/xaml-math); nuspec does not declare a commit |
 | Microsoft.Data.Sqlite | 10.0.12 | Direct, Infrastructure conversation persistence | MIT | [dotnet/dotnet](https://github.com/dotnet/dotnet), commit `95017c711e6afc1085133d440e42b4bd78155701` |
 | Microsoft.Data.Sqlite.Core | 10.0.12 | Transitive through Microsoft.Data.Sqlite | MIT | [dotnet/dotnet](https://github.com/dotnet/dotnet), commit `95017c711e6afc1085133d440e42b4bd78155701` |
+| System.Speech | 10.0.12 | Direct, Infrastructure installed Windows voice adapter | MIT | [dotnet/dotnet](https://github.com/dotnet/dotnet), commit `95017c711e6afc1085133d440e42b4bd78155701` |
 | SQLitePCLRaw.bundle_e_sqlite3 | 2.1.12 | Transitive SQLite bundle initialization | Apache-2.0 | [ericsink/SQLitePCL.raw](https://github.com/ericsink/SQLitePCL.raw); nuspec does not declare a commit |
 | SQLitePCLRaw.core | 2.1.12 | Transitive SQLite interop abstraction | Apache-2.0 | [ericsink/SQLitePCL.raw](https://github.com/ericsink/SQLitePCL.raw); nuspec does not declare a commit |
 | SQLitePCLRaw.lib.e_sqlite3 | 2.1.12 | Transitive platform-specific native SQLite binaries | Apache-2.0 | [ericsink/SQLitePCL.raw](https://github.com/ericsink/SQLitePCL.raw); nuspec does not declare a commit |
@@ -48,6 +54,14 @@ The SQLite native package version above is the package identity, not a claim abo
 the embedded SQLite engine's version. The restored package contains several platform
 assets; the current application qualification target is Windows x64. The dependency
 graph does not imply other platforms have been built or tested.
+
+System.Speech 10.0.12's restored archive is **1,334,368 bytes**. Its `net10.0`
+dependency group has no additional NuGet dependencies; the package therefore adds
+one runtime package ID. This is archive size, not an installed application or voice
+model footprint. The implementation uses Windows speech synthesis only. The package
+also contains recognition APIs, but adding the package does not enable microphone
+capture or recognition in this application. Installed Windows voice engines remain
+separate platform dependencies; eligibility checks do not prove synthesis succeeds.
 
 WpfMath's declared `MIT AND OFL-1.1` expression is not the whole font-notice inventory.
 Its restored `FONT-LICENSES.md` also lists Computer Modern font files under the Knuth
@@ -63,8 +77,8 @@ browser, tool executor, network renderer or mathematical correctness checker.
 
 ## Test-only packages
 
-The three direct test references use `PrivateAssets="all"`. Runtime SQLite transitives
-also appear in the test graph through the Infrastructure project reference; they are
+The three direct test references use `PrivateAssets="all"`. Runtime SQLite and speech
+packages also appear in the test graph through the Infrastructure project reference; they are
 already listed above. The following twelve packages belong to the test toolchain.
 Their presence does not introduce application telemetry; the verification script sets
 both .NET CLI and testing-platform telemetry opt-out variables.

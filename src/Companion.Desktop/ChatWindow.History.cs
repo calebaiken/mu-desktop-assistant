@@ -124,6 +124,7 @@ public partial class ChatWindow
     internal async Task ContinueWithoutSavingAsync()
     {
         if (stopping || activeTurn is not null || historyBusy || pendingCompletion is not { } pending || conversation is not { } current) return;
+        StopSpeech();
         historyBusy = true;
         SaveRetryButton.IsEnabled = false;
         ContinueTemporaryButton.IsEnabled = false;
@@ -205,6 +206,7 @@ public partial class ChatWindow
     private async Task RunHistoryActionAsync(Func<Task> action)
     {
         if (!CanSend) return;
+        StopSpeech();
         historyBusy = true;
         SetHistoryInteraction(false);
         try { await action(); }
@@ -216,6 +218,7 @@ public partial class ChatWindow
 
     private void ResetConversation()
     {
+        StopSpeech();
         conversation = null;
         temporaryFromSaved = false;
         currentTurnId = null;
@@ -293,6 +296,7 @@ public partial class ChatWindow
             BranchPanel.Visibility = choices.Length == 0 ? Visibility.Collapsed : Visibility.Visible;
         }
         finally { bindingHistory = false; }
+        UpdateSpeechControls();
     }
 
     private void SetHistoryInteraction(bool enabled)
@@ -305,6 +309,7 @@ public partial class ChatWindow
         NewConversationButton.IsEnabled = available;
         RetryButton.IsEnabled = available;
         SendButton.IsEnabled = available && CanSend && !string.IsNullOrWhiteSpace(MessageInput.Text);
+        UpdateSpeechControls();
     }
 
     private void ShutdownHistory()
@@ -320,6 +325,7 @@ public partial class ChatWindow
     internal void EditSelectedTurn()
     {
         if (!CanSend || conversation is null || conversation.LeafTurnId is not { } leaf) return;
+        StopSpeech();
         var turn = conversation.Turns.Single(item => item.Id == leaf);
         forkParentId = turn.ParentTurnId;
         forking = true;

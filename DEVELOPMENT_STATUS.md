@@ -6,6 +6,9 @@ Phase 0 passed at 9.4/10 and Phase 1 passed at 9.0/10. Phase 2's final resource
 confirmation remains **FAIL**, and release is not approved. Phase 3 now implements
 pretrained local inference, optional SQLite history, separate temporary sessions,
 branching/search and bounded native rich chat rendering.
+Phase 4A now implements manual local Read aloud/Stop, installed voice selection and
+session speaking speed; its independent review passes at **9.0/10**. Full Phase 4
+microphone input, recognition, VAD and complete voice-loop work remain unfinished.
 The recorded validation sequence moves unavailable physical/input/sign-in qualification
 to mandatory Phase 11/12 pre-release gates without marking any missing check passed.
 The separate, explicitly post-result decision in docs/qa/PHASE_2_RESOURCE_SEQUENCE.md
@@ -13,6 +16,18 @@ places unresolved CPU qualification in the user's Phase 12 optimization work. Pe
 remains 7/10 with zero budget-criterion points; neither limits nor measurements changed.
 
 ## Completed implementation
+
+- Phase 4A speech output runs plain text through an owned Windows speech worker,
+  with a 2,000-character input cap, 30-second deadline and three-second cleanup
+  bound. Read aloud is explicit; new sends, conversation changes, Sleep and close
+  cancel it. No API key, microphone or automatic spoken reply is introduced.
+  Strict regression passes **305/305 tests**, **11/11 architecture checks** and
+  composed WPF smoke. Native Microsoft David synthesis, Stop, reuse and the active
+  deadline passed. Abrupt temporary-speech persistence checks passed. The first
+  expanded UI supervisor timed out; the declared diagnostic rerun passed **38/38**
+  supervisor checks and **84 speech UI assertions in both native runs**, alongside
+  all prior desktop suites. The [speech review](docs/qa/PHASE_4A_SPEECH_REVIEW.md)
+  scores **90/100**, approving only this output increment.
 
 - Phase 3 history: explicit Saved chats mode, title/search/delete, immutable edited
   and regenerated branches, pending-prompt commits and interrupted-turn recovery.
@@ -81,7 +96,8 @@ remains 7/10 with zero budget-criterion points; neither limits nor measurements 
 ## Architecture decisions
 
 C#/.NET 10 WPF; Core values and pure math, Application ports, Infrastructure adapters,
-Desktop composition. Infrastructure owns Microsoft.Data.Sqlite; Desktop owns Markdig
+Desktop composition. Infrastructure owns Microsoft.Data.Sqlite and System.Speech;
+Desktop owns Markdig
 and WpfMath. Core/Application remain package-free. The reviewed native llama.cpp
 worker and Qwen weights are explicit Phase 3 dependencies. See docs/DEPENDENCIES.md.
 The framework's Windows Forms
@@ -122,14 +138,14 @@ requested tray visibility. Settings refresh click-through availability after sho
   after writer failure. Preserved TRX:
   artifacts/qa/desktop-ui-20260922-183217-1d198cb8/release-196-before-observer-abba.trx.
   The earlier 193-case artifact and its cadence-only scope remain retained.
-- Latest complete native UI run: **18/18 process/control checks**, **43 appearance,
+- Historical final Phase 2 native UI run: **18/18 process/control checks**, **43 appearance,
   state and placement assertions**, **24 tray/recovery/shortcut assertions**,
   **29 settings lifecycle assertions**, and **49 placement-initialization assertions**,
   with no skips or reported failures. Evidence:
   artifacts/qa/desktop-ui-20260922-185538-0c91126a/profile.
   Settings recovery, shutdown during Save, input freeze during placement and confirmed
   shortcut recovery pass. The
-  latest Release build has zero warnings/errors. This native run observed one display at
+  associated Release build has zero warnings/errors. This native run observed one display at
   120 DPI (125%); next-display coverage is therefore a single-display no-op.
 - The new readiness fixture initially failed compilation and was corrected. Strict
   Release verification now passes. Native attempt desktop-ui-20260922-185315-2646a9cb
@@ -224,6 +240,7 @@ frame-time percentile or long-running memory certification is claimed.
 | Phase 2 resource/lifecycle review | Independent phase0_qa | 8.7/10 | PASS development; resource confirmation FAIL; docs/qa/PHASE_2_RESOURCE_REVIEW.md |
 | Phase 3 local pretrained chat increment | Independent local_model_qa | 9.0/10 | PASS bounded increment; full Phase 3 incomplete; docs/qa/PHASE_3_LOCAL_INCREMENT_REVIEW.md |
 | Phase 3 history/rendering development exit | Independent local_model_adapter | 9.5/10 | PASS development; release gates retained; docs/qa/PHASE_3_HISTORY_REVIEW.md |
+| Phase 4A manual local speech output | Independent local_model_adapter | 9.0/10 | PASS output slice only; full Phase 4 unfinished; docs/qa/PHASE_4A_SPEECH_REVIEW.md |
 
 The latest Phase 2 independent score is **8.7/10 (87/100)**, strictly greater than 8.5, and
 Phase 2 is complete as a development milestone. Historical 8.0 and 8.6 failed exits
@@ -236,8 +253,9 @@ manual-matrix case as mandatory before release. See docs/qa/PHASE_2_RESOURCE_REV
 
 ## Pending work / known limitations
 
-1. Phase 3 development is complete at **9.5/10**. Begin Phase 4 with explicit installed-
-   voice Read aloud/Stop, then offline push-to-talk. The 0.6B model has only
+1. Phase 3 development is complete at **9.5/10**. Phase 4A's explicit installed-
+   voice Read aloud/Stop passed independent review at **9.0/10**; offline
+   push-to-talk is next. The 0.6B model has only
    narrow fixture evidence, not general assistant or scientific accuracy qualification.
 2. Before release, diagnose CPU cost and complete a separately predeclared Phase 12
    repeat protocol controlling actual presentation/occlusion, warmup and observer cost.
@@ -252,7 +270,7 @@ A companion larger than a work area anchors to its origin; tray settings/Exit re
 recovery routes. General occlusion detection is not implemented; visible occluded
 avatars can keep animating. Local storage is not encrypted and same-user malware
 remains outside the protection boundary. Asset packs, signing, installer/updater,
-release license and voice/approved long-term memory/tool features remain later work.
+release license, microphone/recognition, approved long-term memory and tools remain later work.
 
 ## Source checkpoint and next objective
 
@@ -262,6 +280,8 @@ source and 8.6 failed-exit review. The current verified development milestone us
 local source checkpoint refs/checkpoints/phase-2. No remote CI run or release is claimed. The
 local pretrained chat increment has its own source checkpoint at
 refs/checkpoints/phase-3-local-chat-increment. Phase 3 history/rendering is retained at
-refs/checkpoints/phase-3. The next objective is Phase 4 local voice under
-docs/PHASE_4_VOICE_PLAN.md, with its own independent review before advancement.
+refs/checkpoints/phase-3. Phase 4A output is implemented under
+docs/PHASE_4_VOICE_PLAN.md, with its approved source recorded at
+refs/checkpoints/phase-4a-speech-output. Next is Phase 4B local push-to-talk,
+with separate capture/recognition ports and its own frozen independent review.
 No hosted provider is planned.

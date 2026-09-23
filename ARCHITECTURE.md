@@ -4,8 +4,10 @@ Status: Phase 2 desktop interactions complete as a development milestone at inde
 QA 8.7/10; resource and physical qualification still block release. Configuration, log ports/adapters, instance
 activation and WPF shell now exist. Phase 3 adds owned local model inference and
 SQLite history and branches, separate temporary sessions, exact local token admission,
-and bounded native rich rendering. Voice, long-term memory and tools below remain
-intended architecture. Review date: 2026-09-21; status synchronized 2026-09-22.
+and bounded native rich rendering. Phase 4A now implements explicit local Read aloud
+and Stop, pending its independent execution review. Microphone/recognition, long-term
+memory and tools below remain intended architecture. Review date: 2026-09-21; status
+synchronized 2026-09-22.
 
 ## Phase 1 implementation decisions
 
@@ -34,8 +36,9 @@ intended architecture. Review date: 2026-09-21; status synchronized 2026-09-22.
   acknowledgment. No commands, paths or free-form payload cross that IPC boundary.
 - `--data-dir` selects an explicit absolute local test/development profile; UNC/device
   paths are rejected after normalization. Smoke modes exercise real composed services.
-- MSTest is a pinned test-only dependency. Phase 3 introduces an exact owning-layer
-  allowlist for SQLite and native rich rendering; Core and Application remain package-free.
+- MSTest is a pinned test-only dependency. The exact owning-layer allowlist includes
+  SQLite and System.Speech in Infrastructure, and native rich rendering in Desktop;
+  Core and Application remain package-free.
   The dependency-free repository checks remain alongside standard test discovery/TRX.
 
 ## Technology decisions
@@ -215,15 +218,43 @@ panel only on user action. Screen readers receive text state labels, not color a
 
 ## Voice and personality
 
-Capture → bounded PCM frames → local VAD → STT → conversation → TTS → playback.
-Separate audio-device, STT and TTS ports allow local or consented remote services.
-Push-to-talk is the default; optional activation requires a persistent visible indicator.
-Half-duplex first: stop/flush capture during playback and discard a short calibrated
-tail before resuming; no automatic feedback loop. Cancellation stops synthesis,
-playback and stale avatar state. Later echo cancellation/full duplex requires measured
-device tests. Handle unplugged devices, OS permission denial and output failures with
-text fallback. Select input/output device IDs, voice and speed; do not assume defaults
-remain available. Audio buffers are bounded/disposed, not retained by default.
+The implemented Phase 4A slice reads only an explicitly selected completed reply
+after Read aloud. `ISpeechOutput` is an Application contract; Infrastructure uses
+pinned System.Speech 10.0.12 and eligible enabled Microsoft Windows voices. Voice and
+rate choices are session-only, with rates -5 through +5. Reply completion, rich
+rendering and history changes never automatically start speech. Chat keeps its full
+text; read-aloud input is clipped to 2,000 UTF-16 characters without splitting a
+surrogate pair, and the limit is disclosed.
+
+Each enumeration, speech or inaudible probe uses one owned child of the current
+desktop executable in its private `--speech-worker` mode. A background STA owns
+native speech objects. Bounded, length-prefixed JSON over redirected standard input
+and output carries a single operation identity; no text enters command-line
+arguments, logs or audio files. The supervisor validates ordering and exact terminal
+events, permits one operation without a queue, and bounds the operation at 30 seconds.
+Stop, timeout and disposal terminate only the held child identity and its private
+kill-on-close job, with a three-second cleanup acknowledgment bound. Content is sent
+only after job assignment; the launch-to-assignment gap is mitigated by stdin EOF
+and the worker deadline, not eliminated by suspended startup.
+
+The worker selects the chosen installed voice again before synthesis and passes
+plain text to `SpeakAsync`, never SSML or an external lexicon. Default-output
+`SpeechSynthesizer.SpeakStarted` produces the owned Speaking event. This is an engine
+event, not a physical speaker clock or proof that sound was heard. Cleanup releases
+that operation's state; queued old events cannot resume another operation. New send,
+new chat, history navigation, edit/branch, close and companion sleep cancel output.
+Failures preserve readable text. The separate memory diagnostic caps PCM/WAVE storage
+at 4 MiB and returns format/size/duration/hash metadata only; memory synthesis does
+not produce the application's Speaking event or establish audible playback.
+
+The remaining full voice design is capture → bounded PCM frames → local VAD → STT →
+conversation → TTS → playback. Microphone capture, push-to-talk, recognition, explicit
+input/output endpoint selection and optional activation remain future work. Activation
+requires a persistent visible indicator. Half-duplex capture suppression and a
+calibrated playback tail must prevent an automatic feedback loop; echo cancellation
+or full duplex requires measured device tests. Physical device removal, permission,
+output and heard-stop checks remain qualification work. The existing implementation
+uses the default output device and does not qualify this wider voice loop.
 
 Personality is a separate validated configuration: name, description, tone, verbosity,
 humor, curiosity, formality, initiative, expression behavior and preferred address.

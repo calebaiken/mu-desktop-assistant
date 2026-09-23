@@ -5,7 +5,9 @@ SQLite history and branch recovery, separate temporary sessions, native Markdown
 rendering and the compact reply preview. The first history regression passed 267/267
 tests; that retained artifact predates later rendering/recovery/preview edits and is
 not a pass claim for the final source. The [Phase 3 review](docs/qa/PHASE_3_HISTORY_REVIEW.md)
-tracks executed artifacts, failed attempts and the final independent verdict. Earlier
+tracks executed artifacts, failed attempts and its final **9.5/10 development verdict**.
+That result belongs to Phase 3; the Phase 4A speech increment independently passes at
+**9.0/10** for manual output only. Earlier
 224-test local-chat and compact-surface evidence keeps its original, narrower scope.
 
 `scripts/verify-local-model.ps1` separately runs the
@@ -23,9 +25,48 @@ are expected counts enforced by the current supervisor, not proof that a particu
 binary completed them. Native method/property checks do not establish actual
 keyboard/mouse or screen-reader usability. Renderer notation is not numerical validation.
 
+Phase 4A passes **84 native fake-provider UI checks in each of two retained runs**
+and **38/38 UI supervisor cases** in `desktop-ui-20260922-224213-17740e63`.
+Its first expanded attempt exhausted the former 60-second
+aggregate deadline after preceding suites consumed 52.516 seconds; that failed
+attempt is retained. The passing attempt declared 120 seconds overall, added content-free
+substage timing and retained all individual three-second waits. The UI checks cover
+explicit start/stop, completed-reply eligibility, no autoplay, literal/Unicode-bounded
+text, voice/rate selection, cancellation/late callbacks, native layout and accessible
+names. They neither send audio nor establish physical input, hearing or device behavior.
+The [frozen Phase 4A review protocol](docs/qa/PHASE_4A_SPEECH_REVIEW.md) governs required
+native-engine, privacy, fault and lifecycle evidence; its **90/100** verdict approves
+only this output slice. Full Phase 4 and release qualification remain unfinished.
+
+Strict speech regression passes **305/305 tests**, **11/11 architecture checks**,
+composed WPF smoke and zero warnings/errors. Native memory synthesis passed in
+`speech-20260922-223108-36a69151`; explicit default-output Stop/reuse/deadline passed
+in `speech-20260922-223856-66dd24ca`. Stop acknowledged in 0.0038051 seconds; the
+30-second deadline ended at 30.0156752 seconds, with held worker exits confirmed.
+The abrupt temporary-speech sentinel scan passed in
+`private-speech-20260922-223824-cd48804a`. All paths are under `artifacts/qa`.
+Physical hearing, full App Sleep/input integration, the exact sentinel's normal
+exit scan and the frozen 60-second idle/ten-cycle protocol remain unexecuted.
+
+`scripts/verify-speech.ps1` creates a unique isolated profile and retains binary/protocol
+hashes and all outcomes. Its default diagnostic is **inaudible**, synthesizing public
+fixtures into bounded memory and retaining metadata only. Explicitly adding
+`-Playback` enables default-device audio for the public playback/Stop cases. Successful
+engine events or PCM metadata do not prove a listener heard a start or stop; retain
+actual observer notes separately. The supervisor's process deadline is 120 seconds;
+the production per-operation and cleanup limits remain 30 and 3 seconds.
+
+`scripts/verify-history-privacy.ps1 -Speech` starts a fresh profile, writes a real saved
+SQLite decoy, then holds a fake explicit speech operation on a temporary public sentinel.
+The app allows 10 seconds for readiness; the external supervisor allows 15 seconds for
+the marker, terminates only its owned process and scans every bounded profile file
+and sidecar for UTF-8/UTF-16LE/UTF-16BE sentinel bytes. This is whole-app voice UI
+persistence evidence with no audio, not evidence about a third-party speech engine,
+OS paging or forensic erasure. The existing history-only mode remains available.
+
 Use Windows 11 x64 and .NET SDK 10.0.401. All builds enable nullable checks, built-in
 analyzers, deterministic output and warnings as errors. Core and Application remain
-package-free. Infrastructure owns Microsoft.Data.Sqlite 10.0.12; Desktop owns Markdig
+package-free. Infrastructure owns Microsoft.Data.Sqlite and System.Speech 10.0.12; Desktop owns Markdig
 1.3.2 and WpfMath 2.1.0. Their exact resolved transitives and content hashes are locked.
 MSTest TestFramework/TestAdapter 4.4.1 and Microsoft.NET.Test.Sdk 18.10.0 remain pinned
 test-only dependencies. See the [complete dependency inventory](docs/DEPENDENCIES.md).
@@ -36,6 +77,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify.ps1 -Configuration Debug
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-negative.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-ui.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-speech.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-history-privacy.ps1 -Speech
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/measure-desktop.ps1
 ```
 
@@ -222,8 +265,8 @@ headless CI. Do not equate a configuration file with a successful CI run.
 
 ## Dependency review
 
-The runtime package allowlist is limited to SQLite in Infrastructure and native rich
-rendering in Desktop. Transitive package versions, package-supplied repository commits,
+The runtime package allowlist is limited to SQLite and System.Speech in Infrastructure
+and native rich rendering in Desktop. Transitive package versions, package-supplied repository commits,
 declared licenses and WpfMath font notices are recorded in
 [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md). Production has no browser-rendering or
 hosted-provider package. Core/Application dependency rules still prohibit package references.
@@ -236,6 +279,10 @@ Version sources: [MSTest framework](https://www.nuget.org/packages/MSTest.TestFr
 Transitive versions/content hashes are recorded in packages.lock.json; review lock diffs.
 The 2026-09-22 `dotnet list Companion.slnx package --vulnerable --include-transitive`
 check completed across all six projects without a reported known-vulnerable package.
+The post-speech-package approved run is retained in
+`artifacts/qa/phase4a-package-advisories.txt`; the first restricted invocation exited 1
+without output. It was not a passing check, and the advisory scan was not rerun for
+these documentation edits.
 This is a query of the configured NuGet advisory feed, not a source audit, exploitability
 assessment or scan of the separately downloaded model/native worker. Keep normal
 restore audit enabled; report network audit failures rather than suppressing NU1900.

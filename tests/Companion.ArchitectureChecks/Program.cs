@@ -53,7 +53,7 @@ foreach (var (layer, dependencies) in expected)
         var packages = doc.Descendants("PackageReference")
             .Select(node => ((string?)node.Attribute("Include"), (string?)node.Attribute("Version"))).ToArray();
         var reviewedPackages = layer == "Infrastructure"
-            ? new[] { ((string?)"Microsoft.Data.Sqlite", (string?)"10.0.12") }
+            ? new[] { ((string?)"Microsoft.Data.Sqlite", (string?)"10.0.12"), ((string?)"System.Speech", (string?)"10.0.12") }
             : layer == "Desktop"
                 ? new[] { ((string?)"Markdig", (string?)"1.3.2"), ((string?)"WpfMath", (string?)"2.1.0") }
                 : [];

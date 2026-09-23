@@ -1,10 +1,12 @@
 # Phase 4: local voice implementation plan
 
-Status: **planning only**, prepared 2026-09-22. No voice package, model or runtime has
-been installed for this plan; no microphone or speaker was activated. This document
-does not award Phase 4 a QA score or imply that Phase 3 has passed its final gate.
-Implementation starts only after the preceding phase receives its required independent
-score strictly greater than 8.5 with no critical defect.
+Status: **4A output increment independently passed at 9.0/10**, prepared and started 2026-09-22 after
+Phase 3 passed independent QA at9.5/10. The original planning pass installed nothing
+and activated no audio. The implementation now adds pinned System.Speech10.0.12 and
+explicit Read aloud/Stop through installed Windows voices; no voice model was downloaded
+and microphone input remains unimplemented. The separate
+[Phase 4A review](qa/PHASE_4A_SPEECH_REVIEW.md) approves the output increment only.
+Phase 4B push-to-talk is next. No full Phase4 pass follows from this plan.
 
 The original brief requires microphone → VAD → speech recognition → conversation →
 speech synthesis → playback → avatar synchronization, plus push-to-talk, optional
