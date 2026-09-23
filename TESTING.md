@@ -1,5 +1,15 @@
 # Testing
 
+The local pretrained chat increment adds scripted SSE/host adversarial tests and real
+WPF chat lifecycle/layout fixtures. Current strict Release verification passes 224
+tests and 11 architecture checks. `scripts/verify-local-model.ps1` separately runs the
+[frozen real-model protocol](docs/qa/PHASE_3_LOCAL_MODEL_PROTOCOL.md), retaining binary
+identities, public fixture responses, errors, cancellation and worker-cleanup outcomes
+in a unique directory. It requires `scripts/setup-local-ai.ps1` first. The first live
+run passed; this small prompt set does not establish broad assistant quality.
+`scripts/verify-ui.ps1` now requires 54 distinct chat assertions in both native runs.
+Native method checks do not establish actual keyboard/mouse or screen-reader usability.
+
 Use Windows 11 x64 and .NET SDK 10.0.401. All builds enable nullable checks, built-in
 analyzers, deterministic output and warnings as errors. Production has no third-party
 packages; MSTest TestFramework/TestAdapter 4.4.1 and Microsoft.NET.Test.Sdk 18.10.0 are

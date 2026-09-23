@@ -5,12 +5,16 @@ at 9.4/10; Phase 1 independently passed at 9.0/10; Phase 2 development passed at
 none advances with a score of 8.5 or lower. Cross-cutting security is designed now,
 implemented with each feature and adversarially tested again in Phase 11.
 
+Phase 3's first **local pretrained chat increment passed at 9.0/10**. This approves
+the bounded in-memory chat slice; full Phase 3 remains incomplete. See the
+[independent increment review](docs/qa/PHASE_3_LOCAL_INCREMENT_REVIEW.md).
+
 | Phase | Delivery | Exit evidence (in addition to independent score >8.5) |
 |---|---|---|
 | 0 | Requirements, architecture, threat model, contracts, repo and minimal Windows build | Clean strict build; architecture and real-XAML smoke checks; documented limitations, traceability and independent QA |
 | 1 | Composition root, lifetime/single instance, settings, structured logging, basic companion window, standard test framework | Atomic settings round trip/corrupt recovery/full disk; log redaction; startup/shutdown/cancellation; real visible launch and accessible close |
 | 2 | Default 2D avatar, animation states, drag/snap/DPI, scale/opacity/topmost/click-through, tray/hotkey/startup preference | Independent geometry/storage tests; programmatic owned-window recovery/hotkey/state/lifetime checks; recorded resource baseline and independent QA >8.5. Historical budget failures stay explicit; resource and physical qualification remain mandatory release gates under the recorded sequence decisions. |
-| 3 | Provider port + first real provider, bounded streaming, history/branches/search/private mode, complete chat rendering/UI | Scripted HTTP normal/malformed/timeout/offline/cancel cases; key/endpoint validation; real SQLite and temporary sentinel; Markdown/code/LaTeX/XSS; user-configured live check |
+| 3 | Pretrained local model with owned worker, bounded streaming, history/branches/search/private mode, complete chat rendering/UI | Local worker normal/malformed/timeout/crash/cancel cases; pinned model/runtime provenance and offline checks; real SQLite and temporary sentinel; Markdown/code/LaTeX/XSS; unseen assistant evaluation before broad capability claims |
 | 4 | VAD, push-to-talk/STT/TTS, playback synchronization, optional activation, device/voice/speed settings | Audio fixtures + physical device matrix; denied/unavailable/unplugged input/output; mute and stop; no feedback loops; no raw-audio persistence |
 | 5 | Personality editor and prompt composer, presets, progressive disclosure | Every personality setting round trips; malformed config recovery; personality cannot change permission policy; keyboard/high contrast UX |
 | 6 | Inspectable/editable/deletable approved memory, project scopes, disable/private behavior | Approval provenance, optimistic edit conflict, scope isolation, migration/backup/recovery, delete/index cleanup and temporary crash tests |
@@ -66,7 +70,8 @@ at 1.978694% / 1.015400%; run 2 passes at 0.755208% / 0.598859% / 0.364527%. Bot
 intervals and all memory intervals pass, but the required aggregate remains **FAIL**.
 The [final development review](docs/qa/PHASE_2_RESOURCE_REVIEW.md) passes at **8.7/10**.
 Historical 8.0/8.6 failed exits and source checkpoint 6306ec9 remain preserved. Phase 3
-is next; no provider or conversation feature is implemented yet. Physical display/input/
+has begun with the user's selected [pretrained local model path](docs/LOCAL_AI.md);
+the first increment targets in-memory plain-text chat. Full history and rich rendering remain. Physical display/input/
 accessibility, sign-in and unchanged resource qualification remain mandatory before release in Phases 11/12.
 Implementation alone does not complete the phase.
 
@@ -77,7 +82,7 @@ release approval. The full feature set requires all relevant gates and a release
 ## Extension backlog
 
 Richer documents, web research, file mutation, clipboard, approved scripts, Git, project
-management, calendar/email, active-window/selected-text/screen context, local models,
+management, calendar/email, active-window/selected-text/screen context,
 additional providers, embeddings, full-duplex voice, C++ hot paths, 3D avatars and ARM64
 are separate capability increments. Each must use existing ports, have scoped permissions
 and a named QA review; disabled capability scaffolds are not working features. Choose

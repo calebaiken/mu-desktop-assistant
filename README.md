@@ -2,7 +2,7 @@
 
 A Windows-first personal AI companion built in C#/.NET 10 and WPF.
 
-**Phase 2 development passed independent QA at 8.7/10; Phase 3 is next.** The app opens a small transparent
+**Local pretrained chat passed independent QA at 9.0/10; full Phase 3 remains in progress.** The app opens a small transparent
 companion and a settings window. Drag the character to move it and snap to a display's
 work-area edges, or focus it with Tab and use arrow keys (Shift moves farther) within
 the current display. **Ctrl+Shift+M**, while the companion is focused, or the
@@ -15,11 +15,21 @@ The built-in vector character supports eight semantic expressions and a brief id
 about every ten seconds. Motion stops while hidden/minimized, sleeping, with reduced motion or when Windows disables
 animations. High contrast uses system colors and keeps the companion opaque. Tray
 actions and a configurable summon shortcut recover hidden or click-through windows.
-Monitor-relative position persists separately from preferences. Chat, voice, custom
-avatar packs, tools and memory are not implemented yet. Resource confirmation failed;
+Monitor-relative position persists separately from preferences. The first chat increment
+uses a pretrained Qwen model entirely on this PC: streaming plain text, Stop, retry and
+in-memory conversation context. Persistent history, rich rendering, voice, custom
+avatar packs, tools and memory remain unimplemented. Resource confirmation failed;
 CPU qualification remains a release blocker. Physical display, actual input, accessibility and sign-in qualification
 remain mandatory before release under the recorded validation sequence. No API credentials are
 read or required.
+
+For local AI, run `scripts/setup-local-ai.ps1` once, then `scripts/run-local-chat.ps1`
+after building. Open **Chat** from the companion/tray menu or press **Ctrl+Shift+C**
+with the companion focused. Closing chat discards its history and unloads the model.
+The small model can make mistakes. See [local AI setup and limits](docs/LOCAL_AI.md).
+The [increment review](docs/qa/PHASE_3_LOCAL_INCREMENT_REVIEW.md) verifies 224 tests,
+54 native chat assertions and real local inference/cancellation. This is a development
+increment, not a finished assistant or release.
 
 ## Build and launch
 
@@ -71,9 +81,9 @@ for retention and recovery. Verification uses isolated fixtures instead of real 
 | Location | Responsibility |
 |---|---|
 | `src/Companion.Core` | Validated configuration/domain values |
-| `src/Companion.Application` | Settings and typed event-log ports |
-| `src/Companion.Infrastructure` | Atomic JSON persistence, structured logs, instance activation |
-| `src/Companion.Desktop` | Composition/lifetime, companion and settings windows |
+| `src/Companion.Application` | Settings, typed logging and local chat ports |
+| `src/Companion.Infrastructure` | Persistence, logging, activation, owned model worker and streaming adapter |
+| `src/Companion.Desktop` | Composition/lifetime, companion, settings and chat windows |
 | `tests/Companion.Tests` | Discoverable MSTest unit/integration/adversarial tests |
 | `tests/Companion.ArchitectureChecks` | Executable repository invariants |
 | `scripts` | Positive, negative and visible-window process verification |
@@ -84,9 +94,9 @@ Read [development status](DEVELOPMENT_STATUS.md), [architecture](ARCHITECTURE.md
 Phase 0 passed independent QA at 9.4/10; [Phase 1 independently passed at 9.0/10](docs/qa/PHASE_1_REVIEW.md).
 Phase 2's [final development review](docs/qa/PHASE_2_RESOURCE_REVIEW.md) passes at **8.7/10**.
 The historical [8.6 failed exit](docs/qa/PHASE_2_FOLLOWUP_REVIEW.md) and
-[8.0 review](docs/qa/PHASE_2_REVIEW.md) remain preserved. The final-source Release suite
+[8.0 review](docs/qa/PHASE_2_REVIEW.md) remain preserved. Phase 2's final-source Release suite
 passes 196 tests and 11 architecture checks.
-The final native run passes 18 process controls, 43 appearance, 24 integration,
+Phase 2's final native run passes 18 process controls, 43 appearance, 24 integration,
 29 settings lifecycle and 49 placement-initialization assertions, with no skips or failures.
 The declared A/B/B/A comparison passed every CPU/memory interval on its frozen binary;
 earlier CPU failures remain preserved. New startup-placement and confirmed-recovery
@@ -98,6 +108,6 @@ allows development to continue while keeping CPU qualification mandatory in Phas
 Performance scored 7/10, with no points for the failed budget criterion.
 The [validation sequence decision](docs/qa/PHASE_2_VALIDATION_SEQUENCE.md) moves unavailable
 physical/input/sign-in qualification to mandatory pre-release gates. No missing check
-is counted as passed. Development approval is not release approval; Phase 3 is next.
+is counted as passed. Development approval is not release approval; full Phase 3 remains incomplete.
 No installer, remote repository or published release
 exists. No release license has been selected.

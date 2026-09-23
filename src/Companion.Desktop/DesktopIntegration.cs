@@ -30,7 +30,7 @@ public sealed class DesktopIntegration : IDisposable
     private bool disposed;
 
     public DesktopIntegration(Window window, Action openSettings, Action toggleSleep, Action exit,
-        Action<string> reportError, Action? recovered = null, bool enableSystemIntegration = true)
+        Action<string> reportError, Action? recovered = null, bool enableSystemIntegration = true, Action? openChat = null)
     {
         ArgumentNullException.ThrowIfNull(window);
         ArgumentNullException.ThrowIfNull(openSettings);
@@ -51,6 +51,8 @@ public sealed class DesktopIntegration : IDisposable
         {
             menu = new Forms.ContextMenuStrip();
             menu.Items.Add("Show / recover companion", null, (_, _) => Invoke(Recover));
+            if (openChat is not null)
+                menu.Items.Add("Chat", null, (_, _) => Invoke(() => { Recover(); openChat(); }));
             menu.Items.Add("Hide companion", null, (_, _) => Invoke(() =>
             {
                 if (!RecoveryAvailable) reportError(HideRecoveryRequiredMessage);

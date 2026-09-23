@@ -19,3 +19,8 @@ artifacts/
 *.pfx
 *.key
 secrets/
+**/__pycache__/
+**/.venv/
+*.pyc
+*.safetensors
+*.gguf

@@ -60,6 +60,7 @@
     </Border>
     <Window.ContextMenu>
         <ContextMenu>
+            <MenuItem Header="_Chat" InputGestureText="Ctrl+Shift+C" Click="Chat_Click" />
             <MenuItem Header="_Settings" Click="Settings_Click" />
             <MenuItem Header="_Hide" Click="Hide_Click" />
             <MenuItem Header="_Next display" InputGestureText="Ctrl+Shift+M" Click="NextMonitor_Click" />

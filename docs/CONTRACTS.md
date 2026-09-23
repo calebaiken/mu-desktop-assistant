@@ -1,4 +1,19 @@
-# Proposed application contracts
+# Application contracts
+
+## Implemented local chat increment
+
+`IChatModel.StreamAsync` accepts an immutable snapshot of role/content messages and
+cancellation, emits bounded text deltas and one Stop/Length completion, or throws a
+typed content-free failure. Interrupted output is visibly marked and excluded from
+future context. The local adapter bounds requests to 32 messages / 32 KiB UTF-8,
+individual SSE events to 64 KiB, output to 8,192 characters / 32 KiB, response idle
+to 30 s and turns to 120 s. One request runs per instance. These are actual limits,
+distinct from the future general contracts below. The CPU worker context is 2,048
+tokens with 256 output tokens; byte bounds do not constitute exact token preflight.
+The native chat stores only completed pairs in memory and never writes a transcript.
+There is no tool-call event or executable model authority in this increment.
+
+## Remaining proposed contracts
 
 These are design specifications, **not implemented interfaces**. Introduce code as each
 phase can supply a real implementation and contract tests. All ports are asynchronous

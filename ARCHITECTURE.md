@@ -2,8 +2,9 @@
 
 Status: Phase 2 desktop interactions complete as a development milestone at independent
 QA 8.7/10; resource and physical qualification still block release. Configuration, log ports/adapters, instance
-activation and WPF shell now exist. Conversation, voice, memory, tools and rendering
-extensions below remain intended architecture. Review date: 2026-09-21; status synchronized 2026-09-22.
+activation and WPF shell now exist. Phase 3 adds owned local model inference and
+in-memory plain-text chat. Persistent conversation features, voice, memory, tools and
+rich rendering below remain intended architecture. Review date: 2026-09-21; status synchronized 2026-09-22.
 
 ## Phase 1 implementation decisions
 
@@ -58,8 +59,10 @@ integration. WPF styling will use shared design tokens and native accessible con
 Use a modular monolith initially, not microservices. No C++ is needed before profiling
 identifies a hot path; a native library then exposes a versioned C ABI with explicit
 ownership and SafeHandle wrappers, and is built with CMake plus sanitizer tests.
-Python becomes an isolated scientific worker only when symbolic/scientific libraries
-justify its install and security cost. Neither language is a Phase 0 dependency.
+The user selected pretrained local inference after considering from-scratch training.
+A pinned llama.cpp C++ worker supplies tensor inference outside the WPF UI; there is
+no Python or training dependency in this path. The earlier Python experiment is
+paused. See [the local AI decision](docs/LOCAL_AI.md).
 
 Use SQLite via Microsoft.Data.Sqlite for structured state when storage is implemented,
 with explicit SQL and migrations rather than an ORM at this scale. Use versioned JSON
@@ -106,10 +109,13 @@ discovery declares vision, tools, reasoning controls, temperature and stream sup
 Unsupported settings cause a visible validation error instead of silently changing
 meaning. Store credential references separately from endpoint/model options.
 
-OpenAI, other explicitly configured HTTPS endpoints and user-enabled loopback local
-models fit the same port. Implement a first real provider and scripted test fixtures in
-Phase 3; test fixtures are never represented as an AI product mode. API selection and
-credentials are implementation-phase work, not needed to build this foundation.
+The user selected a pretrained model running locally without an API key. Phase 3
+begins with an owned llama.cpp CPU worker, bounded loopback streaming and in-memory
+plain-text chat. History, branches, search and rich rendering remain subsequent
+increments. There is no cloud fallback. The provider-independent port is an
+architecture boundary, not a hosted-service requirement. Downloaded model weights
+come from their original publisher; the user controls local inference and data.
+This supersedes both the provider-first and briefly considered from-scratch plans.
 
 Conversation streams use bounded channels, batched UI deltas (target 30–60 ms), one
 active turn per conversation and a per-turn cancellation source. A global concurrency

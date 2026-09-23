@@ -1,9 +1,20 @@
 # Security and privacy design
 
 Living threat model, not a security certification. Phase 1 adds explicit local preference
-storage, content-free diagnostics and same-user activation IPC. There is still no API
-client, tool execution, recording or conversation storage. Future controls below must
+storage, content-free diagnostics and same-user activation IPC. Phase 3 adds an owned
+local model process and bounded loopback chat client. There is no cloud inference,
+tool execution, recording or persistent conversation storage. Future controls below must
 pass negative tests before their feature is enabled.
+
+Local inference admits only the pinned official runtime/model, verifies every bundled
+executable/DLL and holds read leases while running. The host validates loopback socket
+ownership before authentication, ignores inherited provider/runtime configuration,
+disables remote fetching/UI/slot APIs/logging and uses an internal per-launch secret.
+This is not a user API key or a defense against malicious code running as the same
+Windows user. Runtime output is plain text with no authority to execute tools. Windows
+job cleanup begins after assignment; the brief create-to-assign crash gap remains.
+Chat history exists only in the window/process memory; OS paging/dumps and copies
+outside the app are not erased on close. [Local AI boundaries](docs/LOCAL_AI.md) apply.
 
 Implemented persistence is limited to nonsecret preferences and placement under the selected data
 directory. Secrets are not supported settings fields; unknown fields are rejected.

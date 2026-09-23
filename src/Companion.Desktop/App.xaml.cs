@@ -7,6 +7,8 @@ using Companion.Application.Configuration;
 using Companion.Application.Diagnostics;
 using Companion.Core.Desktop;
 using Companion.Infrastructure.Lifetime;
+using Companion.Application.Conversation;
+using Companion.Infrastructure.Conversation;
 
 namespace Companion.Desktop;
 
@@ -15,6 +17,8 @@ public partial class App : System.Windows.Application
     private CompanionRuntime? runtime;
     private CompanionWindow? companion;
     private SettingsWindow? settingsWindow;
+    private ChatWindow? chatWindow;
+    private LocalModelHost? localModelHost;
     private StartupOptions? options;
     private DesktopIntegration? desktop;
     private PlacementSession? placement;
@@ -44,6 +48,11 @@ public partial class App : System.Windows.Application
             if (options.IsTestSession) companion.ShowActivated = false;
             MainWindow = companion;
             companion.SettingsRequested += (_, _) => OpenSettings();
+            companion.ChatRequested += (_, _) => OpenChat();
+            companion.SleepChanged += (_, _) =>
+            {
+                if (companion.CurrentState == AvatarState.Sleeping) chatWindow?.StopGeneration();
+            };
             companion.Closing += (_, closing) =>
             {
                 if (stopping) return;
@@ -65,6 +74,12 @@ public partial class App : System.Windows.Application
                 await StopAsync(content.DesiredSize.Width > 0 && content.DesiredSize.Height > 0 ? 0 : 1);
                 return;
             }
+            if (options.LocalModelSmoke)
+            {
+                await LocalModelSmokeChecks.RunAsync(options.LocalModelDirectory!, options.DataDirectory);
+                await StopAsync(0);
+                return;
+            }
             companion.Show();
             placement = new(companion, options.DataDirectory);
             await placement.InitializeAsync();
@@ -77,7 +92,7 @@ public partial class App : System.Windows.Application
                     {
                         companion.ConstrainToWorkArea(false);
                         settingsWindow?.RefreshInteraction();
-                    });
+                    }, openChat: OpenChat);
                 if (!desktop.TryRegisterHotkey(runtime.Settings.SummonShortcut, out var error))
                     companion.ReportShortcutStatus(error);
                 companion.HideRequested += (_, _) =>
@@ -110,6 +125,8 @@ public partial class App : System.Windows.Application
                 await RecordStage("settings-lifecycle-complete");
                 await PlacementInitializationSmokeChecks.RunAsync(options.DataDirectory);
                 await RecordStage("placement-initialization-complete");
+                await ChatLifecycleSmokeChecks.RunAsync(options.DataDirectory);
+                await RecordStage("chat-lifecycle-complete");
                 OpenSettings();
                 await Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
                 if (settingsWindow is null || new WindowInteropHelper(settingsWindow).Handle == IntPtr.Zero)
@@ -160,6 +177,59 @@ public partial class App : System.Windows.Application
         settingsWindow.Show();
     }
 
+    private void OpenChat()
+    {
+        if (stopping || companion is null || options is null || options.IsTestSession) return;
+        desktop?.Recover();
+        if (chatWindow is not null)
+        {
+            chatWindow.Show();
+            chatWindow.WindowState = WindowState.Normal;
+            chatWindow.Activate();
+            return;
+        }
+        LocalModelHost? host = null;
+        try
+        {
+            if (options.LocalModelDirectory is { } directory) host = new LocalModelHost(directory);
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or ArgumentException)
+        {
+            // Optional model setup must never prevent use of the companion itself.
+        }
+        localModelHost = host;
+        chatWindow = new ChatWindow(token => host is null
+            ? Task.FromException<IChatModel>(new ChatModelException(ChatFailure.Unavailable))
+            : host.GetModelAsync(token)) { Owner = companion };
+        var window = chatWindow;
+        IDisposable? thinking = null;
+        window.GenerationChanged += (_, _) =>
+        {
+            thinking?.Dispose();
+            thinking = null;
+            if (window.IsGenerating && !stopping)
+            {
+                if (companion.CurrentState == AvatarState.Sleeping) companion.ToggleSleep();
+                companion.EndPreview();
+                thinking = companion.BeginActivity(AvatarState.Thinking);
+            }
+        };
+        chatWindow.Closed += (_, _) =>
+        {
+            thinking?.Dispose();
+            chatWindow = null;
+            if (ReferenceEquals(localModelHost, host)) localModelHost = null;
+            if (host is not null) _ = CloseModelAsync(host);
+        };
+        chatWindow.Show();
+    }
+
+    private static async Task CloseModelAsync(LocalModelHost host)
+    {
+        try { await host.DisposeAsync(); }
+        catch (Exception) { /* Worker ownership cleanup is best effort; no content enters logs. */ }
+    }
+
     private async Task ObserveListenerAsync(SingleInstanceCoordinator instance)
     {
         try { await instance.Completion; }
@@ -188,6 +258,12 @@ public partial class App : System.Windows.Application
         stopping = true;
         if (companion is not null) companion.IsEnabled = false;
         settingsWindow?.BeginShutdown();
+        chatWindow?.BeginShutdown();
+        if (localModelHost is not null)
+        {
+            try { await localModelHost.DisposeAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(5)); }
+            catch (Exception) { exitCode = 1; }
+        }
         try { desktop?.Dispose(); }
         catch (Exception) { exitCode = 1; }
         if (placement is not null)

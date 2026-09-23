@@ -7,7 +7,7 @@ entire vision so deferred requirements remain visible and testable.
 
 | ID | Requirement group | Design reference | Implementation / acceptance owner |
 |---|---|---|---|
-| R01 | Windows-first maintainable C#/native/optional science stack, modular IPC and Git-friendly build | ARCHITECTURE technology/dependencies | 0 architecture/build; 12 packaging; C++ only after profiling |
+| R01 | Windows-first maintainable C#/native/optional science stack, modular IPC and Git-friendly build | ARCHITECTURE technology/dependencies | 0 architecture/build; 3 reviewed native inference worker; 12 packaging; custom C++ hot paths only after profiling |
 | R02 | Transparent borderless avatar, drag, size/opacity, topmost/click-through, snap/multi-monitor/DPI | ARCHITECTURE avatar | 1–2; monitor/DPI/recovery matrix |
 | R03 | Hide/summon, tray, startup preference, click/double/right click, hotkey, popup/mic/palette | ARCHITECTURE avatar; UX_SPEC | 2–4; keyboard/focus/tray/hotkey tests; palette in 8 |
 | R04 | Idle/speaking/listening/thinking/working/notification/rest states | ARCHITECTURE avatar/voice | 2/4; transition and cancellation tests |

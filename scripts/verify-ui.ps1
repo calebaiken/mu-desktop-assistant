@@ -109,6 +109,14 @@ if ($placementInitialization.failure -or $placementInitialization.count -ne 49 -
 }
 $script:caseCount++
 Write-Output 'PASS 49 placement initialization assertions'
+$chatLifecycle = Get-Content -LiteralPath (Join-Path $profile 'chat-lifecycle-smoke.json') -Raw | ConvertFrom-Json
+if ($chatLifecycle.failure -or $chatLifecycle.count -ne 54 -or
+    @($chatLifecycle.passed | Select-Object -Unique).Count -ne 54 -or
+    @($stages | Where-Object { $_ -like 'chat-lifecycle-complete:*' }).Count -ne 2) {
+    throw 'Both native runs must complete all 54 chat lifecycle, history and layout assertions.'
+}
+$script:caseCount++
+Write-Output 'PASS 54 local chat lifecycle/history/layout assertions'
 Assert-AppExit 'headless-composed-lifecycle' "--smoke $profileArgument" 0
 Assert-AppExit 'reject-forward-slash-unc' '--smoke --data-dir "//invalid-host.invalid/share"' 2
 Assert-AppExit 'reject-backslash-unc' '--smoke --data-dir "\\invalid-host.invalid\share"' 2

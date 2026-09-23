@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased — Phase 3 local chat increment (2026-09-22, independent QA 9.0/10 PASS)
+
+- Adopted the user's pretrained-local-model choice, without API keys or cloud inference.
+- Added pinned official Qwen3-0.6B weights and llama.cpp CPU setup, hash checks, lazy
+  owned worker, offline loopback transport and process cleanup/memory limits.
+- Added plain-text streaming chat, Stop, bounded in-memory context, edit/retry,
+  close cancellation and Thinking/Sleep integration. Full Phase 3 remains incomplete.
+- Passed strict 224-test regression, 11 architecture checks, 19 native process controls,
+  54 chat assertions and the predeclared real model integration checks. All narrow
+  prompt outcomes are retained separately from transport success; no general assistant
+  capability or release approval is claimed.
+
 ## Unreleased — Phase 2 desktop interactions (2026-09-22, development complete; release blocked)
 
 - Added a semantic renderer contract, eight default vector expressions, activity

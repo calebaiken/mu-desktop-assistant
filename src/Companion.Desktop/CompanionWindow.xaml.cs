@@ -13,6 +13,7 @@ namespace Companion.Desktop;
 public partial class CompanionWindow : Window
 {
     public event EventHandler? SettingsRequested;
+    public event EventHandler? ChatRequested;
     public event EventHandler? HideRequested;
     public event EventHandler? PlacementChanged;
     public event EventHandler? SleepChanged;
@@ -96,6 +97,7 @@ public partial class CompanionWindow : Window
     }
 
     internal void EndPreview() { previewTimer.Stop(); preview = null; UpdateMotion(); }
+    internal IDisposable BeginActivity(AvatarState state) => states.Begin(state);
     internal void CommitPlacement() => PlacementChanged?.Invoke(this, EventArgs.Empty);
 
     internal void ToggleSleep()
@@ -156,6 +158,12 @@ public partial class CompanionWindow : Window
     private async void Window_PreviewKeyDown(object sender, KeyEventArgs e)
     {
         if (!IsEnabled || Content is UIElement { IsEnabled: false }) return;
+        if (e.Key == Key.C && Keyboard.Modifiers == (ModifierKeys.Control | ModifierKeys.Shift))
+        {
+            e.Handled = true;
+            ChatRequested?.Invoke(this, EventArgs.Empty);
+            return;
+        }
         if (e.Key == Key.M && Keyboard.Modifiers == (ModifierKeys.Control | ModifierKeys.Shift))
         {
             e.Handled = true;
@@ -260,6 +268,7 @@ public partial class CompanionWindow : Window
     }
 
     private void Settings_Click(object sender, RoutedEventArgs e) => SettingsRequested?.Invoke(this, EventArgs.Empty);
+    private void Chat_Click(object sender, RoutedEventArgs e) => ChatRequested?.Invoke(this, EventArgs.Empty);
     private void Hide_Click(object sender, RoutedEventArgs e) => HideRequested?.Invoke(this, EventArgs.Empty);
     private void Sleep_Click(object sender, RoutedEventArgs e) => ToggleSleep();
     private void Exit_Click(object sender, RoutedEventArgs e) => Close();
