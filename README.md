@@ -11,7 +11,7 @@ A Windows-first personal AI companion built in C#/.NET 10 and WPF.
 | Optional runtimes | Python 3.12/3.13 workers — ML Lab, neural speech, LAYA advisor |
 | Cloud services | None. No API key is read or required. |
 | Platform | Windows 11 x64 |
-| License | None selected yet — treat as all rights reserved |
+| License | [MIT](LICENSE) — see also third-party notices below |
 
 > **Scope note.** This repository contains the *entire* Mu desktop application.
 > The **Machine Learning Lab is a subsystem of Mu, not a separate program.** Its
@@ -206,8 +206,14 @@ for retention and recovery. Verification uses isolated fixtures instead of real 
 ## Repository
 
 Remote: `https://github.com/calebaiken/mu-desktop-assistant` (private).
-Default branch `main`. No installer or published release exists; the release
-license has not been selected.
+Default branch `main`. No installer or published release exists.
+
+Copyright (c) 2026 calebaiken. Released under the [MIT License](LICENSE).
+
+This project reuses third-party components under their own terms. `docs/DEPENDENCIES.md`
+is the source-level inventory, and `workers/*/licenses/` carries the verbatim
+notices for the optional Python runtimes and models. **This project license does
+not relicense those components.**
 
 | Location | Responsibility |
 |---|---|
@@ -249,4 +255,13 @@ with 272 tests, 11 architecture checks and 28 native process controls. Phase 4A'
 with 305 tests, 38 native process controls and 84 speech UI checks in both runs.
 Microphone/VAD/STT and the complete
 voice loop remain unfinished. See the [voice plan](docs/PHASE_4_VOICE_PLAN.md).
-No installer or published release exists. No release license has been selected.
+No installer or published release exists.
+
+The optional Python runtimes are **installed on the user's machine at runtime,
+not redistributed** by this project — speech and ML Lab dependencies arrive
+through `uv pip sync` into an isolated environment, and model weights are
+fetched into `%LOCALAPPDATA%`. That separation is what keeps this project's own
+MIT license valid, because two of those runtime dependencies (espeak-ng and
+phonemizer) are **GPL-3.0**. Shipping an installer that bundled them would be
+distribution, and would require relicensing the combined work under GPL-3.0.
+See [DEPENDENCIES](docs/DEPENDENCIES.md).
