@@ -7,6 +7,11 @@ the full voice loop. Receipts live under `artifacts/qa/neural-voice-review` unle
 full path below specifies another isolated run. See the
 [independent review](docs/qa/MU_NEURAL_VOICE_REVIEW.md) for final scores and repair loops.
 
+Receipts below record real runs on the provisioned local host, where the optional
+ML runtimes under `artifacts/` exist and the full suite executes. GitHub Actions
+does not provision them, so it reports 366 passed and 32 skipped of 398. Both
+are expected; see [AGENTS.md](AGENTS.md).
+
 | Check | Executed result | Receipt |
 |---|---|---|
 | Strict final shortcut-targeted production build | 0 warnings/errors; includes Stop repair | `desktop-stable-final-build.txt` |

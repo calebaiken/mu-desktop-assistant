@@ -2,8 +2,10 @@
 
 The 2026-09-30 optional neural-output increment adds Heart, Bella, Michael and
 George through the existing Chat voice selector, plus explicit Preview. Its pinned
-Kokoro CPU runtime/model are installed locally. The final .NET suite currently
-passes 398/398 with no skips, architecture 11/11, independent neural Python 21/21,
+Kokoro CPU runtime/model are installed locally. With that runtime provisioned the
+final .NET suite passes 398/398 with no skips; on CI, which does not provision it,
+the same suite reports 366 passed and 32 skipped (see [AGENTS.md](AGENTS.md)).
+Architecture 11/11, independent neural Python 21/21,
 and native UI supervisor 50/50 with 94 speech checks in each retained run. Four
 actual neural samples passed 21 native production-host synthesis checks and an
 independent audio oracle. See [neural voice help](docs/MU_NEURAL_VOICES.md) and
