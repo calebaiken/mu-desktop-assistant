@@ -168,7 +168,7 @@ public sealed class IndependentLayaTests
         {
             if (!File.Exists(Path.Combine(root.FullName, "Companion.slnx"))) continue;
             var python = Path.Combine(root.FullName, "artifacts", "ml-runtime", "Scripts", "python.exe");
-            Assert.IsTrue(File.Exists(python), "Optional ML Python runtime is required for real process-boundary review.");
+            if (!File.Exists(python)) Assert.Inconclusive("Optional ML Python runtime is absent. Run scripts/setup-ml-lab.ps1 to execute real process-boundary review.");
             return new(python, files.FilePath("worker.py"), files.PathValue);
         }
         throw new AssertFailedException("Repository runtime not found.");

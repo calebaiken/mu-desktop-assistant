@@ -461,7 +461,8 @@ public sealed class IndependentNeuralSpeechTests
             if (File.Exists(Path.Combine(root.FullName, "Companion.slnx")))
             {
                 var python = Path.Combine(root.FullName, "artifacts", "ml-runtime", "Scripts", "python.exe");
-                Assert.IsTrue(File.Exists(python)); return python;
+                if (!File.Exists(python)) Assert.Inconclusive("Optional ML Python runtime is absent. Run scripts/setup-ml-lab.ps1 to execute real process-boundary review.");
+                return python;
             }
         throw new AssertFailedException("The reviewed local test runtime was not found.");
     }
