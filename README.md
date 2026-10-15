@@ -210,7 +210,7 @@ for retention and recovery. Verification uses isolated fixtures instead of real 
 Remote: `https://github.com/calebaiken/mu-desktop-assistant` (private).
 Default branch `main`. No installer or published release exists.
 
-Copyright (c) 2026 calebaiken. Released under the [MIT License](LICENSE).
+Copyright (c) 2026 Caleb Aiken. Released under the [MIT License](LICENSE).
 
 This project reuses third-party components under their own terms. `docs/DEPENDENCIES.md`
 is the source-level inventory, and `workers/*/licenses/` carries the verbatim
