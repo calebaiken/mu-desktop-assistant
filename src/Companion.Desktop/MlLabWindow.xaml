@@ -1,0 +1,141 @@
+<Window x:Class="Companion.Desktop.MlLabWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Machine Learning Lab · Mu" Icon="/Companion.Desktop;component/Assets/Mu.ico" Width="1100" Height="780" MinWidth="760" MinHeight="560"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}"
+        Foreground="{DynamicResource {x:Static SystemColors.WindowTextBrushKey}}">
+    <Window.Resources>
+        <Style TargetType="Button"><Setter Property="MinHeight" Value="32"/><Setter Property="Padding" Value="10,4"/><Setter Property="Margin" Value="0,0,8,6"/></Style>
+        <Style TargetType="TextBox"><Setter Property="MinHeight" Value="30"/><Setter Property="Padding" Value="5"/><Setter Property="IsUndoEnabled" Value="False"/></Style>
+        <Style TargetType="ComboBox"><Setter Property="MinHeight" Value="30"/><Setter Property="Margin" Value="0,0,8,6"/></Style>
+        <Style TargetType="DataGrid"><Setter Property="IsReadOnly" Value="True"/><Setter Property="CanUserAddRows" Value="False"/><Setter Property="CanUserDeleteRows" Value="False"/><Setter Property="AutoGenerateColumns" Value="True"/><Setter Property="EnableRowVirtualization" Value="True"/><Setter Property="EnableColumnVirtualization" Value="True"/><Setter Property="HeadersVisibility" Value="Column"/></Style>
+        <Style TargetType="ComboBoxItem"><Setter Property="AutomationProperties.Name" Value="{Binding}"/></Style>
+    </Window.Resources>
+    <Grid Margin="18">
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <DockPanel>
+            <Button Content="Refresh saved work" Click="Refresh_Click" DockPanel.Dock="Right"/>
+            <StackPanel><TextBlock Text="Machine Learning Lab" FontSize="23" FontWeight="SemiBold"/><TextBlock Text="Local datasets · Reproducible experiments · Explicit execution" Margin="0,4,0,8"/></StackPanel>
+        </DockPanel>
+        <TextBlock x:Name="ProjectLabel" Grid.Row="1" TextWrapping="Wrap" Margin="0,0,0,10" FontSize="12"/>
+        <TabControl x:Name="LabTabs" Grid.Row="2" AutomationProperties.Name="Machine learning workspace">
+            <TabItem x:Name="DataTab" Header="Data">
+                <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel Margin="14">
+                    <TextBlock Text="Choose a local dataset" FontSize="19" FontWeight="SemiBold"/>
+                    <TextBlock Text="Sources stay in place. Inspection and training save dataset references and artifacts in this Lab project, separate from chat history." TextWrapping="Wrap" Margin="0,6,0,12"/>
+                    <Label Content="Dataset _file" Target="{Binding ElementName=DatasetPath}"/>
+                    <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                        <TextBox x:Name="DatasetPath" MaxLength="1024" AutomationProperties.Name="Dataset file path"/>
+                        <Button Grid.Column="1" Content="Choose file…" Click="ChooseDataset_Click" Margin="8,0,0,0"/>
+                    </Grid>
+                    <Label Content="Array or HDF5 _key (leave blank for a single table)" Target="{Binding ElementName=DatasetKey}"/>
+                    <TextBox x:Name="DatasetKey" MaxLength="512" AutomationProperties.Name="Dataset array or HDF5 key"/>
+                    <WrapPanel Margin="0,8,0,4">
+                        <StackPanel Width="150" Margin="0,0,12,0"><Label Content="Starting row" Target="{Binding ElementName=StartRow}"/><TextBox x:Name="StartRow" Text="0" MaxLength="9"/></StackPanel>
+                        <StackPanel Width="150" Margin="0,0,12,0"><Label Content="Maximum rows" Target="{Binding ElementName=RowLimit}"/><TextBox x:Name="RowLimit" Text="10000" MaxLength="6"/></StackPanel>
+                    </WrapPanel>
+                    <TextBlock Text="Selections are bounded contiguous row ranges, not random samples. Statistics describe only the selected rows and may not represent the whole source. NPZ/HDF5 keys can be browsed before inspection." TextWrapping="Wrap" Margin="0,6,0,12"/>
+                    <WrapPanel><Button x:Name="BrowseButton" Content="Browse structure" Click="Browse_Click"/><Button x:Name="InspectButton" Content="Inspect dataset" Click="Inspect_Click"/></WrapPanel>
+                    <DataGrid x:Name="StructureGrid" Height="220" SelectionChanged="Structure_SelectionChanged" AutomationProperties.Name="Dataset structure; select an array to use its key"/>
+                </StackPanel></ScrollViewer>
+            </TabItem>
+            <TabItem x:Name="InspectTab" Header="Inspect">
+                <Grid Margin="14"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                    <TextBlock x:Name="DatasetSummary" Text="Inspect a dataset to see its selected rows, columns, missing values and preview." TextWrapping="Wrap" Margin="0,0,0,8"/>
+                    <TextBlock x:Name="InspectWarnings" Grid.Row="1" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                    <TabControl Grid.Row="2"><TabItem Header="Preview"><DataGrid x:Name="PreviewGrid" AutomationProperties.Name="Dataset preview, at most 100 rows"/></TabItem>
+                        <TabItem Header="Column statistics"><DataGrid x:Name="StatisticsGrid" AutomationProperties.Name="Dataset feature statistics"/></TabItem>
+                        <TabItem Header="Metadata"><TextBox x:Name="DatasetMetadata" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" AcceptsReturn="True" AutomationProperties.Name="Dataset metadata"/></TabItem></TabControl>
+                    <Button Grid.Row="3" Content="Configure experiment →" Click="GoConfigure_Click" HorizontalAlignment="Right" Margin="0,10,0,0"/>
+                </Grid>
+            </TabItem>
+            <TabItem x:Name="ConfigureTab" Header="Configure / train">
+                <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel Margin="14">
+                    <TextBlock Text="Configure a reproducible experiment" FontSize="19" FontWeight="SemiBold"/>
+                    <TextBlock Text="Choose features and the held-out split explicitly. Preprocessing is fitted on training rows only. A selected target is excluded from features." TextWrapping="Wrap" Margin="0,6,0,8"/>
+                    <WrapPanel>
+                        <StackPanel Width="190"><Label Content="Task" Target="{Binding ElementName=TaskSelector}"/><ComboBox x:Name="TaskSelector" SelectionChanged="Task_SelectionChanged" AutomationProperties.Name="Experiment task"/></StackPanel>
+                        <StackPanel Width="235"><Label Content="Algorithm" Target="{Binding ElementName=AlgorithmSelector}"/><ComboBox x:Name="AlgorithmSelector" AutomationProperties.Name="Training algorithm"/></StackPanel>
+                        <StackPanel Width="220"><Label Content="Target column" Target="{Binding ElementName=TargetSelector}"/><ComboBox x:Name="TargetSelector" SelectionChanged="Target_SelectionChanged" AutomationProperties.Name="Target column"/></StackPanel>
+                    </WrapPanel>
+                    <DataGrid x:Name="FeaturesGrid" Height="185" AutoGenerateColumns="False" IsReadOnly="False" AutomationProperties.Name="Choose input features">
+                        <DataGrid.Columns><DataGridCheckBoxColumn Header="Use" Binding="{Binding Use, UpdateSourceTrigger=PropertyChanged}"/><DataGridTextColumn Header="Feature" Binding="{Binding Name}" IsReadOnly="True" Width="*"/><DataGridTextColumn Header="Type" Binding="{Binding Type}" IsReadOnly="True"/><DataGridTextColumn Header="Missing" Binding="{Binding Missing}" IsReadOnly="True"/><DataGridTextColumn Header="Review" Binding="{Binding Advice}" IsReadOnly="True" Width="2*"/></DataGrid.Columns>
+                    </DataGrid>
+                    <WrapPanel Margin="0,6,0,0"><Button Content="Select suggested features" Click="SuggestedFeatures_Click"/><Button Content="Clear features" Click="ClearFeatures_Click"/></WrapPanel>
+                    <WrapPanel>
+                        <StackPanel Width="170"><Label Content="Scaling" Target="{Binding ElementName=ScalingSelector}"/><ComboBox x:Name="ScalingSelector" AutomationProperties.Name="Feature scaling"/></StackPanel>
+                        <StackPanel Width="170"><Label Content="Split" Target="{Binding ElementName=SplitSelector}"/><ComboBox x:Name="SplitSelector" AutomationProperties.Name="Train test split"/></StackPanel>
+                        <StackPanel Width="190"><Label Content="Group / time-order column" Target="{Binding ElementName=GroupSelector}"/><ComboBox x:Name="GroupSelector" AutomationProperties.Name="Group or time order split column"/></StackPanel>
+                        <StackPanel Width="110" Margin="0,0,8,6"><Label Content="Test fraction" Target="{Binding ElementName=TestFraction}"/><TextBox x:Name="TestFraction" Text="0.2" MaxLength="8"/></StackPanel>
+                        <StackPanel Width="100" Margin="0,0,8,6"><Label Content="Seed" Target="{Binding ElementName=SeedInput}"/><TextBox x:Name="SeedInput" Text="42" MaxLength="10"/></StackPanel>
+                        <StackPanel Width="120" Margin="0,0,8,6"><Label Content="CV folds (0 = off)" Target="{Binding ElementName=FoldsInput}"/><TextBox x:Name="FoldsInput" Text="0" MaxLength="2"/></StackPanel>
+                    </WrapPanel>
+                    <Label Content="Experiment name" Target="{Binding ElementName=ExperimentName}"/><TextBox x:Name="ExperimentName" Text="Baseline" MaxLength="100"/>
+                    <Expander Header="Compute limits and advanced hyperparameters" Margin="0,8,0,8"><StackPanel>
+                        <WrapPanel><StackPanel Width="170" Margin="0,0,12,6"><Label Content="Worker memory (MiB)" Target="{Binding ElementName=MemoryLimit}"/><TextBox x:Name="MemoryLimit" Text="1024" MaxLength="4"/></StackPanel><StackPanel Width="140" Margin="0,0,12,6"><Label Content="CPU threads" Target="{Binding ElementName=ThreadLimit}"/><TextBox x:Name="ThreadLimit" Text="2" MaxLength="1"/></StackPanel></WrapPanel>
+                        <Label Content="Hyperparameters (JSON object; only supported keys are accepted)" Target="{Binding ElementName=Hyperparameters}"/><TextBox x:Name="Hyperparameters" Text="{}{}" MaxLength="4096" AcceptsReturn="True" MinHeight="62" VerticalScrollBarVisibility="Auto" TextWrapping="Wrap" FontFamily="Consolas"/>
+                    </StackPanel></Expander>
+                    <Button x:Name="TrainButton" Content="Train and save experiment" Click="Train_Click" HorizontalAlignment="Left"/>
+                </StackPanel></ScrollViewer>
+            </TabItem>
+            <TabItem x:Name="JobsTab" Header="Jobs">
+                <Grid Margin="14"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                    <TextBlock Text="One CPU job runs at a time. Elapsed time and memory are measured; no estimated progress percentage is shown. Closing the Lab keeps jobs running; exiting Mu stops them." TextWrapping="Wrap" Margin="0,0,0,12"/>
+                    <DataGrid x:Name="JobsGrid" Grid.Row="1" AutoGenerateColumns="False" AutomationProperties.Name="Local machine learning jobs"><DataGrid.Columns><DataGridTextColumn Header="Action" Binding="{Binding Operation}" Width="*"/><DataGridTextColumn Header="State" Binding="{Binding State}"/><DataGridTextColumn Header="Elapsed" Binding="{Binding Elapsed}"/><DataGridTextColumn Header="Memory" Binding="{Binding Memory}"/><DataGridTextColumn Header="CPU" Binding="{Binding Cpu}"/></DataGrid.Columns></DataGrid>
+                    <Button x:Name="CancelJobButton" Grid.Row="2" Content="Cancel current request" Click="CancelJob_Click" IsEnabled="False" HorizontalAlignment="Left" Margin="0,12,0,0"/>
+                </Grid>
+            </TabItem>
+            <TabItem x:Name="ResultsTab" Header="Results">
+                <Grid Margin="14"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                    <TextBlock x:Name="ResultSummary" Text="Completed experiment metrics appear here." TextWrapping="Wrap" Margin="0,0,0,8"/>
+                    <TextBlock x:Name="ResultWarnings" Grid.Row="1" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                    <TabControl Grid.Row="2"><TabItem Header="Metrics"><DataGrid x:Name="MetricsGrid" AutomationProperties.Name="Experiment metrics"/></TabItem><TabItem Header="Reproducibility record"><TextBox x:Name="ResultMetadata" IsReadOnly="True" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" FontFamily="Consolas" AutomationProperties.Name="Experiment reproducibility metadata"/></TabItem></TabControl>
+                </Grid>
+            </TabItem>
+            <TabItem x:Name="HistoryTab" Header="History / export">
+                <Grid Margin="14"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                    <StackPanel><TextBlock Text="Select an experiment to inspect its recorded configuration, metrics and plots. Export creates its reproducibility bundle inside the Lab project." TextWrapping="Wrap" Margin="0,0,0,10"/><TextBlock x:Name="HistoryWarnings" TextWrapping="Wrap" Margin="0,0,0,6"/></StackPanel>
+                    <DataGrid x:Name="HistoryGrid" Grid.Row="1" SelectionMode="Extended" SelectionChanged="History_SelectionChanged" AutomationProperties.Name="Saved experiment history; Control click to select models for comparison"/>
+                    <WrapPanel Grid.Row="2" Margin="0,10,0,0"><Button Content="Open selected results" Click="OpenResults_Click"/><Button Content="Compare selected (2–5)" Click="Compare_Click"/><Button x:Name="ExportButton" Content="Export selected experiment" Click="Export_Click"/></WrapPanel>
+                    <TextBox x:Name="ExportPath" Grid.Row="3" IsReadOnly="True" TextWrapping="Wrap" AutomationProperties.Name="Exported experiment path"/>
+                </Grid>
+            </TabItem>
+            <TabItem x:Name="ModelsTab" Header="Models / predict">
+                <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel Margin="14">
+                    <TextBlock Text="Select a saved model" FontSize="19" FontWeight="SemiBold"/>
+                    <DataGrid x:Name="ModelsGrid" Height="185" SelectionMode="Single" SelectionChanged="Models_SelectionChanged" AutomationProperties.Name="Saved local models" Margin="0,10,0,6"/>
+                    <TextBlock x:Name="ModelSummary" Text="Models are loaded only through the local Lab's restricted persistence format." TextWrapping="Wrap"/>
+                    <Label Content="Prediction dataset file" Target="{Binding ElementName=PredictionPath}"/>
+                    <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBox x:Name="PredictionPath" MaxLength="1024" AutomationProperties.Name="Prediction dataset path"/><Button Grid.Column="1" Content="Choose file…" Click="ChoosePrediction_Click" Margin="8,0,0,0"/></Grid>
+                    <Label Content="Prediction array or HDF5 key" Target="{Binding ElementName=PredictionKey}"/><TextBox x:Name="PredictionKey" MaxLength="512"/>
+                    <WrapPanel Margin="0,6,0,6"><StackPanel Width="150" Margin="0,0,12,0"><Label Content="Starting row" Target="{Binding ElementName=PredictionStart}"/><TextBox x:Name="PredictionStart" Text="0" MaxLength="9"/></StackPanel><StackPanel Width="150"><Label Content="Maximum rows" Target="{Binding ElementName=PredictionRows}"/><TextBox x:Name="PredictionRows" Text="10000" MaxLength="6"/></StackPanel></WrapPanel>
+                    <Button x:Name="PredictButton" Content="Run prediction" Click="Predict_Click" HorizontalAlignment="Left"/>
+                    <TextBlock x:Name="PredictionSummary" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                    <DataGrid x:Name="PredictionGrid" Height="200" AutomationProperties.Name="Prediction preview, at most 100 rows"/>
+                </StackPanel></ScrollViewer>
+            </TabItem>
+            <TabItem x:Name="PlotsTab" Header="Plots">
+                <Grid Margin="14"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                    <ComboBox x:Name="PlotSelector" DisplayMemberPath="Name" SelectionChanged="Plot_SelectionChanged" AutomationProperties.Name="Local experiment plot"><ComboBox.ItemContainerStyle><Style TargetType="ComboBoxItem"><Setter Property="AutomationProperties.Name" Value="{Binding Name}"/></Style></ComboBox.ItemContainerStyle></ComboBox>
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"><Image x:Name="PlotImage" Stretch="Uniform" MaxWidth="1600" MaxHeight="1200" AutomationProperties.Name="Selected local machine learning plot"/></ScrollViewer>
+                </Grid>
+            </TabItem>
+            <TabItem x:Name="AssistantTab" Header="Ask Mu">
+                <Grid Margin="14"><Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                  <ScrollViewer x:Name="AssistantScroll" VerticalScrollBarVisibility="Auto"><StackPanel>
+                    <TextBlock Text="Describe an experiment. Mu uses the local language model to propose a supported action. Review the typed plan before running it. This Lab workspace and its artifacts are saved independently of temporary chats." TextWrapping="Wrap" Margin="0,0,0,8"/>
+                    <Label Content="Request" Target="{Binding ElementName=AssistantRequest}"/>
+                    <TextBox x:Name="AssistantRequest" MaxLength="2000" Height="84" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" AutomationProperties.Name="Machine learning assistant request"/>
+                    <WrapPanel Margin="0,8,0,4"><ComboBox x:Name="AssistantMode" Width="130" AutomationProperties.Name="Assistant explanation mode"/><Button x:Name="AnalyzeTaskButton" Content="Analyze task with LAYA" Click="AnalyzeTask_Click"/><Button x:Name="ProposeButton" Content="Propose a plan" Click="Propose_Click"/><Button x:Name="CancelPlanButton" Content="Stop planning" Click="CancelPlan_Click" IsEnabled="False"/></WrapPanel>
+                    <Expander x:Name="LayaAdviceExpander" Header="Local LAYA advice" IsExpanded="False" Margin="0,0,0,8"><TextBox x:Name="LayaAdviceText" Text="LAYA suggests an ML task category from your request. It runs locally and does not execute actions. Category scores are not calibrated confidence." IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" MaxHeight="170" VerticalScrollBarVisibility="Auto" AutomationProperties.Name="Local LAYA task category advice"/></Expander>
+                    <Label Content="Proposed action for review" Target="{Binding ElementName=ProposalText}"/>
+                    <TextBox x:Name="ProposalText" Height="260" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" AutomationProperties.Name="Review proposed machine learning action"/>
+                  </StackPanel></ScrollViewer>
+                    <Button x:Name="RunProposalButton" Grid.Row="1" Content="Run reviewed plan" Click="RunProposal_Click" IsEnabled="False" HorizontalAlignment="Right" Margin="0,10,0,0"/>
+                </Grid>
+            </TabItem>
+        </TabControl>
+        <TextBlock x:Name="StatusLabel" Grid.Row="3" Text="Choose and inspect a dataset to begin." TextWrapping="Wrap" Margin="0,12,0,0" AutomationProperties.LiveSetting="Polite" AutomationProperties.Name="Machine learning Lab status"/>
+    </Grid>
+</Window>

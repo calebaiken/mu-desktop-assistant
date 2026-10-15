@@ -5,9 +5,101 @@ QA 8.7/10; resource and physical qualification still block release. Configuratio
 activation and WPF shell now exist. Phase 3 adds owned local model inference and
 SQLite history and branches, separate temporary sessions, exact local token admission,
 and bounded native rich rendering. Phase 4A now implements explicit local Read aloud
-and Stop, pending its independent execution review. Microphone/recognition, long-term
-memory and tools below remain intended architecture. Review date: 2026-09-21; status
-synchronized 2026-09-22.
+and Stop, independently reviewed at 9.0/10. Microphone/recognition remains preserved,
+unqualified WIP. The 2026-09-29 ML Lab adds the bounded architecture described below;
+general-purpose tools and long-term memory remain intended architecture.
+
+## Optional neural speech output (2026-09-30)
+
+The existing package-free `ISpeechOutput` port now accepts a composite local
+provider: the unchanged Windows adapter plus optional Kokoro ONNX CPU speech.
+Desktop composes and owns both; closing Chat cancels its operation. Voice selection
+routes a closed ID without silent substitution. Preview uses fixed public text and
+the same lifecycle as Read aloud, without generating or storing a conversation.
+
+`KokoroNeuralSpeechOutput` owns one hidden Python child in a 1,536 MiB, one-process,
+kill-on-close Windows job. The worker admits one bounded stdin command before native
+imports, checks memory and pinned local assets, then synthesizes bounded phoneme
+chunks. Normal playback is synchronous in memory in that same held process. Speaking
+starts after synthesis, immediately before the playback API. Generation has a
+separate 90-second deadline; playback retains 30 seconds and cleanup three seconds.
+The existing SAPI limits are unchanged. Both providers share one active operation.
+
+The worker runtime is optional and separate from ML/LAYA. No neural package enters
+Core, Application or the .NET base dependency set. Phonemizer's temporary DLL copies
+use an owned operation directory; checked leaf cleanup follows confirmed child exit.
+The brief process-create/job-assignment gap and trusted-native-code boundary remain.
+See [voice help and extension rules](docs/MU_NEURAL_VOICES.md) and
+[the closed worker protocol](workers/neural_speech/README.md).
+
+## Mu identity and optional LAYA boundary (2026-09-30)
+
+Core owns four closed appearance enums in schema-3 settings. Infrastructure migrates
+v1/v2 without writing, preserving prior names (including omitted legacy Pip), scale,
+opacity and shortcuts. Desktop's existing vector renderer adds a round particle
+preset, five palettes including Galaxy, two faces and three decorations. Settings
+uses a static preview; only successful Save updates the companion. Frozen brushes,
+system-color rendering and existing animation ownership keep reduced-motion/high-
+contrast policy intact. Local matching icon resources are wired explicitly to each
+derived native Window, the executable and owned tray Icon. A hover-only connector
+keeps the pointer path onto controls continuous at the existing compact bounds.
+
+Application owns `LayaAdvice` and `ILayaDecisionService`; Infrastructure implements
+`LocalLayaDecisionService` through the existing Windows job helper and validated
+interpreter resolver. This optional App-owned service is independent of chat and the
+ML training queue, with one request at a time and cancellation/disposal bounds.
+`workers/laya_advisor` admits a closed request before native imports, checks resource
+headroom, locks verified assets and invokes the pinned local CPU decision model.
+The native Ask Mu view displays advice and excludes stale/truncated/unclear/low-score
+hints from the existing planner. No action is created or run by LAYA. The full
+checkpoint is installed but actual inference remains unqualified after a safe memory
+refusal; synthetic UI and protocol checks qualify only their respective boundaries.
+
+To extend appearance, add validated enum values, renderer handling, selector entries,
+migration compatibility and full palette/state/contrast fixtures. To extend local
+advice, preserve the closed port, fixed response schema and authority boundary; a
+backend/checkpoint update requires new locks, manifests and admitted real-model tests.
+See [appearance/LAYA guide](docs/MU_APPEARANCE_LAYA.md) and
+[worker contract](workers/laya_advisor/README.md).
+
+## Implemented ML Lab foundation (2026-09-29)
+
+Application owns package-free ML action records, validation, `IMlLabService` and the
+local conversational planner. Infrastructure implements an App-scoped FIFO service
+and Windows job ownership; Desktop provides the native Lab window and composition.
+`workers/ml_lab` separates bounded readers, model registry/preprocessing, evaluation,
+persistence/export and the private one-request protocol. See the
+[worker extension guide](workers/ml_lab/README.md) and [native UI design](docs/ML_LAB_UI.md).
+
+Each request starts one Python process, assigns its one-process kill-on-close job,
+then writes the admitted request. The worker blocks on stdin before loading scientific
+packages. The validated base interpreter uses the configured venv identity to avoid
+the Windows venv redirector creating a second process. The create-to-job-assignment
+gap remains; a job object is not a security sandbox. Defaults are 10,000 rows, 1 GiB
+committed memory and two threads; allowed limits are 100,000 rows, 256–4,096 MiB and
+1–8 threads. Queue admission is capped at 16, operations at ten minutes, cleanup at
+three seconds. Worker CPU/memory telemetry is separate from desktop resource sampling.
+
+Closed actions cover capabilities, browse/inspect, train, list/describe, compare,
+predict and export. Dataset references and fingerprint scope are recorded; source
+files are never rewritten. Training uses train-only sklearn pipelines, exact source
+split indices, explicit seed/configuration and task-specific metrics. Saved models
+use bounded `.skops` with version/hash checks and fixed allowed serialization types.
+Comparison requires matching dataset fingerprint/selection, features, target, task,
+partitions and CV strategy; it does not automatically choose a winner.
+
+The App owns ML lifetime independently of Chat and the Lab window. Closing the view
+detaches subscriptions; reopening restores job status and saved work. App exit cancels
+and disposes owned work. ML artifacts are explicitly persistent even when Chat is
+temporary. No chat message is implicitly promoted into a dataset or experiment.
+
+An optional `IStructuredChatModel` port applies a local JSON schema to the existing
+llama.cpp worker. A captured current-selection alias prevents fabricated dataset
+paths; choose another source in Data before requesting another file action. The UI
+shows the validated action and captured limits before a separate, single-use Run.
+The existing 2,048-token context and 256-token reply reserve are unchanged. Learn,
+Research and Auto currently guide one proposal, not autonomous search. Native ML
+execution and two live proposal fixtures pass; full requested ML Phase 1 remains open.
 
 ## Phase 1 implementation decisions
 
@@ -301,8 +393,9 @@ silently replace an unknown or corrupt sole copy.
 
 Temporary conversations use an in-memory repository and exclude persisted chat,
 summaries, memories, embeddings, attachment caches and content-bearing logs. Disable
-durable tools in temporary mode until the user switches to a normal conversation; no
-ambiguous private-session notes. Remote providers may retain submitted content; private
+general conversation tools in temporary mode until the user switches to a normal
+conversation; no ambiguous private-session notes. The separately opened ML Lab has
+its own persistent-project disclosure and explicit execution controls. Remote providers may retain submitted content; private
 mode promises local app persistence behavior, not remote erasure or immunity to OS
 paging/crash dumps. Deletion removes application references and retrieval indexes;
 WAL/backups/SSDs require separate retention handling and are not guaranteed forensic erase.

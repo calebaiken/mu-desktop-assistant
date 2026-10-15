@@ -3,8 +3,88 @@
 Living threat model, not a security certification. Phase 1 adds explicit local preference
 storage, content-free diagnostics and same-user activation IPC. Phase 3 adds an owned
 local model process, bounded loopback chat client and optional saved conversations.
-There is no cloud inference, tool execution or recording. Future controls below must
+There is no cloud inference, arbitrary shell/tool execution or recording. Future controls below must
 pass negative tests before their feature is enabled.
+
+The optional 2026-09-30 neural output backend uses pinned Kokoro ONNX assets and a
+separate hash-locked CPU runtime. Explicit setup downloads assets; speech itself
+uses no API key, network service or automatic download. Python audit hooks refuse
+DNS, connections, datagrams, shell execution and child processes; pinned native
+libraries are trusted code, so this is not a general native-code sandbox. The
+host supplies a closed environment, bounded private pipes and an owned 1,536 MiB
+one-process job before sending text. Asset hashes and Windows read leases prevent
+ordinary concurrent file replacement. No arbitrary model/provider/voice URL is
+accepted, and the selected voice is never silently replaced on a speech failure.
+
+Normal neural speech creates no audio/transcript file and puts no utterance in
+argv, environment or logs. Only explicit isolated public-sample diagnostics export
+WAVs. Packaged phonemizer DLL copies use a unique owned TEMP directory, cleaned
+after confirmed worker exit, including cancellation. Cleanup checks ownership,
+canonical paths, links, descendant counts and a time bound before deleting leaves;
+it never sweeps generic TEMP. Stop/new context/close invalidate old callbacks and
+terminate only the held worker. Memory admission, text/chunk/audio caps and separate
+90-second generation/30-second playback/three-second cleanup budgets remain enforced.
+OS paging/dumps, same-user malicious code and device behavior remain outside this
+application persistence guarantee. See [neural voice help](docs/MU_NEURAL_VOICES.md).
+
+The 2026-09-30 optional LAYA advisor classifies only the explicit problem description;
+it does not read datasets, execute actions or replace the local chat model. A fallible
+hint may inform a reviewed proposal only while its exact request remains unchanged.
+The App owns one bounded CPU worker: 3 GiB committed-memory job cap, one-process
+limit, two-minute deadline, bounded UTF-8 protocol and minimal offline environment.
+The worker admits input before native imports and refuses inadequate physical,
+system-commit or process-commit headroom. The native real-model diagnostic currently
+returns `memory_limit`; successful full-model inference is not a certified behavior.
+
+Explicit setup downloads hash-pinned optional wheels and five checkpoint files;
+runtime uses safetensors, refuses links/unexpected files/remote custom code, verifies
+hashes and holds Windows read leases throughout loading/inference. Offline library
+flags and a Python audit hook deny network operations. These controls contain a
+trusted packaged worker; they are not an OS sandbox against hostile Python/native
+code or same-user malware. Prompts/scores are not logged or persisted by the worker.
+No API credential is needed. Mu does not close other applications to reclaim memory.
+
+Avatar customization stores closed enums, not arbitrary executable themes or remote
+assets. SVG/PNG/ICO assets are local and generated from the native vector design.
+The shortcut creator preserves an existing link, targets a verified local executable,
+and reads back its target, arguments, working directory and icon; Windows taskbar
+pinning remains an explicit user operation. The Desktop folder on this PC is inside
+OneDrive, so Windows may sync the shortcut according to the user's existing settings;
+Mu itself does not upload datasets or perform a cloud sync.
+
+The 2026-09-29 ML foundation adds explicitly requested local computation and durable
+Lab artifacts, independent of temporary Chat. Dataset references include local paths;
+experiment metadata, selected predictions, model files and plots can contain sensitive
+scientific data. These are plaintext project artifacts, not content-free diagnostics
+or encrypted storage. Closing temporary Chat does not erase this separate project.
+The worker's bounded operation journal records IDs/states/error codes, not raw rows
+or prompts. Source files are referenced and preserved, not rewritten or deleted.
+
+ML execution uses closed typed actions and one owned CPU worker with a hard Windows
+job-memory cap, one-process limit, deadlines, bounded stdio and a minimal environment.
+Request admission precedes scientific imports and follows job assignment. The brief
+process-create/assignment gap remains; this trusted packaged worker is not an OS
+sandbox for arbitrary Python. No generated code, pickle/joblib import, subprocess
+tool or external upload action is exposed. Export writes a reproduction script;
+export does not run that script automatically.
+
+Readers refuse path links/junctions/remote paths, unsafe NumPy objects and HDF5
+external/soft links or external/virtual storage. File/array/ZIP/selection limits
+precede materialization where supported. Large-source fingerprints are explicitly
+sampled and are not complete content proofs. A changed source prevents silent
+completed registration. Saved `.skops` models require bounded size/expansion, recorded
+hash and exact library versions plus a fixed allowlist of pinned serialization types.
+The application never trusts all types discovered in a file; a matching hash alone
+is not proof of trusted origin. Same-user malicious replacement remains outside the
+protection boundary. Arbitrary external serialized models are not imported.
+
+Ask Mu returns schema-constrained data through the existing local model. The current
+selection is resolved by the application, not invented by model text. The UI captures
+and displays a single typed action and limits, then requires explicit Run. Dataset
+contents and model prose cannot grant shell or broader file authority. Plots are
+bounded local PNG files beneath the project, rendered through native WPF, with no
+remote URI or active web surface. ML evidence does not qualify voice-input WIP,
+physical accessibility, unresolved desktop CPU budgets or a signed release.
 
 Phase 4A adds manually requested local speech output. The adapter admits installed
 Microsoft voice metadata and refuses mixed enabled engines before APIs that could

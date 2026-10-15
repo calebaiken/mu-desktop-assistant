@@ -1,10 +1,17 @@
 # Phase 4: local voice implementation plan
 
-Status: **4A output increment independently passed at 9.0/10**, prepared and started 2026-09-22 after
+Status update 2026-09-30: optional **Kokoro local neural output** now extends the
+existing Read aloud/Stop path, with four English choices and explicit Preview.
+The pinned CPU runtime/model are installed; new qualification is recorded in the
+[neural voice review](qa/MU_NEURAL_VOICE_REVIEW.md), separately from the original
+SAPI evidence. It does not complete microphone input, output-device selection or
+the full voice loop. See [neural voice help](MU_NEURAL_VOICES.md).
+
+Historical baseline: **4A output increment independently passed at 9.0/10**, prepared and started 2026-09-22 after
 Phase 3 passed independent QA at9.5/10. The original planning pass installed nothing
 and activated no audio. The implementation now adds pinned System.Speech10.0.12 and
-explicit Read aloud/Stop through installed Windows voices; no voice model was downloaded
-and microphone input remains unimplemented. The separate
+explicit Read aloud/Stop through installed Windows voices; that first slice downloaded
+no voice model. Microphone input remains unqualified WIP. The separate
 [Phase 4A review](qa/PHASE_4A_SPEECH_REVIEW.md) approves the output increment only.
 Phase 4B push-to-talk is next. No full Phase4 pass follows from this plan.
 
@@ -20,9 +27,10 @@ requirements supersede earlier optional cloud-provider language. See
 
 Start with **installed Windows speech for an explicit Read aloud / Stop slice**,
 then add **whisper.cpp base.en plus Silero VAD for push-to-talk**. Keep recognizer,
-synthesizer, capture and playback behind separate application ports. Piper remains a
-later optional neural voice adapter; it is not needed to deliver the first usable
-offline voice path.
+synthesizer, capture and playback behind separate application ports. Kokoro is now
+the selected optional neural output adapter for the later request for more fluent
+voices. Piper remains an unselected alternative; its historical source observations
+below do not certify an installed backend.
 
 The following are source observations, not measurements on this PC. Sizes shown by
 publishers are rounded; the download manifest must record exact bytes, revision and

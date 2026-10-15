@@ -1,6 +1,74 @@
 # Development status
 
-Updated: 2026-09-22. **Phase 3 development passed independent QA at 9.5/10;
+The 2026-09-30 optional neural-output increment adds Heart, Bella, Michael and
+George through the existing Chat voice selector, plus explicit Preview. Its pinned
+Kokoro CPU runtime/model are installed locally. The final .NET suite currently
+passes 398/398 with no skips, architecture 11/11, independent neural Python 21/21,
+and native UI supervisor 50/50 with 94 speech checks in each retained run. Four
+actual neural samples passed 21 native production-host synthesis checks and an
+independent audio oracle. See [neural voice help](docs/MU_NEURAL_VOICES.md) and
+[its separate qualification ledger](docs/qa/MU_NEURAL_VOICE_REVIEW.md) for playback,
+privacy, retained failures and the final measured scope. This output increment
+does not certify subjective naturalness, physical audibility or a full voice loop.
+The final shortcut-targeted executable is rebuilt with the held-process Stop
+repair, zero warnings/errors (`neural-voice-review/desktop-stable-final-build.txt`).
+**Overall neural qualification remains INCOMPLETE:** the 33-case normal-Speak
+rerun safely stopped at five checks with `memory_limit`, even after the user
+reported other applications closed. Final completed reuse/disposal and Qwen
+co-residency are not qualified. The current source/binary/evidence checkpoint is
+`artifacts/qa/neural-voice-review/verified-source-manifest.json`; the earlier
+identity manifest below is historical.
+
+Preceding identity checkpoint, 2026-09-30: **Muon avatar customization, Galaxy theme and application icon/
+desktop shortcut are implemented and pass their native development checks.**
+That checkpoint's strict build is `artifacts/Mu/Companion.Desktop.exe`, with zero warnings/
+errors. Actual Desktop shortcut creation and property readback passed; existing
+profiles select Muon/Galaxy through Settings and Save. Its regression passed
+375/375 .NET tests, 11/11 architecture checks, 12/12 independent LAYA Python tests
+and 44/44 native UI process/control checks. Both retained native UI runs pass
+315 avatar-customization and 40 controlled LAYA UI assertions. Physical input,
+screen-reader and multi-monitor qualification remain outside this increment.
+
+LAYA's optional local task-advice boundary is implemented and its pinned runtime/
+checkpoint are installed. **Actual pretrained inference remains NOT QUALIFIED.**
+The production 3 GiB host and real native view safely refused admission with
+`memory_limit` in 1.65 seconds; no advice or model output was produced. The tiny
+seeded float16 CPU check and synthetic protocol fixtures do not qualify the full
+checkpoint. No cloud/API fallback or lowered admission threshold was introduced.
+See [appearance/LAYA help](docs/MU_APPEARANCE_LAYA.md), [Testing](TESTING.md) and
+[independent identity review](docs/qa/MU_IDENTITY_LAYA_REVIEW.md).
+
+The identity review scores the bounded work **88/100 (8.8/10)** with an **INCOMPLETE**
+overall verdict due to the full LAYA inference gate. Identity/customization are
+delivered; that score does not certify the unfinished model behavior or a release.
+
+The preceding **integrated ML Lab foundation is implemented and its final
+bounded regression passes; full requested ML Phase 1 and release remain incomplete.**
+Exact evidence for that checkpoint is listed in [Testing](TESTING.md). That checkpoint passed
+353/353 .NET tests with no skips, 11/11 architecture checks, 57 native Lab assertions,
+two live local schema-planning fixtures and 38 prior UI supervisor checks. Independent
+Python coverage spans 48 distinct tests across retained runs; author tests cover
+22 task/algorithm pairs in six cases. The [independent ML review](docs/qa/ML_LAB_FOUNDATION_REVIEW.md)
+scores this bounded increment **89/100 (8.9/10), PASS**, with no identified critical
+defect in the reviewed scope. Full ML Phase 1 and release gates remain open.
+
+This is a saved working-tree checkpoint based on `22f3dae`; ML changes and the
+separate preserved voice-input WIP remain uncommitted. The retained receipts and
+source manifest identify the tested tree; they do not describe a clean release checkout.
+
+The preceding 2026-09-30 identity/advice checkpoint is recorded in
+`artifacts/qa/identity-laya-review/verified-source-manifest.json`: nonignored source,
+that candidate's files and final evidence hashes. It records the incomplete LAYA
+gate separately from passing identity/UI checks. Do not attribute its evidence to
+the older normal output or the preceding ML-only candidate.
+
+The preceding ML-only foundation strict production build has zero warnings/errors and is at
+`artifacts/qa/ml-candidate/Companion.Desktop.exe`. The normal binary directory was
+locked by an older running Mu. Close that instance before starting the candidate
+with explicit repository/model paths; ordinary single-instance activation otherwise
+reuses the older binary. No installer or published release is implied.
+
+Historical baseline: **Phase 3 development passed independent QA at 9.5/10;
 the preceding local chat increment passed at 9.0/10 and compact surface at 9.1/10.**
 Phase 0 passed at 9.4/10 and Phase 1 passed at 9.0/10. Phase 2's final resource
 confirmation remains **FAIL**, and release is not approved. Phase 3 now implements
@@ -16,6 +84,34 @@ places unresolved CPU qualification in the user's Phase 12 optimization work. Pe
 remains 7/10 with zero budget-criterion points; neither limits nor measurements changed.
 
 ## Completed implementation
+
+- Added four optional pretrained neural voices to local explicit speech, a fixed
+  public Preview, separate preparation/playback status and safe bounded lifecycle.
+  Normal speech keeps utterance/audio in memory; its optional runtime is separate
+  from ML/LAYA and existing Windows voice selection remains available.
+
+- Added a round muon-inspired particle mascot, five themes including Galaxy, two
+  faces and three halo/trail options, a static accessible preview and schema-3
+  persistence. Legacy omitted names retain Pip; new profiles use Mu. Hover-only
+  connector repairs pointer travel without adding a resting card. High contrast,
+  reduced motion, state expressions and explicit-save semantics remain intact.
+- Added transparent SVG/PNG/seven-frame ICO and native executable/window/tray
+  wiring. `scripts/create-mu-shortcut.ps1` created the actual Desktop link after
+  a scratch-folder check, preserving existing links and verifying all launch/icon
+  properties. Taskbar pinning remains a user action through Windows.
+- Added optional, inspectable LAYA category advice with bounded App-owned CPU
+  workers, offline/hash-verified loading, resource admission and cancellation.
+  Advice is a fallible hint for an unchanged request, never an execution permission.
+  Full checkpoint inference and domain quality remain pending as described above.
+
+- Bounded ML foundation: native Data/Inspect/Configure/Jobs/Results/History/Models/
+  Plots/Ask Mu workflows, local training/evaluation, saved models, exact-cohort comparison,
+  full historical describe, schema-safe prediction and standalone reproduction export.
+  A 24-package hash-locked optional Python runtime backs App-owned limited CPU workers.
+  ML project artifacts persist separately from temporary Chat. Local structured proposals
+  resolve a captured current dataset and require explicit review/Run; Auto is one baseline.
+  Advanced feature engineering, scientific/deep-learning adapters, richer project/model
+  management and full ML acceptance remain future units. See [Lab guide](docs/ML_LAB_GUIDE.md).
 
 - Phase 4A speech output runs plain text through an owned Windows speech worker,
   with a 2,000-character input cap, 30-second deadline and three-second cleanup
@@ -103,7 +199,9 @@ worker and Qwen weights are explicit Phase 3 dependencies. See docs/DEPENDENCIES
 The framework's Windows Forms
 NotifyIcon supplies the tray; WPF still owns the companion and settings. Typed logs
 cannot accept conversation text. No AI credentials, external application network calls,
-voice capture, memory or tools exist yet. Placement is a separate 4 KiB versioned file;
+qualified voice capture, approved memory or general-purpose tools exist yet. The new
+ML Lab is a closed local computation subsystem with an optional Python environment.
+Placement is a separate 4 KiB versioned file;
 startup registration uses a validated quoted executable command without arguments.
 
 ## Defects found and fixed
@@ -241,6 +339,7 @@ frame-time percentile or long-running memory certification is claimed.
 | Phase 3 local pretrained chat increment | Independent local_model_qa | 9.0/10 | PASS bounded increment; full Phase 3 incomplete; docs/qa/PHASE_3_LOCAL_INCREMENT_REVIEW.md |
 | Phase 3 history/rendering development exit | Independent local_model_adapter | 9.5/10 | PASS development; release gates retained; docs/qa/PHASE_3_HISTORY_REVIEW.md |
 | Phase 4A manual local speech output | Independent local_model_adapter | 9.0/10 | PASS output slice only; full Phase 4 unfinished; docs/qa/PHASE_4A_SPEECH_REVIEW.md |
+| Mu identity/avatar and local LAYA boundary | Independent ml_review | 8.8/10 | Identity delivered; overall INCOMPLETE, full LAYA inference unqualified; docs/qa/MU_IDENTITY_LAYA_REVIEW.md |
 
 The latest Phase 2 independent score is **8.7/10 (87/100)**, strictly greater than 8.5, and
 Phase 2 is complete as a development milestone. Historical 8.0 and 8.6 failed exits
@@ -253,9 +352,15 @@ manual-matrix case as mandatory before release. See docs/qa/PHASE_2_RESOURCE_REV
 
 ## Pending work / known limitations
 
+0. Complete the full LAYA runtime diagnostic with sufficient physical RAM and
+   Windows commit headroom, within the existing 3 GiB job limit; retain resource
+   refusals as failures. Only then evaluate representative task-routing quality.
+   Runtime/model installation alone is not successful inference.
+
 1. Phase 3 development is complete at **9.5/10**. Phase 4A's explicit installed-
    voice Read aloud/Stop passed independent review at **9.0/10**; offline
-   push-to-talk is next. The 0.6B model has only
+   push-to-talk remains preserved, unqualified WIP while ML development takes priority.
+   The 0.6B model has only
    narrow fixture evidence, not general assistant or scientific accuracy qualification.
 2. Before release, diagnose CPU cost and complete a separately predeclared Phase 12
    repeat protocol controlling actual presentation/occlusion, warmup and observer cost.
@@ -282,6 +387,8 @@ local pretrained chat increment has its own source checkpoint at
 refs/checkpoints/phase-3-local-chat-increment. Phase 3 history/rendering is retained at
 refs/checkpoints/phase-3. Phase 4A output is implemented under
 docs/PHASE_4_VOICE_PLAN.md, with its approved source recorded at
-refs/checkpoints/phase-4a-speech-output. Next is Phase 4B local push-to-talk,
-with separate capture/recognition ports and its own frozen independent review.
+refs/checkpoints/phase-4a-speech-output. The active next objective is completing the
+requested ML scope after this bounded foundation and its independent review. Phase 4B
+local push-to-talk retains separate capture/recognition ports and its frozen review;
+its incomplete Desktop partial remains excluded from compilation.
 No hosted provider is planned.

@@ -27,7 +27,19 @@ public partial class ChatWindow
     {
         Dispatcher.VerifyAccess();
         if (stopping || IsSpeechBusy || IsGenerating || historyBusy || speechOutput is null || SpeechReply() is not { } reply) return;
-        var content = reply;
+        await SpeakTextAsync(reply, preview: false);
+    }
+
+    internal async Task PreviewVoiceAsync()
+    {
+        Dispatcher.VerifyAccess();
+        if (stopping || IsSpeechBusy || IsGenerating || historyBusy || speechOutput is null) return;
+        await SpeakTextAsync("Hello, I'm Mu, your local assistant. We can explore an idea together, take a closer look at your data, or work through a physics problem. Choose the voice that feels most comfortable to you.", preview: true);
+    }
+
+    private async Task SpeakTextAsync(string text, bool preview)
+    {
+        var content = text;
         var clipped = content.Length > 2000;
         if (clipped)
         {
@@ -36,7 +48,7 @@ public partial class ChatWindow
         }
         using var cancellation = new CancellationTokenSource();
         speechCancellation = cancellation;
-        SetSpeechStatus("Preparing the installed voice…");
+        SetSpeechStatus("Preparing the selected local voice…");
         UpdateSpeechControls();
         try
         {
@@ -45,18 +57,25 @@ public partial class ChatWindow
             if (SpeechVoiceSelector.SelectedItem is not SpeechVoice voice)
                 throw new SpeechException(SpeechFailure.Unavailable);
             var rate = SpeechRateSelector.SelectedValue is int selected ? selected : 0;
-            SetSpeechStatus(clipped
+            var neural = voice.Id.StartsWith("kokoro:", StringComparison.Ordinal);
+            var playbackStatus = neural
+                ? $"{(preview ? "Previewing" : "Reading up to 30 seconds using")} {voice.Name}. Longer replies are shortened; the full text stays here."
+                : clipped
                 ? $"Reading the first 2,000 characters using {voice.Name}. Playback stops after 30 seconds."
-                : $"Reading aloud using {voice.Name}. Playback stops after 30 seconds.");
+                : $"Reading aloud using {voice.Name}. Playback stops after 30 seconds.";
+            SetSpeechStatus(neural ? $"Preparing {voice.Name} locally… You can stop at any time." : playbackStatus);
             var progress = new Progress<SpeechOutputState>(state =>
             {
                 if (!MayUpdateSpeech(cancellation)) return;
                 // A queued start callback cannot revive speech after a stop request.
                 if (state == SpeechOutputState.Speaking && cancellation.IsCancellationRequested) return;
+                if (state == SpeechOutputState.Speaking) SetSpeechStatus(playbackStatus);
                 SetSpeaking(state == SpeechOutputState.Speaking);
             });
-            await speechOutput.SpeakAsync(new(content, voice.Id, rate), progress, cancellation.Token);
-            if (MayUpdateSpeech(cancellation)) SetSpeechStatus(cancellation.IsCancellationRequested ? "Voice stopped. Your reply is still here." : "Finished reading aloud.");
+            await speechOutput!.SpeakAsync(new(content, voice.Id, rate), progress, cancellation.Token);
+            if (MayUpdateSpeech(cancellation)) SetSpeechStatus(cancellation.IsCancellationRequested ? "Voice stopped. Your reply is still here."
+                : preview ? "Voice preview finished. Choose another voice to compare."
+                : neural ? "Finished voice playback, up to 30 seconds. The full reply remains available as text." : "Finished reading aloud.");
         }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
         {
@@ -68,7 +87,7 @@ public partial class ChatWindow
         }
         catch (Exception)
         {
-            if (MayUpdateSpeech(cancellation)) SetSpeechStatus("The installed voice could not read this reply. You can still read or copy the text.");
+            if (MayUpdateSpeech(cancellation)) SetSpeechStatus("The selected local voice could not play. You can choose another voice, or read and copy the text.");
         }
         finally
         {
@@ -127,7 +146,7 @@ public partial class ChatWindow
         UpdateSpeechControls();
         try { await LoadSpeechVoicesAsync(cancellation); }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested) { }
-        catch (Exception) { if (MayUpdateSpeech(cancellation)) SetSpeechStatus("No usable installed voice was found. Chat remains available."); }
+        catch (Exception) { if (MayUpdateSpeech(cancellation)) SetSpeechStatus("No usable local voice was found. Chat remains available."); }
         finally
         {
             if (ReferenceEquals(speechCancellation, cancellation))
@@ -160,18 +179,20 @@ public partial class ChatWindow
         StopSpeechButton.Visibility = IsSpeechBusy ? Visibility.Visible : Visibility.Collapsed;
         StopSpeechButton.IsEnabled = IsSpeechBusy && speechCancellation?.IsCancellationRequested == false;
         SpeechVoiceSelector.IsEnabled = SpeechRateSelector.IsEnabled = !IsSpeechBusy;
+        PreviewVoiceButton.IsEnabled = speechOutput is not null && !IsSpeechBusy && !IsGenerating && !historyBusy;
     }
 
     private static string SpeechFailureMessage(SpeechFailure failure) => failure switch
     {
         SpeechFailure.Timeout => "Voice stopped at its time limit. Your reply is still here; you can read or copy it.",
         SpeechFailure.Busy => "The voice is still stopping. Try Read aloud again when it finishes.",
-        SpeechFailure.InvalidRequest => "This reply or voice selection could not be read aloud. Choose an installed voice and try again.",
+        SpeechFailure.InvalidRequest => "This reply or voice selection could not be read aloud. Choose a local voice and try again.",
         SpeechFailure.CleanupFailed => "The voice could not stop cleanly. Restart the companion before trying again.",
-        _ => "The Windows voice or output device is unavailable. This version supports installations with only Microsoft speech engines enabled. You can still read or copy the reply."
+        _ => "The selected voice, its local assets, available memory or output device is unavailable. Try another voice; chat remains usable. Windows voices require supported Microsoft engines."
     };
 
     private async void ReadAloud_Click(object sender, RoutedEventArgs e) => await ReadReplyAloudAsync();
     private void StopSpeech_Click(object sender, RoutedEventArgs e) => StopSpeech();
+    private async void PreviewVoice_Click(object sender, RoutedEventArgs e) => await PreviewVoiceAsync();
     private sealed record SpeechRateChoice(int Rate, string Label);
 }

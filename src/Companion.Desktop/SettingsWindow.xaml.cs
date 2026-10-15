@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.IO;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Threading;
@@ -22,6 +23,7 @@ public partial class SettingsWindow : Window
     private bool displayFitQueued;
     private bool closed;
     private bool shuttingDown;
+    private bool appearanceReady;
     private HwndSource? source;
 
     internal SettingsWindow(CompanionRuntime runtime, CompanionWindow companion, DesktopIntegration? desktop = null,
@@ -32,6 +34,21 @@ public partial class SettingsWindow : Window
         this.companion = companion;
         this.desktop = desktop;
         this.saveOperation = saveOperation ?? runtime.SaveAsync;
+        AvatarPresetInput.ItemsSource = new[] { new PresetOption(AvatarPreset.Mu, "Muon"), new PresetOption(AvatarPreset.Classic, "Classic") };
+        AvatarAccentInput.ItemsSource = Enum.GetValues<AvatarAccent>().Select(value => new AccentOption(value, value.ToString()));
+        AvatarDecorationInput.ItemsSource = new[]
+        {
+            new DecorationOption(AvatarDecoration.HaloAndTrail, "Halo and trail"),
+            new DecorationOption(AvatarDecoration.TrailOnly, "Trail only"),
+            new DecorationOption(AvatarDecoration.None, "None")
+        };
+        AvatarFaceInput.ItemsSource = Enum.GetValues<AvatarFace>().Select(value => new FaceOption(value, value.ToString()));
+        AvatarPresetInput.SelectedValue = runtime.Settings.AvatarPreset;
+        AvatarAccentInput.SelectedValue = runtime.Settings.AvatarAccent;
+        AvatarDecorationInput.SelectedValue = runtime.Settings.AvatarDecoration;
+        AvatarFaceInput.SelectedValue = runtime.Settings.AvatarFace;
+        appearanceReady = true;
+        UpdateAppearancePreview();
         NameInput.Text = runtime.Settings.CompanionName;
         TopmostInput.IsChecked = runtime.Settings.AlwaysOnTop;
         ScaleInput.Value = runtime.Settings.AvatarScale;
@@ -76,9 +93,12 @@ public partial class SettingsWindow : Window
         Loaded += (_, _) => QueueDisplayFit();
         DpiChanged += (_, _) => QueueDisplayFit();
         StateChanged += (_, _) => QueueDisplayFit();
+        SystemParameters.StaticPropertyChanged += AppearanceSystemChanged;
         Closed += (_, _) =>
         {
             closed = true;
+            SystemParameters.StaticPropertyChanged -= AppearanceSystemChanged;
+            AppearancePreview.Dispose();
             companion.EndPreview();
             if (source is { IsDisposed: false }) source.RemoveHook(WindowMessage);
         };
@@ -126,6 +146,7 @@ public partial class SettingsWindow : Window
         if (closed) return;
         IsEnabled = false;
         SaveButton.IsEnabled = false;
+        AppearancePreview.Stop();
     }
 
     private async void Save_Click(object sender, RoutedEventArgs e) => await SaveChangesAsync();
@@ -140,6 +161,10 @@ public partial class SettingsWindow : Window
             AlwaysOnTop = TopmostInput.IsChecked == true,
             AvatarScale = ScaleInput.Value,
             AvatarOpacity = OpacityInput.Value,
+            AvatarPreset = AvatarPresetInput.SelectedValue is AvatarPreset preset ? preset : runtime.Settings.AvatarPreset,
+            AvatarAccent = AvatarAccentInput.SelectedValue is AvatarAccent accent ? accent : runtime.Settings.AvatarAccent,
+            AvatarDecoration = AvatarDecorationInput.SelectedValue is AvatarDecoration decoration ? decoration : runtime.Settings.AvatarDecoration,
+            AvatarFace = AvatarFaceInput.SelectedValue is AvatarFace face ? face : runtime.Settings.AvatarFace,
             ReducedMotion = ReducedMotionInput.IsChecked == true,
             DiagnosticsEnabled = DiagnosticsInput.IsChecked == true,
             SummonShortcut = ShortcutInput.SelectedValue is SummonHotkey shortcut ? shortcut : runtime.Settings.SummonShortcut
@@ -214,5 +239,24 @@ public partial class SettingsWindow : Window
     {
         if (PreviewInput.SelectedItem is AvatarState state) companion.Preview(state);
     }
+    private void AvatarAppearance_Changed(object sender, SelectionChangedEventArgs e) => UpdateAppearancePreview();
+    internal void AppearanceSystemChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(SystemParameters.HighContrast) || Dispatcher.HasShutdownStarted) return;
+        Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(UpdateAppearancePreview));
+    }
+    private void UpdateAppearancePreview()
+    {
+        if (!appearanceReady || closed || shuttingDown) return;
+        if (AvatarPresetInput.SelectedValue is not AvatarPreset preset || AvatarAccentInput.SelectedValue is not AvatarAccent accent ||
+            AvatarDecorationInput.SelectedValue is not AvatarDecoration decoration || AvatarFaceInput.SelectedValue is not AvatarFace face) return;
+        AvatarDecorationInput.IsEnabled = preset == AvatarPreset.Mu;
+        AppearancePreview.ApplyAppearance(preset, accent, decoration, face);
+        AppearancePreview.Render(AvatarState.Idle, false, SystemParameters.HighContrast);
+    }
+    private sealed record PresetOption(AvatarPreset Value, string Label);
+    private sealed record AccentOption(AvatarAccent Value, string Label);
+    private sealed record DecorationOption(AvatarDecoration Value, string Label);
+    private sealed record FaceOption(AvatarFace Value, string Label);
     private sealed record ShortcutOption(SummonHotkey Value, string Label);
 }

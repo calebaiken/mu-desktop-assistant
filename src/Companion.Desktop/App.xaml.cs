@@ -11,6 +11,8 @@ using Companion.Application.Conversation;
 using Companion.Infrastructure.Conversation;
 using Companion.Application.Voice;
 using Companion.Infrastructure.Voice;
+using Companion.Application.MachineLearning;
+using Companion.Infrastructure.MachineLearning;
 
 namespace Companion.Desktop;
 
@@ -20,6 +22,10 @@ public partial class App : System.Windows.Application
     private CompanionWindow? companion;
     private SettingsWindow? settingsWindow;
     private ChatWindow? chatWindow;
+    private MlLabWindow? mlLabWindow;
+    private IMlLabService? mlLabService;
+    private ILayaDecisionService? layaService;
+    private LocalModelHost? mlPlannerHost;
     private LocalModelHost? localModelHost;
     private ISpeechOutput? localSpeechOutput;
     private StartupOptions? options;
@@ -60,6 +66,7 @@ public partial class App : System.Windows.Application
             MainWindow = companion;
             companion.SettingsRequested += (_, _) => OpenSettings();
             companion.ChatRequested += (_, _) => OpenChat();
+            companion.MlLabRequested += (_, _) => OpenMlLab();
             companion.SleepChanged += (_, _) =>
             {
                 if (companion.CurrentState == AvatarState.Sleeping)
@@ -111,6 +118,35 @@ public partial class App : System.Windows.Application
                 await StopAsync(0);
                 return;
             }
+            if (options.LayaSmoke)
+            {
+                layaService = CreateLayaService();
+                await LayaRuntimeSmokeChecks.RunAsync(layaService, options.DataDirectory);
+                await StopAsync(0);
+                return;
+            }
+            if (options.NeuralSpeechSmoke)
+            {
+                var neural = CreateNeuralSpeechOutput();
+                var speech = new CompositeSpeechOutput(new WindowsSpeechOutput(Path.Combine(AppContext.BaseDirectory, "Companion.Desktop.exe")), neural);
+                localSpeechOutput = speech;
+                await NeuralSpeechSmokeChecks.RunAsync(neural, speech, options.DataDirectory, options.NeuralSpeechPlayback);
+                await StopAsync(0);
+                return;
+            }
+            if (options.MlSmoke)
+            {
+                mlLabService = CreateMlLabService();
+                await MlLabSmokeChecks.RunAsync(mlLabService, options.DataDirectory);
+                if (options.LocalModelDirectory is { } plannerDirectory)
+                {
+                    mlPlannerHost = new LocalModelHost(plannerDirectory);
+                    var plannerModel = await mlPlannerHost.GetModelAsync(runtime.Lifetime.Token);
+                    await MlPlannerSmokeChecks.RunAsync(plannerModel, options.DataDirectory, runtime.Lifetime.Token);
+                }
+                await StopAsync(0);
+                return;
+            }
             companion.Show();
             placement = new(companion, options.DataDirectory);
             await placement.InitializeAsync();
@@ -123,7 +159,7 @@ public partial class App : System.Windows.Application
                     {
                         companion.ConstrainToWorkArea(false);
                         settingsWindow?.RefreshInteraction();
-                    }, openChat: OpenChat);
+                    }, openChat: OpenChat, openMlLab: OpenMlLab);
                 if (!desktop.TryRegisterHotkey(runtime.Settings.SummonShortcut, out var error))
                     companion.ReportShortcutStatus(error);
                 companion.HideRequested += (_, _) =>
@@ -156,6 +192,10 @@ public partial class App : System.Windows.Application
                 await RecordStage("integration-complete");
                 await SettingsLifecycleSmokeChecks.RunAsync(runtime, options.DataDirectory);
                 await RecordStage("settings-lifecycle-complete");
+                await AvatarCustomizationSmokeChecks.RunAsync(runtime, options.DataDirectory);
+                await RecordStage("avatar-customization-complete");
+                await LayaUiSmokeChecks.RunAsync(options.DataDirectory);
+                await RecordStage("laya-ui-complete");
                 await PlacementInitializationSmokeChecks.RunAsync(options.DataDirectory);
                 await RecordStage("placement-initialization-complete");
                 await ChatLifecycleSmokeChecks.RunAsync(options.DataDirectory);
@@ -240,12 +280,13 @@ public partial class App : System.Windows.Application
             // Optional model setup must never prevent use of the companion itself.
         }
         localModelHost = host;
-        var speech = new WindowsSpeechOutput(Path.Combine(AppContext.BaseDirectory, "Companion.Desktop.exe"));
+        var speech = CreateSpeechOutput();
         localSpeechOutput = speech;
         chatWindow = new ChatWindow(token => host is null
             ? Task.FromException<IChatModel>(new ChatModelException(ChatFailure.Unavailable))
             : host.GetModelAsync(token), new SqliteConversationStore(options.DataDirectory), speech) { Owner = companion };
         var window = chatWindow;
+        window.MlLabRequested += (_, _) => OpenMlLab();
         window.ReplyCompleted += reply =>
         {
             if (!stopping && !window.IsActive && companion.IsVisible)
@@ -331,6 +372,22 @@ public partial class App : System.Windows.Application
         if (companion is not null) companion.IsEnabled = false;
         settingsWindow?.BeginShutdown();
         chatWindow?.BeginShutdown();
+        mlLabWindow?.Close();
+        if (mlLabService is not null)
+        {
+            try { await mlLabService.DisposeAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(6)); }
+            catch (Exception) { exitCode = 1; }
+        }
+        if (mlPlannerHost is not null)
+        {
+            try { await mlPlannerHost.DisposeAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(5)); }
+            catch (Exception) { exitCode = 1; }
+        }
+        if (layaService is not null)
+        {
+            try { await layaService.DisposeAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(6)); }
+            catch (Exception) { exitCode = 1; }
+        }
         if (localSpeechOutput is not null)
         {
             try { await localSpeechOutput.DisposeAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(3)); }

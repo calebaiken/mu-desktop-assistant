@@ -30,7 +30,7 @@ public sealed class DesktopIntegration : IDisposable
     private bool disposed;
 
     public DesktopIntegration(Window window, Action openSettings, Action toggleSleep, Action exit,
-        Action<string> reportError, Action? recovered = null, bool enableSystemIntegration = true, Action? openChat = null)
+        Action<string> reportError, Action? recovered = null, bool enableSystemIntegration = true, Action? openChat = null, Action? openMlLab = null)
     {
         ArgumentNullException.ThrowIfNull(window);
         ArgumentNullException.ThrowIfNull(openSettings);
@@ -53,6 +53,8 @@ public sealed class DesktopIntegration : IDisposable
             menu.Items.Add("Show / recover companion", null, (_, _) => Invoke(Recover));
             if (openChat is not null)
                 menu.Items.Add("Chat", null, (_, _) => Invoke(() => { Recover(); openChat(); }));
+            if (openMlLab is not null)
+                menu.Items.Add("Machine Learning Lab", null, (_, _) => Invoke(() => { Recover(); openMlLab(); }));
             menu.Items.Add("Hide companion", null, (_, _) => Invoke(() =>
             {
                 if (!RecoveryAvailable) reportError(HideRecoveryRequiredMessage);
@@ -63,8 +65,10 @@ public sealed class DesktopIntegration : IDisposable
             menu.Items.Add(sleepItem);
             menu.Items.Add(new Forms.ToolStripSeparator());
             menu.Items.Add("Exit", null, (_, _) => Invoke(exit));
-            icon = (System.Drawing.Icon)System.Drawing.SystemIcons.Application.Clone();
-            tray = new Forms.NotifyIcon { Text = "Desktop Companion", Icon = icon, ContextMenuStrip = menu };
+            using var iconStream = System.Windows.Application.GetResourceStream(new Uri("/Companion.Desktop;component/Assets/Mu.ico", UriKind.Relative))!.Stream;
+            using var loadedIcon = new System.Drawing.Icon(iconStream, 32, 32);
+            icon = (System.Drawing.Icon)loadedIcon.Clone();
+            tray = new Forms.NotifyIcon { Text = "Mu", Icon = icon, ContextMenuStrip = menu };
             tray.DoubleClick += (_, _) => Invoke(Recover);
             tray.Visible = true;
         }
@@ -173,7 +177,7 @@ public sealed class DesktopIntegration : IDisposable
     {
         VerifyUsable();
         if (sleepItem is not null) sleepItem.Text = sleeping ? "Wake" : "Sleep";
-        if (tray is not null) tray.Text = sleeping ? "Desktop Companion (sleeping)" : "Desktop Companion";
+        if (tray is not null) tray.Text = sleeping ? "Mu (sleeping)" : "Mu";
     }
 
     private long ReadExtendedStyle()

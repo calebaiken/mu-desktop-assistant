@@ -1,5 +1,65 @@
 # Changelog
 
+## Unreleased — Optional local neural voices (2026-09-30)
+
+- Added pretrained Kokoro English voices Heart, Bella, Michael and George to
+  existing Chat voice selection, alongside supported Windows voices. Added explicit
+  Preview without a reply or history mutation; voice/speed remain session choices.
+- Added a separate optional 18-package hash-locked CPU runtime and verified ONNX
+  assets. Generation is offline, with bounded owned workers, memory admission,
+  cancellation and in-memory playback. No API key, cloning or microphone is added.
+- Preparation stays distinct from Speaking. Stop and context changes invalidate
+  old results; selected neural voices are not replaced silently. Owned temporary
+  phonemizer DLL copies are removed after child exit, without speech/audio caches.
+- Final .NET regression passes 398 tests and native UI passes 50 supervisor checks,
+  including 94 speech checks in each run. Four real public neural samples pass
+  production-host/native synthesis and independent PCM inspection. Detailed playback,
+  failure and privacy receipts are maintained in the neural voice review. A real
+  cancellation check found and prompted a narrow held-process termination repair;
+  its final real rerun remains memory-gated, so overall neural qualification is
+  incomplete. Full
+  voice input, LAYA inference, complete ML Phase 1 and release remain unfinished.
+
+## Unreleased — Mu identity, avatar themes and optional LAYA boundary (2026-09-30)
+
+- Added a muon-inspired particle mascot with five themes including Galaxy, two
+  faces and three decorations. Settings preview/save/cancel, legacy migration,
+  high contrast and reduced motion preserve existing preferences and behavior.
+- Added matching transparent vector/PNG/ICO assets, native window/executable/tray
+  icons and a verified Desktop shortcut. Repaired hover travel and expanded
+  minimum-window Ask Mu reachability after native checks exposed both defects.
+- Added inspectable optional LAYA task-category advice and a pinned offline CPU
+  runtime. It cannot run actions or supersede explicit user choices. Installation
+  is complete; full checkpoint inference remains unqualified because the actual
+  production host declined current memory headroom. No API key or cloud fallback.
+- Current checks: 375 .NET, 11 architecture, 12 independent worker and 44 UI
+  supervisor passes; each native run passes 315 avatar and 40 controlled advice UI
+  assertions. Retained failed model/hover/layout/icon receipts are documented.
+  Existing ML Phase 1, voice-input and release limitations remain unchanged.
+
+## Unreleased — Integrated ML Lab foundation (2026-09-29, bounded increment)
+
+- Added native Lab access from More, tray and Chat; bounded data inspection, explicit
+  feature/target/preprocessing/split configuration, CPU training, metrics/plots,
+  experiment/model history, schema-checked prediction and standalone reproduction export.
+- Added full historical detail and comparison of 2–5 experiments with matching exact
+  data/feature/target/split/CV cohorts. Incompatible comparisons fail visibly.
+- Added an optional 24-package hash-locked Python environment, App-owned FIFO workers,
+  memory/thread/time/output limits, cancellation, telemetry and restricted versioned
+  `.skops` persistence. Source files are preserved; Lab persistence is separate from Chat.
+- Added local JSON-schema planning with a captured current-dataset alias and explicit
+  single-use Run. Two live public proposals passed; no broad language benchmark claim.
+- Final evidence: 353/353 .NET tests, 11/11 architecture checks, 57 native Lab checks,
+  2/2 live planning prompts and 38/38 preceding UI supervisor checks. Independent Python
+  coverage is 48 distinct cases across retained runs; author tests pass 6 cases covering
+  22 task/algorithm pairs. Full ML Phase 1 and release qualification remain incomplete.
+- Retained failed venv-launch, blank-XAML-default, serialization and planning attempts
+  with their repairs. Preserved unqualified voice-input WIP and all earlier CPU,
+  physical-display/accessibility/sign-in and release gates.
+- The final verified executable is in `artifacts/qa/ml-candidate`; the normal output
+  directory was locked by an older running Mu. Close that instance before using the
+  candidate, or rebuild the normal location afterward.
+
 ## Unreleased — Phase 4A explicit local speech (2026-09-22, QA 9.0/10)
 
 - Added Read aloud / Stop voice for completed replies, installed Microsoft voice

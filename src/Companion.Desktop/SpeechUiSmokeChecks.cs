@@ -50,6 +50,7 @@ internal static class SpeechUiSmokeChecks
             await StageAsync("closed-progress", CheckClosedProgressAsync);
             await StageAsync("failure-recovery", CheckFailureRecoveryAsync);
             await StageAsync("layout", CheckLayoutAsync);
+            await StageAsync("neural-preview", CheckNeuralPreviewAsync);
         }
         catch (Exception error)
         {
@@ -402,6 +403,75 @@ internal static class SpeechUiSmokeChecks
             }
             speech.Operations[0].Complete();
             await read.WaitAsync(TimeSpan.FromSeconds(3));
+        }
+        finally { window.Close(); speech.ReleaseAll(); }
+    }
+
+    // Ten reviewer-owned additions. The existing eighty-four speech assertions remain unchanged.
+    private static async Task CheckNeuralPreviewAsync(Action<string, bool> check)
+    {
+        IReadOnlyList<SpeechVoice> voices = [new("kokoro:af_heart", "Heart — Neural (US)", "en-US"),
+            new("kokoro:bm_george", "George — Neural (UK)", "en-GB")];
+        await using var speech = new FixtureSpeech { AvailableVoices = voices };
+        var model = new FixtureModel();
+        var window = CreateWindow(model, speech, new InMemoryConversationStore());
+        try
+        {
+            window.Width = window.MinWidth; window.Height = window.MinHeight;
+            window.SpeechOptions.IsExpanded = true;
+            await UntilAsync(window, () => speech.Enumerations == 1 && !window.IsSpeechBusy);
+            check("preview-without-reply-is-explicit-and-history-free", window.PreviewVoiceButton.IsEnabled &&
+                !window.ReadAloudButton.IsEnabled && window.CurrentConversation is null && speech.Operations.Count == 0);
+            var transcript = window.TranscriptText.Text;
+            var preview = window.PreviewVoiceAsync();
+            await UntilAsync(window, () => speech.Operations.Count == 1);
+            var first = speech.Operations[0];
+            check("preview-sends-public-text-and-selected-neural-voice", first.Request.VoiceId == voices[0].Id &&
+                first.Request.Text.StartsWith("Hello, I'm Mu, your local assistant.", StringComparison.Ordinal) &&
+                first.Request.Rate == 0 && window.CurrentConversation is null);
+            check("neural-preview-preparation-is-cancellable-and-not-speaking", window.IsSpeechBusy && !window.IsSpeaking &&
+                !window.PreviewVoiceButton.IsEnabled && window.StopSpeechButton.IsEnabled &&
+                window.SpeechStatusLabel.Text.Contains("Preparing", StringComparison.Ordinal));
+            await window.PreviewVoiceAsync(); await window.ReadReplyAloudAsync();
+            check("preview-and-read-do-not-queue-during-preparation", speech.Operations.Count == 1);
+            window.StopSpeech(); first.Report(SpeechOutputState.Speaking);
+            await DrainAsync(window);
+            check("stopped-preview-rejects-late-speaking-and-retains-cleanup", first.Token.IsCancellationRequested &&
+                window.IsSpeechBusy && !window.IsSpeaking && !window.PreviewVoiceButton.IsEnabled);
+            first.Cancel(); await preview.WaitAsync(TimeSpan.FromSeconds(3)); await DrainAsync(window);
+            check("cancelled-preview-preserves-empty-chat-and-permits-reuse", !window.IsSpeechBusy && !window.IsSpeaking &&
+                window.PreviewVoiceButton.IsEnabled && window.CurrentConversation is null && window.TranscriptText.Text == transcript);
+
+            window.SpeechVoiceSelector.SelectedItem = voices[1]; window.SpeechRateSelector.SelectedValue = 5;
+            var secondPreview = window.PreviewVoiceAsync(); await UntilAsync(window, () => speech.Operations.Count == 2);
+            var second = speech.Operations[1]; first.Report(SpeechOutputState.Speaking); await DrainAsync(window);
+            check("preview-reuse-honors-voice-rate-and-ignores-old-generation", second.Request.VoiceId == voices[1].Id &&
+                second.Request.Rate == 5 && window.IsSpeechBusy && !window.IsSpeaking && speech.Enumerations == 1);
+            second.Report(SpeechOutputState.Speaking); await DrainAsync(window);
+            await ReplyAsync(window, model, "Reply after explicit public voice preview.", "Public new-send fixture");
+            var replyTranscript = window.TranscriptText.Text;
+            second.Report(SpeechOutputState.Speaking); second.Cancel();
+            await secondPreview.WaitAsync(TimeSpan.FromSeconds(3)); await DrainAsync(window);
+            check("new-send-cancels-preview-without-changing-new-reply", second.Token.IsCancellationRequested &&
+                !window.IsSpeaking && !window.IsSpeechBusy && window.CurrentConversation!.Turns.Count == 1 &&
+                window.TranscriptText.Text == replyTranscript && window.CurrentConversation.Turns[0].Response == "Reply after explicit public voice preview.");
+
+            window.UpdateLayout();
+            var content = (FrameworkElement)window.Content;
+            var bounds = window.PreviewVoiceButton.TransformToAncestor(content).TransformBounds(new Rect(window.PreviewVoiceButton.RenderSize));
+            var peer = UIElementAutomationPeer.CreatePeerForElement(window.PreviewVoiceButton);
+            check("preview-control-reachable-and-named-at-minimum-window", window.PreviewVoiceButton.ActualWidth > 0 &&
+                window.PreviewVoiceButton.ActualHeight > 0 && bounds.Left >= -1 && bounds.Top >= -1 &&
+                bounds.Right <= content.ActualWidth + 1 && bounds.Bottom <= content.ActualHeight + 1 &&
+                peer is not null && !string.IsNullOrWhiteSpace(peer.GetName()) && window.TranscriptText.ActualHeight >= 48);
+            var closingPreview = window.PreviewVoiceAsync(); await UntilAsync(window, () => speech.Operations.Count == 3);
+            var closing = speech.Operations[2]; window.Close();
+            var closedStatus = window.SpeechStatusLabel.Text;
+            closing.Report(SpeechOutputState.Speaking); closing.Complete();
+            await closingPreview.WaitAsync(TimeSpan.FromSeconds(3)); await DrainAsync(window);
+            check("closing-preview-cancels-and-ignores-late-results-with-app-ownership", closing.Token.IsCancellationRequested &&
+                !window.IsSpeechBusy && !window.IsSpeaking && !window.IsEnabled &&
+                window.SpeechStatusLabel.Text == closedStatus && speech.DisposeCalls == 0);
         }
         finally { window.Close(); speech.ReleaseAll(); }
     }

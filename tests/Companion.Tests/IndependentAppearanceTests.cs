@@ -19,7 +19,7 @@ public sealed class IndependentAppearanceTests
         await File.WriteAllTextAsync(directory.FilePath("settings.json.bak"), legacy);
         var migrated = new CompanionSettings
         {
-            CompanionName = "Recover me", AlwaysOnTop = true, ReducedMotion = true
+            CompanionName = "Recover me", AlwaysOnTop = true, ReducedMotion = true, AvatarPreset = AvatarPreset.Classic
         };
         var saved = migrated with { AvatarScale = 1.5, AvatarOpacity = 0.4 };
 
@@ -63,7 +63,7 @@ public sealed class IndependentAppearanceTests
         var recovered = await store.LoadAsync(CancellationToken.None);
 
         Assert.AreEqual(SettingsLoadState.RecoveredBackup, recovered.State);
-        Assert.AreEqual(new CompanionSettings { CompanionName = "Trusted" }, recovered.Settings);
+        Assert.AreEqual(new CompanionSettings { CompanionName = "Trusted", AvatarPreset = AvatarPreset.Classic }, recovered.Settings);
         Assert.IsTrue(recovered.CanSave);
         Assert.AreEqual(malformed, await File.ReadAllTextAsync(directory.FilePath("settings.json")));
         Assert.AreEqual(legacy, await File.ReadAllTextAsync(directory.FilePath("settings.json.bak")));

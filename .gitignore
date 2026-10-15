@@ -1,26 +1,145 @@
+# ---------------------------------------------------------------------------
+# Mu - ignore rules
+#
+# Companion.ArchitectureChecks requires the exact lines marked "invariant"
+# below to be present. Do not reword or move them.
+#
+# Nothing in this repository needs a credential: Mu reads no API key and
+# contacts no cloud service. These rules exist so that credentials, private
+# assistant memory and local user data stay local even if that changes.
+# ---------------------------------------------------------------------------
+
+# --- invariant: credentials and secrets ------------------------------------
+.env
+.env.*
+!.env.example
+*.dmp
+*.pfx
+*.key
+*.p12
+*.pem
+*.jks
+*.keystore
+*.ovpn
+secrets/
+**/secrets/
+.aws/
+.azure/
+.gcloud/
+.netrc
+credentials.json
+service-account*.json
+*_rsa
+*_ed25519
+id_rsa*
+id_ed25519*
+
+# --- invariant: private assistant memory and local user data ----------------
+# Mu's runtime profile lives outside the repo at
+# %LOCALAPPDATA%/DesktopCompanion. These rules also cover any in-repo profile
+# created by scripts/verify*.ps1 or a stray --data-dir.
+*.db
+*.db-*
+*.sqlite*
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+**/DesktopCompanion/
+**/CompanionDev/
+.ml-lab/
+**/ml-lab/default-project/
+**/default-project/
+*.profile/
+**/profile/
+chat-history/
+conversations/
+memory/
+assistant-memory/
+saved-chats/
+logs/
+*.log
+
+# --- build output and IDE state -------------------------------------------
 **/bin/
 **/obj/
 .vs/
 .idea/
-.dotnet-home/
-.packages/
-TestResults/
-artifacts/
+.vscode/
 *.user
 *.suo
-.env
-.env.*
-!.env.example
-*.db
-*.db-*
-*.sqlite*
-*.log
-*.dmp
-*.pfx
-*.key
-secrets/
+*.userosscache
+*.sln.docstates
+TestResults/
+**/TestResults/
+*.trx
+*.coverage
+coverage*.xml
+coverage*.json
+BenchmarkDotNet.Artifacts/
+
+# --- workspace-local package caches (NuGet.Config redirects here) ---------
+.dotnet-home/
+.packages/
+.nuget/
+**/packages.lock.json.bak
+
+# --- generated artifacts ---------------------------------------------------
+# Compiled executables, QA evidence, rendered icons and measurement output.
+artifacts/
+**/artifacts/
+**/out/
+**/output/
+*.tmp
+*.bak
+*.orig
+*.rej
+*.spec
+dist/
+build/
+
+# --- optional Python worker environments and caches ------------------------
 **/__pycache__/
 **/.venv/
+**/venv/
+**/env/
 *.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+.hypothesis/
+
+# --- large model weights and datasets --------------------------------------
+# The ML Lab and neural-speech worker download these at first run into
+# artifacts/ and %LOCALAPPDATA%. They must never be committed.
 *.safetensors
 *.gguf
+*.ckpt
+*.pth
+*.pt
+*.onnx
+*.npz
+*.npy
+*.parquet
+*.arrow
+*.pkl
+*.joblib
+*.tflite
+*.h5
+*.msgpack
+*.bin
+hf-cache/
+huggingface/
+.cache/
+**/.cache/huggingface/
+torch/
+**/torch/
+
+# --- OS noise --------------------------------------------------------------
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk

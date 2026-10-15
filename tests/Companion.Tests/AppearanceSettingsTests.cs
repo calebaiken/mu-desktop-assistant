@@ -34,7 +34,7 @@ public sealed class AppearanceSettingsTests
         Assert.AreEqual(SettingsLoadState.Loaded, actual.State);
         Assert.AreEqual(expected, actual.Settings);
         using var saved = JsonDocument.Parse(await File.ReadAllTextAsync(directory.FilePath("settings.json")));
-        Assert.AreEqual(2, saved.RootElement.GetProperty("SchemaVersion").GetInt32());
+        Assert.AreEqual(CompanionSettings.CurrentVersion, saved.RootElement.GetProperty("SchemaVersion").GetInt32());
     }
 
     [TestMethod]
@@ -52,14 +52,15 @@ public sealed class AppearanceSettingsTests
         Assert.IsTrue(migrated.CanSave);
         Assert.AreEqual(new CompanionSettings
         {
-            CompanionName = "Legacy", AlwaysOnTop = true, ReducedMotion = true, DiagnosticsEnabled = true
+            CompanionName = "Legacy", AlwaysOnTop = true, ReducedMotion = true, DiagnosticsEnabled = true,
+            AvatarPreset = AvatarPreset.Classic
         }, migrated.Settings);
         Assert.AreEqual(original, await File.ReadAllTextAsync(primaryPath));
         Assert.HasCount(1, Directory.GetFiles(directory.PathValue));
 
         await store.SaveAsync(migrated.Settings with { AvatarScale = 1.5, AvatarOpacity = 0.4 }, CancellationToken.None);
         using var backup = JsonDocument.Parse(await File.ReadAllTextAsync(directory.FilePath("settings.json.bak")));
-        Assert.AreEqual(2, backup.RootElement.GetProperty("SchemaVersion").GetInt32());
+        Assert.AreEqual(CompanionSettings.CurrentVersion, backup.RootElement.GetProperty("SchemaVersion").GetInt32());
         Assert.AreEqual("Legacy", backup.RootElement.GetProperty("CompanionName").GetString());
         Assert.AreEqual(1.0, backup.RootElement.GetProperty("AvatarScale").GetDouble());
         Assert.AreEqual(1.0, backup.RootElement.GetProperty("AvatarOpacity").GetDouble());
@@ -83,7 +84,7 @@ public sealed class AppearanceSettingsTests
         var migrated = await store.LoadAsync(CancellationToken.None);
 
         Assert.AreEqual(SettingsLoadState.Loaded, migrated.State);
-        Assert.AreEqual(new CompanionSettings(), migrated.Settings);
+        Assert.AreEqual(new CompanionSettings { CompanionName = "Pip", AvatarPreset = AvatarPreset.Classic }, migrated.Settings);
         Assert.AreEqual(original, await File.ReadAllTextAsync(directory.FilePath("settings.json")));
     }
 
@@ -171,7 +172,7 @@ public sealed class AppearanceSettingsTests
     public async Task NextSchemaRemainsReadOnlyDespiteValidLegacyBackup()
     {
         using var directory = new TestDirectory();
-        const string future = "{\"SchemaVersion\":3,\"CompanionName\":\"Future\"}";
+        var future = "{\"SchemaVersion\":" + (CompanionSettings.CurrentVersion + 1) + ",\"CompanionName\":\"Future\"}";
         await File.WriteAllTextAsync(directory.FilePath("settings.json"), future);
         await File.WriteAllTextAsync(directory.FilePath("settings.json.bak"), "{\"SchemaVersion\":1}");
         using var store = new JsonSettingsStore(directory.PathValue);

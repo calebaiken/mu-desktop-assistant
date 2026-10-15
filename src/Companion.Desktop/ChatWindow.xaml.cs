@@ -44,6 +44,8 @@ public partial class ChatWindow : Window
     public bool IsGenerating { get; private set; }
     public event EventHandler? GenerationChanged;
     public event Action<string>? ReplyCompleted;
+    public event EventHandler? MlLabRequested;
+    private void MlLab_Click(object sender, RoutedEventArgs e) => MlLabRequested?.Invoke(this, EventArgs.Empty);
     internal IReadOnlyList<ChatMessage> ConversationContext => history.AsReadOnly();
 
     internal async Task SendMessageAsync()

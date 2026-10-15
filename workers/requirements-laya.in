@@ -1,0 +1,9 @@
+# Optional CPU-only LAYA advisory environment. Separate from Mu's ML base runtime.
+laya==0.3.21
+torch==2.6.0+cpu
+transformers==4.51.3
+numpy==2.3.3
+safetensors==0.6.2
+huggingface-hub==0.35.3
+tokenizers==0.21.4
+psutil==7.1.0

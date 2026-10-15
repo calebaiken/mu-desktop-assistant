@@ -16,6 +16,7 @@ public partial class CompanionWindow : Window
 {
     public event EventHandler? SettingsRequested;
     public event EventHandler? ChatRequested;
+    public event EventHandler? MlLabRequested;
     public event EventHandler? HideRequested;
     public event EventHandler? PlacementChanged;
     public event EventHandler? SleepChanged;
@@ -84,11 +85,13 @@ public partial class CompanionWindow : Window
         ArgumentNullException.ThrowIfNull(settings);
         if (settings.Validate().Count != 0) throw new ArgumentException("Invalid companion settings.", nameof(settings));
         this.settings = settings;
+        AvatarRenderer.ApplyAppearance(settings.AvatarPreset, settings.AvatarAccent, settings.AvatarDecoration, settings.AvatarFace);
         NameLabel.Text = settings.CompanionName;
         Title = settings.CompanionName + " · Desktop Companion";
         Topmost = settings.AlwaysOnTop;
         AvatarVisual.Width = 112 * settings.AvatarScale;
         AvatarVisual.Height = 88 * settings.AvatarScale;
+        HoverBridge.Height = AvatarVisual.Height / 2;
         // Scale the character while keeping keyboard/button targets at their normal size.
         Width = Math.Max(136, AvatarVisual.Width + 16);
         UpdateHeight();
@@ -105,7 +108,14 @@ public partial class CompanionWindow : Window
         var state = preview ?? states.Current;
         StateLabel.Text = preview.HasValue ? "Preview · " + state : state == AvatarState.Idle ? "Ready" : state.ToString();
         RefreshAccessibleDetails();
-        AvatarRenderer.Render(state, animate, SystemParameters.HighContrast);
+        RenderAvatarAppearance(state, animate, SystemParameters.HighContrast);
+    }
+
+    internal void RenderAvatarAppearance(AvatarState state, bool animate, bool highContrast)
+    {
+        AvatarRenderer.Render(state, animate, highContrast);
+        HoverBridge.Background = AvatarRenderer.Body.Background;
+        HoverBridge.BorderBrush = AvatarRenderer.Body.BorderBrush;
     }
 
     private void RefreshControlsVisibility() =>
@@ -334,6 +344,7 @@ public partial class CompanionWindow : Window
 
     private void Settings_Click(object sender, RoutedEventArgs e) => SettingsRequested?.Invoke(this, EventArgs.Empty);
     private void Chat_Click(object sender, RoutedEventArgs e) => ChatRequested?.Invoke(this, EventArgs.Empty);
+    private void MlLab_Click(object sender, RoutedEventArgs e) => MlLabRequested?.Invoke(this, EventArgs.Empty);
     private void Hide_Click(object sender, RoutedEventArgs e) => HideRequested?.Invoke(this, EventArgs.Empty);
     private void Sleep_Click(object sender, RoutedEventArgs e) => ToggleSleep();
     private void Exit_Click(object sender, RoutedEventArgs e) => Close();

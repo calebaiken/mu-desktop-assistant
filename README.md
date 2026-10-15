@@ -1,6 +1,69 @@
-# Desktop Companion
+# Mu
 
 A Windows-first personal AI companion built in C#/.NET 10 and WPF.
+
+| | |
+|---|---|
+| Solution | `Companion.slnx` — four production projects, two test projects |
+| Target framework | `net10.0`, nullable reference types enabled |
+| SDK | 10.0.401 (`global.json`, `rollForward: latestPatch`, prerelease disabled) |
+| UI | WPF (WindowsDesktop reference packs required) |
+| Optional runtimes | Python 3.12/3.13 workers — ML Lab, neural speech, LAYA advisor |
+| Cloud services | None. No API key is read or required. |
+| Platform | Windows 11 x64 |
+| License | None selected yet — treat as all rights reserved |
+
+> **Scope note.** This repository contains the *entire* Mu desktop application.
+> The **Machine Learning Lab is a subsystem of Mu, not a separate program.** Its
+> C# services live in `Companion.Application.MachineLearning`,
+> `Companion.Infrastructure.MachineLearning` and `Companion.Desktop.MlLab*`, and
+> its Python backend (`workers/ml_lab`) is an owned worker that Mu starts per
+> request. It cannot be built or run independently of the other four projects.
+
+**Local neural voices are integrated (2026-09-30).** In **Chat → Voice options**,
+choose Heart, Bella, Michael or George, then select **Preview voice** to compare.
+Read aloud and Stop use the same local controls. The optional Kokoro CPU runtime
+and voice assets are installed on this PC; no API key, cloud service or microphone
+is involved. Voice/speed choices apply to the current chat window. Long readings
+are shortened to approximately 30 seconds, and memory pressure can safely refuse
+generation. All four real public samples passed audio inspection, and the
+repaired host passes 398 .NET tests. **Final real playback/reuse qualification is
+still incomplete:** the latest run safely returned `memory_limit`. See [voice help](docs/MU_NEURAL_VOICES.md) and
+[the measured qualification](docs/qa/MU_NEURAL_VOICE_REVIEW.md).
+
+**Muon avatar customization and the Galaxy theme are available (2026-09-30).**
+Open Settings, choose **Muon**, select **Galaxy** under **Color / theme**, and
+Save. Five themes, two faces and three particle decorations are available; existing
+profiles retain their previous appearance until saved. The particle mascot keeps
+the compact transparent surface and hover controls. Mu now has matching executable,
+window, tray and shortcut icons. The verified development executable is
+`artifacts/Mu/Companion.Desktop.exe`; the requested **Mu.lnk** was created and
+verified in this PC's Windows Desktop folder. See the
+[appearance and shortcut guide](docs/MU_APPEARANCE_LAYA.md).
+
+Optional local LAYA task advice is integrated into **ML Lab → Ask Mu**. Its pinned
+runtime and checkpoint are installed, but **full checkpoint inference is not yet
+qualified**: the actual native run returned `memory_limit` before loading it.
+Existing chat and ML tools remain available. It requires no API key and cannot
+execute an ML action. The identity checkpoint passed 375 .NET tests, 11 architecture
+checks, 12 independent LAYA worker tests and 44 native UI supervisor checks;
+each of those two native runs passed 315 avatar and 40 controlled LAYA UI assertions.
+These controlled fixtures do not substitute for successful pretrained inference.
+
+**Mu Machine Learning Lab now has a verified bounded foundation (2026-09-29),
+independently reviewed at 8.9/10.**
+Open it from More, the tray or Chat for local dataset inspection, explicit CPU
+training, metrics/plots, saved models, schema-checked prediction, reproducible export
+and comparison of 2–5 experiments with matching data and split. Ask Mu proposes a
+typed action through the local model; review it and explicitly Run before anything
+executes. This is not completion of the full requested ML Phase 1 or release approval.
+See the [Lab guide](docs/ML_LAB_GUIDE.md) and
+[independent review](docs/qa/ML_LAB_FOUNDATION_REVIEW.md).
+
+The preceding ML foundation candidate passed 353 .NET tests, 11 architecture checks, 57 native Lab
+assertions and two live local planning prompts. The latter is a narrow public fixture,
+not a general language-understanding benchmark. Prior desktop UI regression passes
+38 supervisor checks. Historical display, CPU and release gates below remain open.
 
 **Phase 3 development passed independent QA at 9.5/10.** The app opens a small transparent
 character with no surrounding card. Hover over it to reveal **Chat**, **Settings**
@@ -27,9 +90,11 @@ uses a pretrained Qwen model entirely on this PC: streaming, Stop, retry, saved 
 temporary conversations, search, titles and preserved edit/regenerate branches.
 Markdown, highlighted code and a bounded LaTeX subset render in native WPF, with a
 plain-text switch and Copy reply. Phase 4 adds explicit **Read aloud** / **Stop voice**
-using installed Microsoft voices, with session voice/speed controls under Voice options.
-It does not speak replies automatically. Microphone input, custom avatar packs, tools and long-term
-memory remain unimplemented. Resource confirmation failed;
+using optional local neural or installed Microsoft voices, with session voice/speed
+controls and Preview under Voice options.
+It does not speak replies automatically. Microphone input remains unqualified WIP;
+custom avatar packs, general-purpose tools and long-term memory remain future work.
+The new ML Lab is a separate, explicitly persistent workspace. Resource confirmation failed;
 CPU qualification remains a release blocker. Physical display, actual input, accessibility and sign-in qualification
 remain mandatory before release under the recorded validation sequence. No API credentials are
 read or required.
@@ -42,15 +107,56 @@ the local profile; this starts a separate conversation and does not copy tempora
 messages. Saved history survives restart. Replies completed while chat is inactive
 briefly appear beside the character; opening chat or dismissing the preview clears it.
 The small model can make mistakes. Read aloud covers up to 2,000 characters or
-30 seconds; it preserves the full reply as text. This first voice adapter requires
-an installation with only Microsoft speech engines enabled and uses the default
-audio output. It does not change Windows voice or device settings.
+30 seconds; it preserves the full reply as text. The Windows voice adapter requires
+an installation with only Microsoft speech engines enabled. Neural voices use their
+own optional runtime. Both use the default audio output and leave Windows settings intact.
 See [local AI setup and limits](docs/LOCAL_AI.md).
 The [increment review](docs/qa/PHASE_3_LOCAL_INCREMENT_REVIEW.md) verifies 224 tests,
 54 native chat assertions and real local inference/cancellation. This is a development
 increment, not a finished assistant or release.
 
+## Architecture at a glance
+
+Dependencies point in one direction only. `Companion.Core` has no package
+references and is referenced by everything; `Companion.Desktop` references the
+other three and is the only project that composes Windows types.
+
+```
+Companion.Desktop  (WPF: companion, settings, chat, ML Lab windows)
+        |
+        v
+Companion.Infrastructure  (SQLite persistence, logging, activation,
+        |                   owned model worker, streaming adapter)
+        v
+Companion.Application  (settings, typed logging, local chat ports,
+        |                ML contracts & proposal schema)
+        v
+Companion.Core  (validated configuration and domain values; no packages)
+
+Companion.Desktop --spawns--> workers/ml_lab           (bounded local ML, CPU only)
+                    --spawns--> workers/neural_speech  (optional offline synthesis)
+                    --spawns--> workers/laya_advisor    (optional local task advice)
+```
+
+`Companion.Core` and `Companion.Application` are deliberately package-free;
+`Companion.Infrastructure` and `Companion.Desktop` carry the pinned
+dependencies. Full contracts are in [ARCHITECTURE.md](ARCHITECTURE.md).
+
 ## Build and launch
+
+For the optional ML runtime, install local Python 3.12/3.13 and `uv`, then run
+`scripts/setup-ml-lab.ps1 -Python C:\path\to\python.exe`. It installs 24 hash-locked
+packages locally; setup needs network access and at least 2 GiB free storage.
+Training and datasets stay on this PC and require no API key. The default job uses
+10,000 rows, two CPU threads and a 1 GiB committed-memory cap. Lab artifacts persist
+under the profile's `ml-lab/default-project`, independently of temporary chats.
+
+The current Desktop shortcut targets `artifacts/Mu/Companion.Desktop.exe`. The
+preceding ML-only candidate remains under `artifacts/qa/ml-candidate` as historical
+evidence. Close an older running Mu before launching a rebuilt executable with
+`--ml-root <absolute-repository-path>` and
+`--local-model-dir <absolute-repository-path>\artifacts\local-ai`; otherwise single-
+instance activation reuses the older app. This is a development candidate, not an installer.
 
 Prerequisites: Windows 11 x64 and .NET SDK **10.0.401** (later patches in the same
 feature band allowed), including WindowsDesktop reference packs. Production projects
@@ -78,7 +184,7 @@ Hide and click-through require a successfully registered summon shortcut. If a s
 cannot be registered, choose another preset before making the companion inaccessible.
 Settings save explicitly; closing the settings window discards unsaved edits.
 Reopening Settings shows and restores an existing hidden or minimized editor.
-Version-1 preferences migrate in memory and are written as version 2 only on Save.
+Version-1/2 preferences migrate in memory and are written as version 3 only on Save.
 The expression preview lasts four seconds and does not start a microphone or task.
 Windows sign-in startup is opt-in under Desktop behavior, available with the default
 profile; it registers the current executable path, so update it if you move the app.
@@ -99,12 +205,19 @@ for retention and recovery. Verification uses isolated fixtures instead of real 
 
 ## Repository
 
+Remote: `https://github.com/calebaiken/mu-desktop-assistant` (private).
+Default branch `main`. No installer or published release exists; the release
+license has not been selected.
+
 | Location | Responsibility |
 |---|---|
 | `src/Companion.Core` | Validated configuration/domain values |
 | `src/Companion.Application` | Settings, typed logging and local chat ports |
 | `src/Companion.Infrastructure` | Persistence, logging, activation, owned model worker and streaming adapter |
 | `src/Companion.Desktop` | Composition/lifetime, companion, settings and chat windows |
+| `workers/ml_lab` | Optional bounded local Python data/model/evaluation worker |
+| `workers/neural_speech` | Optional pinned offline CPU synthesis and in-memory playback worker |
+| `tests/ml_lab` | Independent numerical, data, protocol and persistence checks |
 | `tests/Companion.Tests` | Discoverable MSTest unit/integration/adversarial tests |
 | `tests/Companion.ArchitectureChecks` | Executable repository invariants |
 | `scripts` | Positive, negative and visible-window process verification |
@@ -136,5 +249,4 @@ with 272 tests, 11 architecture checks and 28 native process controls. Phase 4A'
 with 305 tests, 38 native process controls and 84 speech UI checks in both runs.
 Microphone/VAD/STT and the complete
 voice loop remain unfinished. See the [voice plan](docs/PHASE_4_VOICE_PLAN.md).
-No installer, remote repository or published release
-exists. No release license has been selected.
+No installer or published release exists. No release license has been selected.

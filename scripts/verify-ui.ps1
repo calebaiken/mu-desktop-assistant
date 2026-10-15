@@ -1,8 +1,8 @@
 [CmdletBinding()]
-param([ValidateSet('Debug', 'Release')][string]$Configuration = 'Release')
+param([ValidateSet('Debug', 'Release')][string]$Configuration = 'Release', [string]$ApplicationPath)
 $ErrorActionPreference = 'Stop'
 $workspaceRoot = Split-Path -Parent $PSScriptRoot
-$appPath = Join-Path $workspaceRoot "src\Companion.Desktop\bin\$Configuration\net10.0-windows\Companion.Desktop.exe"
+$appPath = if ($ApplicationPath) { [IO.Path]::GetFullPath($ApplicationPath) } else { Join-Path $workspaceRoot "src\Companion.Desktop\bin\$Configuration\net10.0-windows\Companion.Desktop.exe" }
 if (-not (Test-Path -LiteralPath $appPath -PathType Leaf)) { throw 'Build the desktop project before running UI process checks.' }
 $runId = (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [Guid]::NewGuid().ToString('N').Substring(0, 8)
 $evidenceRoot = Join-Path $workspaceRoot "artifacts\qa\desktop-ui-$runId"
@@ -117,6 +117,19 @@ if ($settingsLifecycle.failure -or $settingsLifecycle.count -ne 29 -or
 }
 $script:caseCount++
 Write-Output 'PASS 29 settings-save-shutdown lifecycle assertions'
+foreach ($fixture in @(
+    @{ File = 'avatar-customization-smoke.json'; Stage = 'avatar-customization-complete'; Count = 315 },
+    @{ File = 'laya-ui-smoke.json'; Stage = 'laya-ui-complete'; Count = 40 })) {
+    foreach ($folder in @($firstRun, $profile)) {
+        $report = Get-Content -LiteralPath (Join-Path $folder $fixture.File) -Raw | ConvertFrom-Json
+        if ($report.failure -or $report.count -ne $fixture.Count -or @($report.passed | Select-Object -Unique).Count -ne $fixture.Count) {
+            throw "Incomplete native evidence: $($fixture.File)"
+        }
+    }
+    if (@($stages | Where-Object { $_ -like ($fixture.Stage + ':*') }).Count -ne 2) { throw 'Both native runs must complete the new customization/advice checks.' }
+    $script:caseCount++
+    Write-Output "PASS $($fixture.Count) $($fixture.File) assertions in both native runs"
+}
 $placementInitialization = Get-Content -LiteralPath (Join-Path $profile 'placement-initialization-smoke.json') -Raw | ConvertFrom-Json
 if ($placementInitialization.failure -or $placementInitialization.count -ne 49 -or
     @($placementInitialization.passed | Select-Object -Unique).Count -ne 49 -or
@@ -133,7 +146,7 @@ if ($chatLifecycle.failure -or $chatLifecycle.count -ne 54 -or
 }
 $script:caseCount++
 Write-Output 'PASS 54 local chat lifecycle/history/layout assertions'
-foreach ($suite in @(@('chat-history', 50), @('safe-chat-document', 46), @('companion-reply', 34), @('speech-ui', 84))) {
+foreach ($suite in @(@('chat-history', 50), @('safe-chat-document', 46), @('companion-reply', 34), @('speech-ui', 94))) {
     $name = [string]$suite[0]
     $expected = [int]$suite[1]
     foreach ($folder in @($firstRun, $profile)) {
@@ -171,6 +184,16 @@ Assert-AppExit 'reject-private-speech-conflict' "--private-speech-smoke --speech
 Assert-AppExit 'reject-speech-model-directory' "--speech-smoke --local-model-dir `"$profile`" $profileArgument" 2
 Assert-AppExit 'reject-private-speech-default-profile' "--private-speech-smoke --data-dir `"$normalProfile`"" 2
 Assert-AppExit 'reject-private-speech-without-profile' '--private-speech-smoke' 2
+Assert-AppExit 'reject-laya-without-explicit-root-profile' '--laya-smoke' 2
+Assert-AppExit 'reject-laya-default-profile' "--laya-smoke --ml-root `"$workspaceRoot`" --data-dir `"$normalProfile`"" 2
+Assert-AppExit 'reject-laya-conflicting-diagnostics' "--laya-smoke --ui-smoke --ml-root `"$workspaceRoot`" $profileArgument" 2
+Assert-AppExit 'reject-laya-chat-model' "--laya-smoke --ml-root `"$workspaceRoot`" --local-model-dir `"$profile`" $profileArgument" 2
+Assert-AppExit 'reject-neural-without-explicit-root-profile' '--neural-speech-smoke' 2
+Assert-AppExit 'reject-neural-default-profile' "--neural-speech-smoke --ml-root `"$workspaceRoot`" --data-dir `"$normalProfile`"" 2
+Assert-AppExit 'reject-neural-conflicting-diagnostics' "--neural-speech-smoke --ui-smoke --ml-root `"$workspaceRoot`" $profileArgument" 2
+Assert-AppExit 'reject-neural-chat-model' "--neural-speech-smoke --ml-root `"$workspaceRoot`" --local-model-dir `"$profile`" $profileArgument" 2
+Assert-AppExit 'reject-neural-playback-without-diagnostic' "--neural-speech-playback --ml-root `"$workspaceRoot`" $profileArgument" 2
+Assert-AppExit 'reject-duplicate-neural-playback' "--neural-speech-smoke --neural-speech-playback --neural-speech-playback --ml-root `"$workspaceRoot`" $profileArgument" 2
 
 $logPath = Join-Path $profile 'logs\application.jsonl'
 $events = @(Get-Content -LiteralPath $logPath | ForEach-Object { $_ | ConvertFrom-Json })

@@ -5,8 +5,16 @@
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>../../assets/brand/Mu.ico</ApplicationIcon>
+    <AssemblyTitle>Mu</AssemblyTitle>
+    <Product>Mu</Product>
+    <Description>Local desktop assistant and Machine Learning Lab</Description>
   </PropertyGroup>
   <ItemGroup>
+    <Resource Include="../../assets/brand/Mu.ico" Link="Assets/Mu.ico" />
+    <Content Include="../../assets/brand/Mu.ico" Link="Mu.ico" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Preserved Phase 4B work is not wired or qualified. Phase 4A output remains active. -->
+    <Compile Remove="ChatWindow.VoiceInput.cs" />
     <PackageReference Include="Markdig" Version="1.3.2" />
     <PackageReference Include="WpfMath" Version="2.1.0" />
     <Using Remove="System.Drawing" />

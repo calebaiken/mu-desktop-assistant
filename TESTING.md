@@ -1,5 +1,186 @@
 # Testing
 
+## Optional neural voices — 2026-09-30
+
+This unit extends explicit local speech, without opening a microphone or completing
+the full voice loop. Receipts live under `artifacts/qa/neural-voice-review` unless a
+full path below specifies another isolated run. See the
+[independent review](docs/qa/MU_NEURAL_VOICE_REVIEW.md) for final scores and repair loops.
+
+| Check | Executed result | Receipt |
+|---|---|---|
+| Strict final shortcut-targeted production build | 0 warnings/errors; includes Stop repair | `desktop-stable-final-build.txt` |
+| Independent affected neural + preserved SAPI | 56/56; 23 new neural, 33 preserved | `termination-race-fixture-repaired.trx` |
+| Full final .NET regression | 398/398; zero skipped; 29 s | `full-suite-termination-repaired.trx` |
+| Architecture | 11/11; required root argument supplied on repaired invocation | `architecture-root-repaired.txt` |
+| Independent Python | 21/21; real NumPy conversion, no model inference | `independent-python-quantization.txt` |
+| Four real voices in native Preview | 21/21, actual production host/model; 61.257 s | `artifacts/qa/neural-speech-20260930-021140-e9038281/neural-speech-smoke.json` |
+| Independent real audio oracle | Four bounded PCM16 mono 24 kHz WAVs, exact durations/hashes | `actual-public-wave-oracle.txt` and `actual-public-wave-reviewed.json` |
+| Final shortcut-targeted native UI supervisor | 50/50; two retained runs, each with 94 speech checks | `native-ui-stable-final.txt`; `artifacts/qa/desktop-ui-20260930-114805-9e0138dc/first-run` and `profile` |
+| Existing Desktop shortcut readback | Rebuilt executable/local model arguments verified; shortcut preserved | `shortcut-final-readback.json` |
+
+The independent .NET cases exercise closed commands/catalogs, exact audio/time
+arithmetic, invalid/tampered/missing input, true held-process cancellation/disposal,
+output floods, unrelated worker preservation and operation-owned TEMP cleanup.
+New preview checks preserve all 84 original native speech assertions. They execute
+real WPF windows and controlled providers, not physical input or human listening.
+
+The actual four-voice Preview run synthesizes the same fixed public introduction
+with each curated voice at rate zero. An explicit inaudible production probe
+replaces playback for that run, so its valid audio/dispatcher evidence does not
+alone prove output-device playback. The exported public WAV files are retained
+only by this isolated diagnostic. Normal speech saves no WAVs. The independent
+oracle verifies 269,887 / 277,679 / 305,695 / 300,847 frames and durations of
+11.245292 / 11.569958 / 12.737292 / 12.535292 seconds. Later actual speech may yield
+different PCM hashes; these are attempt-specific receipts, not a bit-identical
+inference promise or a human-naturalness benchmark.
+
+Retained native failures: `015934-0439993c` stopped after four preliminary checks;
+`021327-407a5987` and `021546-3d22f3e6` failed between inaudible probes;
+`022828-a14d8eb2` reached 24/25, including actual Speaking, held-worker Stop and
+native idle recovery, then failed the short reuse reading. None is a 25-case pass.
+Their full directory names begin `artifacts/qa/neural-speech-20260930-`.
+The separate `artifacts/qa/neural-speech-lifecycle-20260930-023218-bc651ea8`
+normal-Speak harness exposed CleanupFailed after six checks. The ensuing narrow
+termination-race repair confirms held-child exit within the original remaining
+three seconds before accepting a racing Kill error. The original failed receipts
+and their temporary-directory evidence are preserved.
+
+After that repair, the final 398-test suite and affected 56-test suite pass,
+including 24 real held-process cancellation/error-drain/reuse iterations and
+32 actual job-termination scheduling races under the original three-second bound.
+The real model reruns at `024351-86635676` and `114316-407af385` each stopped
+at five of 33 checks with the exact content-free `memory_limit` code. The final
+directory is `artifacts/qa/neural-speech-lifecycle-20260930-114316-407af385`.
+This proves safe refusal, not successful generation/cancellation/playback reuse.
+The final numerical review does not waive this **INCOMPLETE** functional gate.
+User applications were not closed by Mu; unproven background-process ownership
+did not authorize terminating them. Qwen/neural co-residency was not attempted
+under the measured commit shortage.
+
+The reviewer initially used a 66,000-byte probe flood, below the six-MiB probe cap.
+That test's own guard expired; the fixture was repaired to cap plus one byte,
+without weakening the production cap or timeout. Setup's initial PS5 quoting
+verification failure and its repaired idempotent run remain under
+`artifacts/neural-voice-research`. Final normal playback/privacy, termination-race
+regression and source/binary hashes are recorded in the review's final ledger.
+Missing physical hearing, subjective preference, pronunciation, device-loss,
+co-resident model resources and release qualifications are not silently passed.
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/setup-neural-speech.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/verify-neural-speech.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/verify-neural-speech.ps1 -Playback
+```
+
+`-Playback` deliberately uses the default output for a public sample and checks
+Stop/reuse. Its aggregate supervisor permits 650 seconds; individual production
+budgets remain 90 seconds generation, 30 seconds playback and three seconds cleanup.
+Run model diagnostics serially on this low-memory PC. Do not attribute a new
+successful run to an older failed attempt or erase failures from the ledger.
+
+## Mu identity and optional LAYA evidence — 2026-09-30
+
+Current build: `artifacts/Mu/Companion.Desktop.exe`. These receipts qualify avatar/
+icon/UI and the advisory boundary; **full pretrained LAYA inference is incomplete**.
+All paths below are relative to `artifacts/qa` unless stated otherwise.
+
+| Check | Executed result | Receipt |
+|---|---|---|
+| Strict production build | 0 warnings/errors | `identity-laya-review/desktop-icon-repair-build.txt` |
+| Full .NET regression | 375/375, 0 skipped | `identity-laya-review/full-suite-reviewed.trx` |
+| Architecture | 11/11 | `identity-laya-review/architecture-final.txt` |
+| Independent LAYA Python | 12/12; no pretrained inference | `identity-laya-review/python-independent-admission-final.txt` |
+| Native UI supervisor | 44/44; two retained runs | `identity-laya-review/native-ui-icon-repaired.txt` |
+| Avatar customization | 315/315 in each native run | `desktop-ui-20260930-005702-9eb5cf24/first-run/avatar-customization-smoke.json` and `profile/avatar-customization-smoke.json` |
+| Controlled LAYA UI | 40/40 in each native run | Same `first-run/` and `profile/` directories, `laya-ui-smoke.json` |
+| ICO decoding / PE extraction | All seven frames decoded; actual executable icon inspected | `identity-laya-review/icon-decoded.json`, `executable-icon.json` |
+| Shortcut | Scratch and actual Desktop creation/property verification passed | `identity-laya-review/shortcut-fixture-create.txt`, `desktop-shortcut-create.txt` |
+| Actual LAYA production host/native view | **FAIL: memory_limit**, 3 preliminary checks; no model output; 1.65 s | `laya-runtime-20260930-010310-74c36871/laya-runtime-smoke.json` |
+
+The tiny seeded real ModernBERT/LAYA-head float16 CPU check passed in 15.026 seconds
+(`laya/tiny-precision-runtime-seeded.txt`). It verifies numerical execution of that
+policy on a tiny synthetic model, not the downloaded checkpoint or domain accuracy.
+The full-model diagnostic must pass its 16 checks before inference is qualified:
+
+```powershell
+.\scripts\verify-ui.ps1 -ApplicationPath .\artifacts\Mu\Companion.Desktop.exe
+.\scripts\verify-laya.ps1 -ApplicationPath .\artifacts\Mu\Companion.Desktop.exe
+```
+
+The initial `identity-laya-review/real-host-native-laya.txt` text capture is empty
+and is retained as a logging failure, not evidence. The actual native JSON above
+records the run's failure and elapsed time. The independent review scores this
+bounded work 88/100 (8.8/10), **overall INCOMPLETE** because successful full-checkpoint
+inference remains a functional gate; the identity/customization scope is delivered.
+
+Native fixtures use actual WPF windows/dispatchers and isolate profiles. They do not
+certify physical mouse/keyboard travel, screen readers, multiple displays or an idle
+CPU budget. Synthetic held Python workers separately test actual cancellation and
+disposal ownership. No test opens the microphone or uses user dataset content.
+
+Retained failures include the initial hover gap (`desktop-ui-20260930-004141-3ed7cbed`),
+expanded minimum-window action clipping (`004749-16bd2937`) and missing derived-window
+icon (`005356-6d7b0e51`); repairs reran the original assertions. Prior full-model
+float32/commit failures and setup disk exhaustion are preserved under `laya/`.
+The repaired legacy-name test follows a retained 374/375 run. These failures were
+not recategorized as passes. See the [independent review](docs/qa/MU_IDENTITY_LAYA_REVIEW.md).
+
+## ML foundation evidence — 2026-09-29
+
+This is the integrated bounded ML foundation, not full requested ML Phase 1 or a
+release approval. Final receipts preserve the scope of each run:
+
+| Check | Executed result | Retained receipt under `artifacts/qa` |
+|---|---|---|
+| Strict candidate production build | 0 warnings, 0 errors | `ml-foundation/build-candidate.txt` |
+| .NET unit/integration/adversarial | 353/353; 0 skipped/inconclusive | `ml-foundation/ml-reviewed-final.trx`, `final-reviewed-dotnet-tests.txt` |
+| Architecture | 11/11 | `ml-foundation/final-architecture-repaired.txt` |
+| Independent Python | 46/46 full suite plus 19/19 expanded engine run; 48 distinct covered cases, not 65 unique tests | `ml-foundation-review/independent-final-run.txt`, `engine-final-negative-run.txt` |
+| Author Python | 6/6; loops cover 22 task/algorithm pairs; 20.209 s | `artifacts/ml-author-tests/author-suite-foundation.txt` (outside `artifacts/qa`) |
+| Native Lab | 57 assertions; failure=null; 137.904 s | `ml-native-20260929-230409-e1b0e71e/ml-lab-smoke.json` |
+| Live local planner | 2/2 public prompts through unchanged production transport; no proposal executed | `ml-native-20260929-230409-e1b0e71e/ml-planner-smoke.json` |
+| Existing desktop UI regression | 38/38 supervisor checks | `desktop-ui-20260929-230137-f73c8c5b/profile`, `ml-foundation/existing-ui-regression.txt` |
+
+The current author receipt is `artifacts/ml-author-tests/author-suite-foundation.txt`:
+6/6 in 20.209 seconds. The older `author-suite-final.txt` contains the preceding
+five-case run and does not qualify the later comparison test.
+
+The native suite exercises a real WPF HWND and local workers: minimum geometry,
+dispatcher heartbeat, inspection, regression/classification/CV/PCA/clustering,
+prediction failure/recovery, full historical detail, exact-cohort comparison,
+plots, queue/running cancellation, reuse and reopening. It is not physical input,
+screen-reader, multi-monitor or general scientific-validity qualification. The two
+live prompts check current-selection inspection and PCA without scaling; they are
+not a general language-understanding benchmark. The earlier 48- and 52-check native
+passes, failed planning attempts and diagnostic tee-assisted probe remain historical
+artifacts; the final planner receipt uses the unchanged production transport.
+
+Host tests execute synthetic workers through the real job/stdio adapter, covering
+output floods followed by a deliberate sleep, malformed replies, missing runtime,
+already-cancelled admission, cancelled-middle FIFO ordering, memory denial and held-
+worker concurrent disposal. Only missing optional runtime makes applicable tests
+inconclusive; the final 353-test run has none. The earlier 346-test receipt is retained
+as its own checkpoint. `final-structured-tests-build.txt` also records zero warnings
+and errors; `verified-source-manifest.json` identifies the final validated source.
+No test opens the microphone.
+
+```powershell
+.\scripts\setup-ml-lab.ps1 -Python C:\path\to\python.exe
+& .\artifacts\ml-runtime\Scripts\python.exe -m unittest discover -s tests/ml_lab -p 'test_independent_*.py' -v
+& .\artifacts\ml-runtime\Scripts\python.exe workers/ml_lab/test_author.py
+dotnet test tests/Companion.Tests -c Release --no-build --filter FullyQualifiedName~MlWorkerHostTests
+.\scripts\verify-ml-lab.ps1 -SkipBuild -LocalModelDirectory .\artifacts\local-ai
+```
+
+Use the matching freshly built executable. The normal output was locked by an older
+open Mu, so final validation used `artifacts/qa/ml-candidate/Companion.Desktop.exe`.
+The ML and existing-UI scripts accept `-ApplicationPath` for this candidate. Do not
+attribute a candidate receipt to the older normal binary. Close the older app before
+launching the candidate or rebuilding the usual output. Full pre-existing release
+gates and voice-input nonqualification below are unchanged. The independent
+[ML review](docs/qa/ML_LAB_FOUNDATION_REVIEW.md) records repairs, remaining scope and score.
+
 Phase 3 verification covers bounded local SSE/context admission, owned worker lifetime,
 SQLite history and branch recovery, separate temporary sessions, native Markdown/math
 rendering and the compact reply preview. The first history regression passed 267/267

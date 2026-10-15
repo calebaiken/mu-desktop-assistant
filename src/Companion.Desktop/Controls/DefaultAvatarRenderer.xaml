@@ -5,6 +5,14 @@
  <Grid x:Name="Character" RenderTransformOrigin="0.5,0.5">
   <Grid.RenderTransform><TranslateTransform x:Name="Motion" /></Grid.RenderTransform>
   <Border x:Name="Body" Background="#DDEAE6" BorderBrush="#55766D" BorderThickness="2" CornerRadius="45" />
+  <Path x:Name="DetectionHalo" Data="M38,79 C15,50 26,16 63,8 C102,-1 138,25 135,60 C133,76 124,89 109,96"
+        Stroke="#24483D" StrokeThickness="2" StrokeDashArray="4,4" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Visibility="Collapsed"/>
+  <Path x:Name="ParticleTrail" Data="M16,95 A2,2 0 1 1 20,95 A2,2 0 1 1 16,95 Z M26,87 A3,3 0 1 1 32,87 A3,3 0 1 1 26,87 Z M36,79 A4,4 0 1 1 44,79 A4,4 0 1 1 36,79 Z"
+        Fill="#24483D" Visibility="Collapsed"/>
+  <Path x:Name="MuBody" Data="M78,24 A31,31 0 1 1 78,86 A31,31 0 1 1 78,24 Z"
+        Fill="#DDEAE6" Stroke="#24483D" StrokeThickness="2" StrokeLineJoin="Round" Visibility="Collapsed"/>
+  <Path x:Name="GalaxyStars" Data="M61,31 L62,34 L65,35 L62,36 L61,39 L60,36 L57,35 L60,34 Z M96,34 L97,36 L99,37 L97,38 L96,40 L95,38 L93,37 L95,36 Z M98,61 L99,64 L102,65 L99,66 L98,69 L97,66 L94,65 L97,64 Z"
+        Fill="#CEF5FF" Opacity="0.7" Visibility="Collapsed"/>
   <Ellipse x:Name="LeftEye" Fill="#24483D" Width="10" Height="16" Margin="-45,-4,0,0" RenderTransformOrigin="0.5,0.5">
    <Ellipse.RenderTransform><ScaleTransform x:Name="LeftBlink" /></Ellipse.RenderTransform>
   </Ellipse>

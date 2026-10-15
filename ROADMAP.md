@@ -11,9 +11,25 @@ exact token admission and native Markdown/code/math now pass the
 [Phase 3 development review](docs/qa/PHASE_3_HISTORY_REVIEW.md) at **9.5/10**.
 Phase 4A's [explicit local speech output](docs/qa/PHASE_4A_SPEECH_REVIEW.md) passes
 independent review at **9.0/10**. This covers manual Read aloud/Stop and session
-voice/speed controls; Phase 4B push-to-talk and the wider voice loop remain next
+voice/speed controls; Phase 4B push-to-talk and the wider voice loop remain unfinished
 under the [voice plan](docs/PHASE_4_VOICE_PLAN.md). See the
 [independent increment review](docs/qa/PHASE_3_LOCAL_INCREMENT_REVIEW.md).
+
+The user's 2026-09-29 priority is the integrated Mu Machine Learning Lab. Its phase
+numbering is separate from the assistant roadmap below. The bounded foundation now
+implements local inspection, supervised/unsupervised CPU fitting, metrics/plots,
+saved models, prediction, exact-cohort comparison, historical detail, export and
+reviewed local conversational proposals. Executed regression includes 353 .NET tests,
+11 architecture checks, 57 native Lab checks and two live planning fixtures. This does
+not complete all requested ML Phase 1 or authorize advancement by itself; the
+[independent ML review](docs/qa/ML_LAB_FOUNDATION_REVIEW.md) owns that decision.
+
+Next ML units include richer editable feature engineering, multidimensional scientific
+data/waveforms, project/model lifecycle UX, fuller learning explanations, advanced
+search/interpretability and scientific/deep-learning backends. Auto currently proposes
+one reviewed action. GPU execution, pause/resume, notebook export and broad assistant
+competence remain unqualified. Existing Phase 4B files are preserved, with the incomplete
+Desktop partial excluded from compilation; microphone work is not counted as delivered.
 
 | Phase | Delivery | Exit evidence (in addition to independent score >8.5) |
 |---|---|---|

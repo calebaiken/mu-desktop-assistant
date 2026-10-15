@@ -8,7 +8,7 @@ using Companion.Application.Conversation;
 namespace Companion.Infrastructure.Conversation;
 
 /// <summary>Streams only from the companion's authenticated, loopback-only model worker.</summary>
-public sealed class LocalChatModel : IChatModel, IDisposable
+public sealed class LocalChatModel : IStructuredChatModel, IDisposable
 {
     internal const int MaximumMessageBytes = 32 * 1024;
     internal const int MaximumEventBytes = 64 * 1024;
@@ -55,8 +55,20 @@ public sealed class LocalChatModel : IChatModel, IDisposable
             throw new ArgumentOutOfRangeException(nameof(idleTimeout));
     }
 
-    public async IAsyncEnumerable<ChatStreamEvent> StreamAsync(
+    public IAsyncEnumerable<ChatStreamEvent> StreamAsync(IReadOnlyList<ChatMessage> messages,
+        CancellationToken cancellationToken = default) => StreamCoreAsync(messages, null, cancellationToken);
+
+    public IAsyncEnumerable<ChatStreamEvent> StreamJsonAsync(IReadOnlyList<ChatMessage> messages,
+        JsonElement schema, CancellationToken cancellationToken = default)
+    {
+        if (schema.ValueKind != JsonValueKind.Object || schema.GetRawText().Length > 16384)
+            throw new ArgumentException("A bounded JSON object schema is required.", nameof(schema));
+        return StreamCoreAsync(messages, schema.Clone(), cancellationToken);
+    }
+
+    private async IAsyncEnumerable<ChatStreamEvent> StreamCoreAsync(
         IReadOnlyList<ChatMessage> messages,
+        JsonElement? schema,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -72,12 +84,15 @@ public sealed class LocalChatModel : IChatModel, IDisposable
             using var request = new HttpRequestMessage(HttpMethod.Post, endpoint);
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", sessionToken);
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));
-            request.Content = new ByteArrayContent(JsonSerializer.SerializeToUtf8Bytes(new
+            var requestBody = new Dictionary<string, object?>
             {
-                model = "local", messages = requestMessages, stream = true, max_tokens = MaximumOutputTokens,
-                cache_prompt = false, temperature = 0.7, top_k = 20, top_p = 0.8, min_p = 0.0,
-                presence_penalty = 1.5, chat_template_kwargs = new { enable_thinking = false }
-            }));
+                ["model"] = "local", ["messages"] = requestMessages, ["stream"] = true, ["max_tokens"] = MaximumOutputTokens,
+                ["cache_prompt"] = false, ["temperature"] = schema is null ? 0.7 : 0.0,
+                ["top_k"] = 20, ["top_p"] = 0.8, ["min_p"] = 0.0,
+                ["presence_penalty"] = schema is null ? 1.5 : 0.0, ["chat_template_kwargs"] = new { enable_thinking = false }
+            };
+            if (schema is { } constrained) requestBody["response_format"] = new { type = "json_object", schema = constrained };
+            request.Content = new ByteArrayContent(JsonSerializer.SerializeToUtf8Bytes(requestBody));
             request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
             using var response = await SendAsync(request, idle, cancellationToken).ConfigureAwait(false);
             ValidateResponse(response, endpoint, "text/event-stream");
