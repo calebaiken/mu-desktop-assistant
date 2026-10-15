@@ -11,6 +11,26 @@ jobs:
       - uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
+      # The ML, LAYA and neural-speech process-boundary tests resolve an
+      # interpreter from artifacts/ml-runtime/Scripts/python.exe, which is
+      # created by the setup-*.ps1 scripts and therefore never present on a
+      # clean checkout. Provision a bare venv at that path so those checks
+      # actually execute instead of reporting inconclusive.
+      #
+      # Deliberately NOT scripts/setup-ml-lab.ps1: the 24 packages in
+      # workers/requirements-ml.lock are --generate-hashes locked against
+      # CPython 3.12.14 and would fail to sync on a runner. The tests spawn
+      # stdlib-only synthetic workers and import none of those packages, so an
+      # interpreter is the whole requirement. Re-test before changing this.
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Provision optional ML runtime interpreter
+        shell: powershell
+        run: |
+          New-Item -ItemType Directory -Force -Path artifacts | Out-Null
+          python -m venv artifacts/ml-runtime
+          & artifacts/ml-runtime/Scripts/python.exe -c "import json,os,sys,base64,pathlib; print('ML runtime interpreter ready:', sys.version)"
       - name: Build, test and smoke
         shell: powershell
         run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify.ps1
