@@ -27,9 +27,9 @@ and voice assets are installed on this PC; no API key, cloud service or micropho
 is involved. Voice/speed choices apply to the current chat window. Long readings
 are shortened to approximately 30 seconds, and memory pressure can safely refuse
 generation. All four real public samples passed audio inspection, and the
-repaired host passes all 398 .NET tests when the optional local ML runtime is
-provisioned. CI has no such runtime, so it reports 366 passed and 32 skipped
-rather than a shortfall. **Final real playback/reuse qualification is
+repaired host passes all 398 .NET tests. CI now provisions a bare interpreter at
+`artifacts/ml-runtime` so those checks execute there too: 398 passed, 0 failed,
+0 skipped. **Final real playback/reuse qualification is
 still incomplete:** the latest run safely returned `memory_limit`. See [voice help](docs/MU_NEURAL_VOICES.md) and
 [the measured qualification](docs/qa/MU_NEURAL_VOICE_REVIEW.md).
 

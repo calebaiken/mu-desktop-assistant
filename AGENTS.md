@@ -75,14 +75,23 @@ Consequently the two environments differ, and this is expected, not a bug:
 
 | | Failed | Passed | Skipped | Total |
 |---|---|---|---|---|
-| GitHub Actions (no runtime provisioned) | 0 | 366 | 32 | 398 |
+| GitHub Actions (interpreter provisioned by the workflow) | 0 | 398 | 0 | 398 |
 | Local, after the setup scripts | 0 | 398 | 0 | 398 |
+
+The workflow creates a bare venv at `artifacts/ml-runtime`, which is the whole
+requirement: these checks spawn stdlib-only synthetic workers and import none of
+the packages in `workers/requirements-ml.lock`. It does not run
+`scripts/setup-ml-lab.ps1`, whose 24 packages are `--generate-hashes` locked
+against CPython 3.12.14 and do not reliably sync on a runner. CI therefore
+verifies the process boundary but not that the pinned ML stack installs.
 
 Tests that need the reviewed runtime resolve it from
 `artifacts/ml-runtime/Scripts/python.exe`. **When that file is absent such a test
 must call `Assert.Inconclusive(...)`, never `Assert.IsTrue(File.Exists(...))` or
 `Assert.Fail`.** A missing optional runtime is a reported skip, never a failure
-and never a silent pass. Three helpers already follow this rule —
+and never a silent pass. That rule is what let the suite pass at all before the
+workflow learned to provision the interpreter; on a machine with no Python the
+32 checks skip again rather than failing. Three helpers already follow it —
 `MlWorkerHostTests`, `IndependentLayaTests.MakeService` and
 `IndependentNeuralSpeechTests.Python`. Treat them as the pattern.
 

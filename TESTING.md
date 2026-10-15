@@ -9,8 +9,9 @@ full path below specifies another isolated run. See the
 
 Receipts below record real runs on the provisioned local host, where the optional
 ML runtimes under `artifacts/` exist and the full suite executes. GitHub Actions
-does not provision them, so it reports 366 passed and 32 skipped of 398. Both
-are expected; see [AGENTS.md](AGENTS.md).
+provisions a bare interpreter at the same path and also reaches 398/398; it does
+not install the pinned ML packages, since these checks import none of them. See
+[AGENTS.md](AGENTS.md).
 
 | Check | Executed result | Receipt |
 |---|---|---|
