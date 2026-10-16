@@ -704,22 +704,150 @@ elif suffix == ".jsonl":
     with path.open(encoding="utf-8-sig") as stream:
         rows = (json.loads(line) for line in stream if line.strip())
         frame = pd.DataFrame(itertools.islice(rows, start, start + count))
-elif suffix in (".npy", ".npz"):
+elif suffix in (".npy", ".npz", ".h5", ".hdf5"):
+    def _has_h5_dataset(handle, candidate):
+        if not candidate:
+            return False
+        import h5py
+        current = handle
+        parts = [p for p in str(candidate).strip("/").split("/") if p]
+        if not parts:
+            return False
+        for part in parts:
+            if part in (".", "..") or not isinstance(current, h5py.Group):
+                return False
+            link = current.get(part, getlink=True)
+            if not isinstance(link, h5py.HardLink):
+                return False
+            current = current[part]
+        return isinstance(current, h5py.Dataset)
+
+    def _key_exists(existing_keys, candidate):
+        if existing_keys is None or not candidate:
+            return False
+        if isinstance(existing_keys, (set, list, tuple, dict)):
+            return candidate in existing_keys
+        return _has_h5_dataset(existing_keys, candidate)
+
+    def _parse_key(raw_key, existing_keys=None):
+        if not raw_key:
+            return None, None, False
+        text = str(raw_key).strip()
+        if _key_exists(existing_keys, text):
+            return text, None, False
+        escaped = text.replace("@@", "\x00")
+        wf = False
+        ch = None
+        if escaped.endswith("@waveform"):
+            wf = True
+            escaped = escaped[:-len("@waveform")]
+        candidate_after_wf = escaped.replace("\x00", "@")
+        if wf and _key_exists(existing_keys, candidate_after_wf):
+            return candidate_after_wf, None, True
+        if "@channel:" in escaped:
+            base, _, ch_str = escaped.rpartition("@channel:")
+            if ch_str.isdigit():
+                ch = int(ch_str)
+                escaped = base
+        base_key = escaped.replace("\x00", "@")
+        return (base_key if base_key else None), ch, wf
+
+    def _extract_wf(matrix, prefix="wf"):
+        data = np.asarray(matrix, dtype=np.float64)
+        n_rows, n_samples = data.shape
+        mean = np.mean(data, axis=1)
+        std = np.std(data, axis=1, ddof=0)
+        minimum = np.min(data, axis=1)
+        maximum = np.max(data, axis=1)
+        ptp = maximum - minimum
+        sq = np.square(data)
+        energy = np.sum(sq, axis=1)
+        rms = np.sqrt(energy / n_samples)
+        abs_data = np.abs(data)
+        abs_mean = np.mean(abs_data, axis=1)
+        median = np.median(data, axis=1)
+        q25, q75 = np.percentile(data, [25.0, 75.0], axis=1)
+        iqr = q75 - q25
+        if n_samples >= 2:
+            signs = np.sign(data)
+            filled_signs = np.take_along_axis(
+                signs,
+                np.maximum.accumulate(np.where(signs != 0.0, np.arange(n_samples), 0), axis=1),
+                axis=1,
+            )
+            zero_crossings = np.sum(filled_signs[:, 1:] * filled_signs[:, :-1] < 0.0, axis=1).astype(np.float64)
+        else:
+            zero_crossings = np.zeros(n_rows, dtype=np.float64)
+        peak_abs = np.max(abs_data, axis=1)
+        safe_rms = np.where(rms > 0.0, rms, 1.0)
+        crest_factor = np.where(rms > 0.0, peak_abs / safe_rms, 0.0)
+        peak_index = np.argmax(abs_data, axis=1).astype(np.float64)
+        centered = data - mean[:, None]
+        spectrum = np.abs(np.fft.rfft(centered, axis=1))
+        bins = np.arange(spectrum.shape[1], dtype=np.float64)
+        spec_sum = np.sum(spectrum, axis=1)
+        safe_spec_sum = np.where(spec_sum > 0.0, spec_sum, 1.0)
+        spectral_centroid = np.where(spec_sum > 0.0, np.sum(spectrum * bins[None, :], axis=1) / safe_spec_sum, 0.0)
+        if spectrum.shape[1] > 1:
+            ac_mag = spectrum[:, 1:]
+            ac_max = np.max(ac_mag, axis=1)
+            dominant_bin = np.where(ac_max > 0.0, (np.argmax(ac_mag, axis=1) + 1).astype(np.float64), 0.0)
+        else:
+            dominant_bin = np.zeros(n_rows, dtype=np.float64)
+        return pd.DataFrame({
+            f"{prefix}_mean": mean, f"{prefix}_std": std, f"{prefix}_min": minimum,
+            f"{prefix}_max": maximum, f"{prefix}_ptp": ptp, f"{prefix}_rms": rms,
+            f"{prefix}_energy": energy, f"{prefix}_abs_mean": abs_mean,
+            f"{prefix}_median": median, f"{prefix}_iqr": iqr,
+            f"{prefix}_zero_crossings": zero_crossings, f"{prefix}_crest_factor": crest_factor,
+            f"{prefix}_peak_index": peak_index, f"{prefix}_spectral_centroid": spectral_centroid,
+            f"{prefix}_dominant_bin": dominant_bin,
+        })
+
     if suffix == ".npy":
-        array = np.load(path, mmap_mode="r", allow_pickle=False)[start:start + count]
-    else:
+        base_key, ch_idx, wf_mode = _parse_key(key)
+        raw_arr = np.load(path, mmap_mode="r", allow_pickle=False)[start:start + count]
+    elif suffix == ".npz":
         with np.load(path, allow_pickle=False) as archive:
-            array = archive[key][start:start + count]
-    if array.ndim == 1:
-        array = array.reshape(-1, 1)
-    frame = pd.DataFrame(array, columns=[f"feature_{i}" for i in range(array.shape[1])])
-elif suffix in (".h5", ".hdf5"):
-    import h5py
-    with h5py.File(path, "r") as handle:
-        array = handle[key][start:start + count]
-    if array.ndim == 1:
-        array = array.reshape(-1, 1)
-    frame = pd.DataFrame(array, columns=[f"feature_{i}" for i in range(array.shape[1])])
+            base_key, ch_idx, wf_mode = _parse_key(key, set(archive.files))
+            resolved_key = base_key or (next(iter(archive.files)) if len(archive.files) == 1 else None)
+            raw_arr = archive[resolved_key][start:start + count]
+    else:
+        import h5py
+        with h5py.File(path, "r") as handle:
+            base_key, ch_idx, wf_mode = _parse_key(key, handle)
+            current = handle
+            for part in (base_key or "").strip("/").split("/"):
+                if part in ("", ".", "..") or not isinstance(current, h5py.Group):
+                    raise RuntimeError("Invalid HDF5 dataset key.")
+                link = current.get(part, getlink=True)
+                if not isinstance(link, h5py.HardLink):
+                    raise RuntimeError("HDF5 external and symbolic links are not followed.")
+                current = current[part]
+            if not isinstance(current, h5py.Dataset) or current.is_virtual or current.external:
+                raise RuntimeError("Invalid or virtual/external HDF5 dataset.")
+            if len(current.shape) == 3 and ch_idx is not None:
+                raw_arr = current[start:start + count, ch_idx, :]
+            else:
+                raw_arr = current[start:start + count]
+    raw_arr = np.asarray(raw_arr)
+    if ch_idx is not None or wf_mode:
+        if raw_arr.ndim == 3:
+            if ch_idx is not None:
+                sliced_2d = raw_arr[:, ch_idx, :]
+                frame = _extract_wf(sliced_2d, f"ch{ch_idx}") if wf_mode else pd.DataFrame(sliced_2d, columns=[f"ch{ch_idx}_sample_{i}" for i in range(sliced_2d.shape[1])])
+            else:
+                frame = pd.concat([_extract_wf(raw_arr[:, c, :], f"ch{c}") for c in range(raw_arr.shape[1])], axis=1)
+        elif ch_idx is not None and raw_arr.ndim == 2:
+            frame = _extract_wf(raw_arr, f"ch{ch_idx}") if wf_mode else pd.DataFrame(raw_arr, columns=[f"ch{ch_idx}_sample_{i}" for i in range(raw_arr.shape[1])])
+        else:
+            if raw_arr.ndim == 1:
+                raw_arr = raw_arr.reshape(-1, 1)
+            frame = _extract_wf(raw_arr, "wf")
+    else:
+        if raw_arr.ndim == 1:
+            raw_arr = raw_arr.reshape(-1, 1)
+        frame = pd.DataFrame(raw_arr, columns=[f"feature_{i}" for i in range(raw_arr.shape[1])])
 elif suffix == ".parquet":
     import pyarrow.parquet as pq
     parts, scanned = [], 0

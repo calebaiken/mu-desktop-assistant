@@ -126,5 +126,24 @@ class EngineSmokeTests(unittest.TestCase):
         self.assertEqual("incompatible_comparison", mismatch.exception.code)
 
 
+
+    def test_hdf5_waveform_and_attribute_inspection(self):
+        import h5py
+        h5_path = self.project / "author_waveforms.h5"
+        t = np.linspace(0.0, 1.0, 32, endpoint=False)
+        data = np.stack([np.sin(2.0 * np.pi * (i + 1) * t) for i in range(24)], axis=0)[:, None, :]
+        with h5py.File(h5_path, "w") as handle:
+            ds = handle.create_dataset("signals", data=data)
+            ds.attrs["unit"] = np.bytes_("mV")
+            ds.attrs["rate_hz"] = 500
+        browsed = engine.browse({"path": str(h5_path)}, self.resource)
+        entry = browsed["entries"][0]
+        self.assertEqual(entry["attributes"]["unit"]["value"], "mV")
+        self.assertEqual(entry["attributes"]["rate_hz"]["value"], 500)
+        self.assertIn("/signals@waveform", entry["selectors"])
+        inspected = engine.inspect({"path": str(h5_path), "key": "/signals@waveform", "start": 0, "rowLimit": 24}, self.project, self.resource)
+        self.assertEqual(inspected["dataset"]["columns"], 15)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

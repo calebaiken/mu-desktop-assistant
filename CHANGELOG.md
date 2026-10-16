@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased — ML Lab HDF5 waveform extraction, channel slicing and attribute previews (2026-10-16)
+
+- Added bounded HDF5 attribute value previews for fixed-size scalar and 1D attributes
+  (`<= 16` elements, `<= 256` bytes) and bounded NPZ header shape/dtype inspection
+  during container browsing without materializing variable-length/object attributes
+  or full array payloads.
+- Added 3D `(events, channels, samples)` channel slicing (`@channel:<index>`) and
+  15-feature deterministic time/frequency waveform extraction (`@waveform` and
+  `@channel:<index>@waveform`) across HDF5, NPZ and NPY datasets, preserving literal
+  `@` in container dataset keys and standalone reproduction script parity.
+- Updated native `MlLabWindow` structure selection to populate recommended waveform
+  selectors from untruncated browse metadata and pinned GitHub Actions ML verification
+  to `workers/requirements-ml.lock` with `--require-hashes`.
+
 ## Unreleased — Optional local neural voices (2026-09-30)
 
 - Added pretrained Kokoro English voices Heart, Bella, Michael and George to

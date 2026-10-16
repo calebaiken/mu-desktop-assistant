@@ -14,6 +14,7 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "workers" / "ml_lab"))
 
+import h5py
 import numpy as np
 import pandas as pd
 import skops.io as skops
@@ -315,6 +316,118 @@ class IndependentEngineTests(unittest.TestCase):
         with self.assertRaises(LabError) as caught:
             self.train()
         self.assertEqual(caught.exception.code, "missing_source")
+
+
+
+    def test_waveform_hdf5_and_npz_training_prediction_and_standalone_export_parity(self):
+        rng = np.random.default_rng(12345)
+        t = np.linspace(0.0, 1.0, 64, endpoint=False)
+        waveforms = np.zeros((48, 2, 64), dtype=np.float64)
+        for i in range(48):
+            amp = 1.0 + 0.15 * i
+            waveforms[i, 0, :] = amp * np.sin(2.0 * np.pi * 3.0 * t) + 0.01 * rng.standard_normal(64)
+            waveforms[i, 1, :] = 0.5 * amp * np.cos(2.0 * np.pi * 6.0 * t) + 0.01 * rng.standard_normal(64)
+
+        h5_path = self.root / "wf_train.h5"
+        with h5py.File(h5_path, "w") as handle:
+            handle.create_dataset("detector/pulses", data=waveforms, chunks=(12, 1, 64))
+
+        npz_path = self.root / "wf_train.npz"
+        np.savez(npz_path, pulses=waveforms)
+
+        npy_path = self.root / "wf_train.npy"
+        np.save(npy_path, waveforms[:, 0, :])
+
+        for ds_path, ds_key, target_col, feat_cols, exp_name in (
+            (h5_path, "/detector/pulses@channel:0@waveform", "ch0_energy", ["ch0_mean", "ch0_std", "ch0_ptp", "ch0_abs_mean", "ch0_dominant_bin"], "H5WaveformRidge"),
+            (npz_path, "pulses@channel:0@waveform", "ch0_energy", ["ch0_mean", "ch0_std", "ch0_ptp", "ch0_abs_mean", "ch0_dominant_bin"], "NpzWaveformRidge"),
+            (npy_path, "@waveform", "wf_energy", ["wf_mean", "wf_std", "wf_ptp", "wf_abs_mean", "wf_dominant_bin"], "NpyWaveformRidge"),
+        ):
+            trained = self.train(
+                name=exp_name,
+                task="regression",
+                algorithm="ridge",
+                dataset={"path": str(ds_path), "key": ds_key, "start": 0, "rowLimit": 40},
+                target=target_col,
+                features=feat_cols,
+                scaling="standard",
+                testFraction=0.2,
+                seed=17,
+                split="random",
+                folds=3,
+                hyperparameters={"alpha": 1.0},
+            )
+            pred = engine.predict(
+                {
+                    "modelId": trained["id"],
+                    "dataset": {"path": str(ds_path), "key": ds_key, "start": 40, "rowLimit": 8},
+                },
+                self.project,
+                RESOURCE,
+            )
+            self.assertEqual(pred["rows"], 8)
+            self.assertEqual(len(pred["predictions"]), 8)
+
+            exported = engine.export({"experimentId": trained["id"]}, self.project)
+            destination = self.root / f"export_{exp_name}"
+            destination.mkdir()
+            proc = subprocess.run(
+                [sys.executable, "-I", "-B", exported["path"]],
+                cwd=destination,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            output = pd.read_csv(destination / "reproduced_predictions.csv")
+            original = pd.read_csv(trained["outputPath"])
+            self.assertEqual(output.shape[1], 1)
+            np.testing.assert_allclose(output.iloc[:, 0], original["prediction"], atol=1e-9)
+
+    def test_zero_crossing_production_and_export_parity(self):
+        patterns = [
+            [1.0, 0.0, -1.0, 0.0, 1.0, -1.0, 0.0, 2.0],
+            [0.0, 0.0, 1.0, 0.0, 0.0, -1.0, 0.0, 0.0],
+            [1.0, 0.0, 0.0, 2.0, -1.0, 0.0, -2.0, 0.0],
+            [0.0, -2.0, 0.0, 2.0, 0.0, -2.0, 0.0, 0.0],
+        ]
+        rows = []
+        for i in range(36):
+            scale = 1.0 + 0.1 * (i + 1)
+            base = np.array(patterns[i % len(patterns)], dtype=np.float64) * scale
+            rows.append(base)
+        matrix = np.vstack(rows)
+        npy_path = self.root / "zc_parity.npy"
+        np.save(npy_path, matrix)
+
+        trained = self.train(
+            name="ZeroCrossingExportParity",
+            task="regression",
+            algorithm="ridge",
+            dataset={"path": str(npy_path), "key": "@waveform", "start": 0, "rowLimit": 32},
+            target="wf_energy",
+            features=["wf_zero_crossings", "wf_rms", "wf_ptp"],
+            scaling="standard",
+            testFraction=0.25,
+            seed=23,
+            split="random",
+            folds=3,
+            hyperparameters={"alpha": 0.5},
+        )
+        exported = engine.export({"experimentId": trained["id"]}, self.project)
+        destination = self.root / "export_zc_parity"
+        destination.mkdir()
+        proc = subprocess.run(
+            [sys.executable, "-I", "-B", exported["path"]],
+            cwd=destination,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        output = pd.read_csv(destination / "reproduced_predictions.csv")
+        original = pd.read_csv(trained["outputPath"])
+        np.testing.assert_allclose(output.iloc[:, 0], original["prediction"], atol=1e-9)
 
 
 if __name__ == "__main__":

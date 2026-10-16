@@ -24,9 +24,13 @@ reviewed local conversational proposals. Executed regression includes 353 .NET t
 not complete all requested ML Phase 1 or authorize advancement by itself; the
 [independent ML review](docs/qa/ML_LAB_FOUNDATION_REVIEW.md) owns that decision.
 
-Next ML units include richer editable feature engineering, multidimensional scientific
-data/waveforms, project/model lifecycle UX, fuller learning explanations, advanced
-search/interpretability and scientific/deep-learning backends. Auto currently proposes
+The [HDF5/waveform increment](docs/qa/ML_LAB_HDF5_WAVEFORM_REVIEW.md) (**9.0/10, PASS**)
+adds bounded scalar/1D HDF5 attribute value previews, 3D `(events, channels, samples)` channel
+slicing (`@channel:<index>`), and 15-feature deterministic waveform extraction (`@waveform`)
+across HDF5, NPZ, and NPY datasets with standalone export parity and 63 native Lab smoke checks.
+Next ML units include richer editable feature engineering, arbitrary N-D tensor slicing,
+project/model lifecycle UX, fuller learning explanations, advanced search/interpretability
+and scientific/deep-learning backends. Auto currently proposes
 one reviewed action. GPU execution, pause/resume, notebook export and broad assistant
 competence remain unqualified. Existing Phase 4B files are preserved, with the incomplete
 Desktop partial excluded from compilation; microphone work is not counted as delivered.

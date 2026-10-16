@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 import io
 import json
+import math
 import os
 from pathlib import Path
 import sys
@@ -215,6 +216,210 @@ class IndependentDataTests(unittest.TestCase):
         for path in ["relative.csv", "//server/share/data.csv", "\\\\server\\share\\data.csv", "\\\\?\\C:\\data.csv", "\\\\.\\C:\\data.csv", "C:\\data.csv:stream"]:
             with self.subTest(path=path), self.assertRaises(LabError):
                 local_path(path, exists=False)
+
+
+
+    def test_waveform_feature_extraction_matches_hand_computed_oracles(self):
+        n_samples = 16
+        t = np.arange(n_samples, dtype=np.float64)
+        sine = 2.0 * np.sin(2.0 * np.pi * 3.0 * t / n_samples)
+        constant = np.full(n_samples, 5.0, dtype=np.float64)
+        zeros = np.zeros(n_samples, dtype=np.float64)
+        impulse = np.zeros(n_samples, dtype=np.float64)
+        impulse[4] = -8.0
+        exact_zero_cross = np.array([1.0, 0.0, -1.0, 0.0, 1.0, -1.0, 0.0, 2.0] + [2.0] * 8, dtype=np.float64)
+        matrix = np.vstack([sine, constant, zeros, impulse, exact_zero_cross])
+        np.save(self.root / "oracles.npy", matrix)
+
+        frame, meta, warnings, more = self.read("oracles.npy", key="@waveform")
+        self.assertFalse(more)
+        self.assertEqual(meta["key"], "@waveform")
+        self.assertEqual(frame.shape, (5, 15))
+        self.assertTrue(any("Waveform mode" in w for w in warnings))
+
+        # Row 0: pure sine wave (amplitude 2, 3 cycles in 16 samples)
+        self.assertAlmostEqual(frame.loc[0, "wf_mean"], 0.0, places=12)
+        self.assertAlmostEqual(frame.loc[0, "wf_std"], math.sqrt(2.0), places=12)
+        self.assertAlmostEqual(frame.loc[0, "wf_rms"], math.sqrt(2.0), places=12)
+        self.assertAlmostEqual(frame.loc[0, "wf_energy"], 32.0, places=11)
+        self.assertAlmostEqual(frame.loc[0, "wf_dominant_bin"], 3.0, places=12)
+        self.assertAlmostEqual(frame.loc[0, "wf_spectral_centroid"], 3.0, places=11)
+
+        # Row 1: constant 5.0 signal
+        self.assertAlmostEqual(frame.loc[1, "wf_mean"], 5.0, places=12)
+        self.assertAlmostEqual(frame.loc[1, "wf_std"], 0.0, places=12)
+        self.assertAlmostEqual(frame.loc[1, "wf_ptp"], 0.0, places=12)
+        self.assertAlmostEqual(frame.loc[1, "wf_rms"], 5.0, places=12)
+        self.assertAlmostEqual(frame.loc[1, "wf_energy"], 400.0, places=12)
+        self.assertAlmostEqual(frame.loc[1, "wf_crest_factor"], 1.0, places=12)
+        self.assertAlmostEqual(frame.loc[1, "wf_zero_crossings"], 0.0, places=12)
+        self.assertAlmostEqual(frame.loc[1, "wf_spectral_centroid"], 0.0, places=12)
+        self.assertAlmostEqual(frame.loc[1, "wf_dominant_bin"], 0.0, places=12)
+
+        # Row 2: all-zero signal (no NaN/Inf on zero RMS or zero spectrum)
+        for col in frame.columns:
+            self.assertEqual(frame.loc[2, col], 0.0, msg=f"Expected 0.0 for {col} on zero signal")
+
+        # Row 3: negative impulse at index 4 (-8.0)
+        self.assertAlmostEqual(frame.loc[3, "wf_min"], -8.0, places=12)
+        self.assertAlmostEqual(frame.loc[3, "wf_max"], 0.0, places=12)
+        self.assertAlmostEqual(frame.loc[3, "wf_ptp"], 8.0, places=12)
+        self.assertAlmostEqual(frame.loc[3, "wf_energy"], 64.0, places=12)
+        self.assertAlmostEqual(frame.loc[3, "wf_rms"], 2.0, places=12)
+        self.assertAlmostEqual(frame.loc[3, "wf_crest_factor"], 4.0, places=12)
+        self.assertAlmostEqual(frame.loc[3, "wf_peak_index"], 4.0, places=12)
+        self.assertAlmostEqual(frame.loc[4, "wf_zero_crossings"], 4.0, places=12)
+
+    def test_zero_crossing_conventions_and_edge_cases(self):
+        cases = np.array([
+            [1.0, 0.0, -1.0, 0.0, 1.0, -1.0, 0.0, 2.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 3.0, -2.0, 0.0, 0.0, 0.0, 0.0],
+            [2.0, 0.0, 0.0, 0.0, -3.0, 0.0, 0.0, 4.0],
+            [2.0, 0.0, 0.0, 0.0, 5.0, -1.0, 0.0, -4.0],
+            [0.0, 0.0, -7.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        ], dtype=np.float64)
+        expected = [4.0, 0.0, 1.0, 2.0, 1.0, 0.0]
+        np.save(self.root / "zc_cases.npy", cases)
+        frame, _, _, _ = self.read("zc_cases.npy", key="@waveform")
+        np.testing.assert_allclose(frame["wf_zero_crossings"].to_numpy(), expected, rtol=0.0, atol=1e-12)
+
+        single_col = np.array([[1.0], [0.0], [-1.0]], dtype=np.float64)
+        np.save(self.root / "zc_single.npy", single_col)
+        single_frame, _, _, _ = self.read("zc_single.npy", key="@waveform")
+        np.testing.assert_allclose(single_frame["wf_zero_crossings"].to_numpy(), [0.0, 0.0, 0.0], rtol=0.0, atol=1e-12)
+
+    def test_hdf5_3d_waveform_channel_slicing_and_attribute_previews(self):
+        path = self.root / "detector_events.h5"
+        t = np.linspace(0.0, 1.0, 64, endpoint=False)
+        waveforms = np.zeros((20, 3, 64), dtype=np.float64)
+        for i in range(20):
+            waveforms[i, 0, :] = (i + 1) * np.sin(2.0 * np.pi * 2.0 * t)
+            waveforms[i, 1, :] = (i + 1) * np.cos(2.0 * np.pi * 5.0 * t)
+            waveforms[i, 2, :] = float(i)
+        wide_2d = np.ones((12, 200), dtype=np.float64)
+
+        with h5py.File(path, "w") as handle:
+            grp = handle.create_group("detector")
+            ds = grp.create_dataset("waveforms", data=waveforms, chunks=(5, 1, 64))
+            ds.attrs["sampling_rate_hz"] = 2000.0
+            ds.attrs["detector_name"] = np.bytes_("calorimeter-A")
+            ds.attrs["vlen_note"] = "variable-length-string-not-materialized"
+            ds.attrs["calibrated"] = np.bool_(True)
+            ds.attrs["gains"] = np.array([1.0, 2.5, 5.0], dtype=np.float64)
+            ds.attrs["non_finite_cal"] = np.nan
+            ds.attrs["oversized_lut"] = np.arange(64, dtype=np.int32)
+            grp.create_dataset("wide_pulses", data=wide_2d)
+            grp.create_dataset("string_cube", data=np.full((4, 2, 8), b"ok", dtype="S2"))
+            grp.create_dataset("measurements@2026", data=waveforms[:, 0, :])
+            grp.create_dataset("raw@waveform", data=np.ones((6, 4), dtype=np.float64))
+
+        info = browse({"path": str(path)}, limits({"limits": {}}))
+        entries = {entry["key"]: entry for entry in info["entries"]}
+        wf_entry = entries["/detector/waveforms"]
+        self.assertEqual(wf_entry["shape"], [20, 3, 64])
+        self.assertIn("/detector/waveforms@waveform", wf_entry["selectors"])
+        self.assertIn("/detector/waveforms@channel:0@waveform", wf_entry["selectors"])
+        self.assertIn("/detector/waveforms@channel:0", wf_entry["selectors"])
+        self.assertEqual(wf_entry["attributes"]["sampling_rate_hz"]["value"], 2000.0)
+        self.assertEqual(wf_entry["attributes"]["detector_name"]["value"], "calorimeter-A")
+        self.assertIn("vlen_note", wf_entry["attributes"])
+        self.assertNotIn("value", wf_entry["attributes"]["vlen_note"])
+        self.assertIs(wf_entry["attributes"]["calibrated"]["value"], True)
+        self.assertEqual(wf_entry["attributes"]["gains"]["value"], [1.0, 2.5, 5.0])
+        self.assertIsNone(wf_entry["attributes"]["non_finite_cal"].get("value"))
+        self.assertNotIn("value", wf_entry["attributes"]["oversized_lut"])
+
+        wide_entry = entries["/detector/wide_pulses"]
+        self.assertEqual(wide_entry["selectors"], ["/detector/wide_pulses@waveform"])
+        self.assertEqual(entries["/detector/string_cube"]["selectors"], [])
+        self.assertEqual(entries["/detector/raw@waveform"]["selectors"], [])
+
+        # Literal '@' in dataset keys and literal '@waveform' dataset names
+        at_raw_frame, at_raw_meta, _, _ = self.read("detector_events.h5", key="/detector/measurements@2026", start=0, rowLimit=4)
+        self.assertEqual(at_raw_frame.shape, (4, 64))
+        self.assertEqual(at_raw_meta["key"], "/detector/measurements@2026")
+        at_wf_frame, at_wf_meta, _, _ = self.read("detector_events.h5", key="/detector/measurements@2026@waveform", start=0, rowLimit=4)
+        self.assertEqual(at_wf_frame.shape, (4, 15))
+        self.assertEqual(at_wf_meta["key"], "/detector/measurements@2026@waveform")
+        literal_wf_frame, literal_wf_meta, _, _ = self.read("detector_events.h5", key="/detector/raw@waveform", start=0, rowLimit=4)
+        self.assertEqual(literal_wf_frame.shape, (4, 4))
+        self.assertEqual(literal_wf_meta["key"], "/detector/raw@waveform")
+        extracted_literal_wf, _, _, _ = self.read("detector_events.h5", key="/detector/raw@waveform@waveform", start=0, rowLimit=4)
+        self.assertEqual(extracted_literal_wf.shape, (4, 15))
+
+        np.savez_compressed(
+            self.root / "detector_events.npz",
+            waveforms=waveforms,
+            labels_cube=np.full((4, 2, 8), b"ok", dtype="S2"),
+            **{"measurements@2026": waveforms[:, 0, :]},
+        )
+        npz_info = browse({"path": str(self.root / "detector_events.npz")}, limits({"limits": {}}))
+        npz_entries = {entry["key"]: entry for entry in npz_info["entries"]}
+        npz_entry = npz_entries["waveforms"]
+        self.assertEqual(npz_entry["shape"], [20, 3, 64])
+        self.assertIn("waveforms@waveform", npz_entry["selectors"])
+        self.assertEqual(npz_entries["labels_cube"]["selectors"], [])
+        npz_at_frame, _, _, _ = self.read("detector_events.npz", key="measurements@2026@waveform", start=0, rowLimit=4)
+        self.assertEqual(npz_at_frame.shape, (4, 15))
+
+        # Multi-channel waveform extraction (3 channels * 15 features = 45 columns)
+        all_ch_frame, all_meta, _, _ = self.read("detector_events.h5", key="/detector/waveforms@waveform", start=2, rowLimit=6)
+        self.assertEqual(all_ch_frame.shape, (6, 45))
+        self.assertEqual(all_meta["key"], "/detector/waveforms@waveform")
+        self.assertAlmostEqual(all_ch_frame.loc[0, "ch0_dominant_bin"], 2.0, places=12)
+        self.assertAlmostEqual(all_ch_frame.loc[0, "ch1_dominant_bin"], 5.0, places=12)
+        self.assertAlmostEqual(all_ch_frame.loc[0, "ch2_mean"], 2.0, places=12)
+
+        # Single-channel waveform extraction (15 features)
+        ch1_frame, ch1_meta, _, _ = self.read("detector_events.h5", key="/detector/waveforms@channel:1@waveform", start=0, rowLimit=5)
+        self.assertEqual(ch1_frame.shape, (5, 15))
+        self.assertEqual(ch1_meta["key"], "/detector/waveforms@channel:1@waveform")
+        self.assertNotEqual(all_meta["id"], ch1_meta["id"])
+
+        # Single-channel raw sample slice (64 columns)
+        raw_ch2_frame, _, _, _ = self.read("detector_events.h5", key="/detector/waveforms@channel:2", start=1, rowLimit=4)
+        self.assertEqual(raw_ch2_frame.shape, (4, 64))
+        self.assertEqual(raw_ch2_frame.columns[0], "ch2_sample_0")
+        self.assertAlmostEqual(raw_ch2_frame.loc[0, "ch2_sample_0"], 1.0, places=12)
+
+        # Wide 2D dataset (>128 columns) works with @waveform
+        wide_wf_frame, _, _, _ = self.read("detector_events.h5", key="/detector/wide_pulses@waveform", start=0, rowLimit=5)
+        self.assertEqual(wide_wf_frame.shape, (5, 15))
+        self.assertAlmostEqual(wide_wf_frame.loc[0, "wf_mean"], 1.0, places=12)
+
+    def test_waveform_and_selector_negative_controls(self):
+        path = self.root / "neg_waveforms.h5"
+        with h5py.File(path, "w") as handle:
+            handle.create_dataset("wf3d", data=np.zeros((10, 2, 32), dtype=np.float64))
+            handle.create_dataset("wf2d", data=np.zeros((10, 32), dtype=np.float64))
+            bad = np.zeros((10, 2, 32), dtype=np.float64)
+            bad[0, 0, 5] = np.nan
+            handle.create_dataset("wf_nan", data=bad)
+            handle.create_dataset("huge_3d", shape=(100_000_000, 4, 2048), chunks=(10, 1, 256), dtype="f8")
+
+        for bad_key in (
+            "/wf3d@unknown",
+            "/wf3d@channel:-1",
+            "/wf3d@channel:abc",
+            "/wf3d@channel:2",
+            "/wf3d@channel:99",
+            "/wf2d@channel:0",
+            "/wf_nan@waveform",
+            "/wf3d\x00@waveform",
+        ):
+            with self.assertRaises(LabError, msg=f"Expected failure for {bad_key}"):
+                self.read("neg_waveforms.h5", key=bad_key)
+
+        # Logical huge 3D dataset succeeds on small bounded slice, refuses oversized slice before materialization
+        small_slice, _, _, more = self.read("neg_waveforms.h5", key="/huge_3d@channel:0@waveform", start=0, rowLimit=5)
+        self.assertTrue(more)
+        self.assertEqual(small_slice.shape, (5, 15))
+        with self.assertRaises(LabError):
+            read_dataset(
+                {"path": str(path), "key": "/huge_3d@waveform", "start": 0, "rowLimit": 50000},
+                limits({"limits": {"memoryMb": 256, "maxRows": 100000}}),
+            )
 
 
 if __name__ == "__main__":

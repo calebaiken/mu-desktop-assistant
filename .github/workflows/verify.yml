@@ -1,45 +1,110 @@
 name: Windows verification
-on: [push, pull_request]
+
+on:
+  push:
+  pull_request:
+
 permissions:
   contents: read
+
 jobs:
   verify:
     runs-on: windows-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
+
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-dotnet@v6
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
-      # The ML, LAYA and neural-speech process-boundary tests resolve an
-      # interpreter from artifacts/ml-runtime/Scripts/python.exe, which is
-      # created by the setup-*.ps1 scripts and therefore never present on a
-      # clean checkout. Provision a bare venv at that path so those checks
-      # actually execute instead of reporting inconclusive.
-      #
-      # Deliberately NOT scripts/setup-ml-lab.ps1: the 24 packages in
-      # workers/requirements-ml.lock are --generate-hashes locked against
-      # CPython 3.12.14 and would fail to sync on a runner. The tests spawn
-      # stdlib-only synthetic workers and import none of those packages, so an
-      # interpreter is the whole requirement. Re-test before changing this.
-      - uses: actions/setup-python@v7
+
+      - name: Setup Python
+        uses: actions/setup-python@v7
         with:
-          python-version: '3.12'
-      - name: Provision optional ML runtime interpreter
-        shell: powershell
+          python-version: "3.12"
+
+      - name: Provision ML runtime interpreter
+        shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force -Path artifacts | Out-Null
-          python -m venv artifacts/ml-runtime
-          & artifacts/ml-runtime/Scripts/python.exe -c "import json,os,sys,base64,pathlib; print('ML runtime interpreter ready:', sys.version)"
-      - name: Build, test and smoke
-        shell: powershell
-        run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify.ps1
-      - name: Adversarial architecture controls
-        shell: powershell
-        run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-negative.ps1
-      - name: Preserve test results
+          $ErrorActionPreference = 'Stop'
+          & python -m venv artifacts/ml-runtime
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Run positive verification gate
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          ./scripts/verify.ps1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Run negative verification gate
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          ./scripts/verify-negative.ps1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Install ML Lab Python dependencies for worker and UI verification
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & artifacts/ml-runtime/Scripts/python.exe -m pip install --upgrade pip
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & artifacts/ml-runtime/Scripts/python.exe -m pip install --require-hashes -r workers/requirements-ml.lock
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Verify failing Python test produces non-zero exit code (negative gate)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $negDir = Join-Path ([System.IO.Path]::GetTempPath()) ("mu-neg-py-" + [Guid]::NewGuid().ToString("N"))
+          New-Item -ItemType Directory -Path $negDir -Force | Out-Null
+          try {
+            $testFile = Join-Path $negDir "test_deliberate_failure.py"
+            Set-Content -Path $testFile -Value "import unittest`nclass NegativeGateTest(unittest.TestCase):`n    def test_fail(self):`n        self.fail('deliberate negative gate failure')`n" -Encoding UTF8
+            & artifacts/ml-runtime/Scripts/python.exe -B -m unittest discover -s $negDir -p "test_*.py"
+            $code = $LASTEXITCODE
+            if ($code -eq 0) {
+              Write-Error "Negative Python test gate failed: deliberate failing test exited with 0."
+              exit 1
+            }
+            Write-Host "Negative Python test gate passed (unittest exited with non-zero code $code on failure)."
+          } finally {
+            Remove-Item -LiteralPath $negDir -Recurse -Force -ErrorAction SilentlyContinue
+          }
+          $global:LASTEXITCODE = 0
+
+      - name: Run ML Lab independent Python test suite
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & artifacts/ml-runtime/Scripts/python.exe -B -m unittest discover -s tests/ml_lab -p "test_independent_*.py" -v
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Run ML Lab author Python test suite
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & artifacts/ml-runtime/Scripts/python.exe -B workers/ml_lab/test_author.py -v
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Run ML Lab WPF smoke verification
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          ./scripts/verify-ml-lab.ps1 -SkipBuild
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Upload test results and smoke receipts
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: test-results
-          path: artifacts/test-results
+          name: windows-verification-results
+          path: |
+            artifacts/test-results
+            artifacts/qa/ml-lab-smoke.json
+            artifacts/qa/**/ml-lab-*.json
+          if-no-files-found: ignore

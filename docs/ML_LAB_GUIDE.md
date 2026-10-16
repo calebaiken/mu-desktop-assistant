@@ -38,8 +38,15 @@ not source-data backups.
    does not establish that its reader is installed. Unsupported input produces
    a local error rather than a substitute dataset.
 2. For NPZ or HDF5, choose **Browse structure**, then select an array/dataset key.
-   Set a starting row and maximum rows. This is a contiguous range, not a random
-   or representative sample.
+   Small scalar and 1D HDF5 attributes (`<= 16` elements, `<= 256` bytes) are shown
+   alongside shape and dtype. For 3D event datasets `(events, channels, samples)` or
+   wide 2D waveform arrays (`> 128` samples), selecting a row auto-populates the
+   recommended `@waveform` selector; you can also specify `@channel:<index>` for a
+   single channel's raw samples or `@channel:<index>@waveform` for 15 deterministic
+   time- and frequency-domain features (`mean`, `std`, `min`, `max`, `ptp`, `rms`,
+   `energy`, `abs_mean`, `median`, `iqr`, `zero_crossings`, `crest_factor`,
+   `peak_index`, `spectral_centroid`, `dominant_bin`). Set a starting row and maximum
+   rows. This is a contiguous range, not a random or representative sample.
 3. Select **Inspect dataset**. **Inspect** shows the selected scope, warnings,
    bounded preview, column statistics and metadata. Inspection reads at most
    1,000 selected rows; the UI preview shows at most 100. Training uses the
@@ -124,8 +131,8 @@ local conversational planning is unavailable.
 - The backend lists at most 200 saved entries and surfaces a listing warning at
   that bound. The UI also has a defensive 500-record ceiling and shows at most
   100 session job rows. These are view bounds, not evidence that omitted work was deleted.
-- Advanced search, SHAP/UMAP adapters, scientific custom models, waveform feature
-  extraction and deep-learning workflows remain later work. Optional package
+- Advanced search, SHAP/UMAP adapters, scientific custom models, arbitrary N-D tensor
+  slicing beyond 3D channel/waveform selectors and deep-learning workflows remain later work. Optional package
   detection does not enable those adapters.
 - Model persistence and project artifact validation reduce accidental unsafe
   loading; they do not make arbitrary third-party models trusted. Use models
