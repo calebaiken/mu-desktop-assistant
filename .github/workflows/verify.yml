@@ -75,6 +75,7 @@ jobs:
           } finally {
             Remove-Item -LiteralPath $negDir -Recurse -Force -ErrorAction SilentlyContinue
           }
+          $global:LASTEXITCODE = 0
 
       - name: Run ML Lab independent Python test suite
         shell: pwsh
