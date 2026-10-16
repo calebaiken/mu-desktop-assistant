@@ -320,12 +320,11 @@ class IndependentEngineTests(unittest.TestCase):
 
 
     def test_waveform_hdf5_and_npz_training_prediction_and_standalone_export_parity(self):
-        rng = np.random.default_rng(123)
+        rng = np.random.default_rng(12345)
         t = np.linspace(0.0, 1.0, 64, endpoint=False)
-        n_events = 48
-        waveforms = np.zeros((n_events, 2, 64), dtype=np.float64)
-        for i in range(n_events):
-            amp = 1.0 + 0.25 * i
+        waveforms = np.zeros((48, 2, 64), dtype=np.float64)
+        for i in range(48):
+            amp = 1.0 + 0.15 * i
             waveforms[i, 0, :] = amp * np.sin(2.0 * np.pi * 3.0 * t) + 0.01 * rng.standard_normal(64)
             waveforms[i, 1, :] = 0.5 * amp * np.cos(2.0 * np.pi * 6.0 * t) + 0.01 * rng.standard_normal(64)
 
@@ -336,61 +335,54 @@ class IndependentEngineTests(unittest.TestCase):
         npz_path = self.root / "wf_train.npz"
         np.savez(npz_path, pulses=waveforms)
 
-        for ds_path, ds_key, exp_name in (
-            (h5_path, "/detector/pulses@channel:0@waveform", "H5WaveformRidge"),
-            (npz_path, "pulses@channel:0@waveform", "NpzWaveformRidge"),
-        ):
-            trained = train(
-                self.root,
-                {
-                    "project": "WaveformParity",
-                    "name": exp_name,
-                    "task": "regression",
-                    "algorithm": "ridge",
-                    "dataset": {"path": str(ds_path), "key": ds_key, "start": 0, "rowLimit": 40},
-                    "target": "ch0_energy",
-                    "features": ["ch0_mean", "ch0_std", "ch0_ptp", "ch0_abs_mean", "ch0_dominant_bin"],
-                    "scaling": "standard",
-                    "split": {"strategy": "random", "seed": 17, "trainRatio": 0.7, "validationRatio": 0.15, "testRatio": 0.15},
-                    "cvFolds": 3,
-                    "saveModel": True,
-                    "parameters": {"alpha": 1.0},
-                },
-                self.limits,
-            )
-            exp = trained["experiment"]
-            model_id = trained["model"]["id"]
+        npy_path = self.root / "wf_train.npy"
+        np.save(npy_path, waveforms[:, 0, :])
 
-            pred = predict(
-                self.root,
+        for ds_path, ds_key, target_col, feat_cols, exp_name in (
+            (h5_path, "/detector/pulses@channel:0@waveform", "ch0_energy", ["ch0_mean", "ch0_std", "ch0_ptp", "ch0_abs_mean", "ch0_dominant_bin"], "H5WaveformRidge"),
+            (npz_path, "pulses@channel:0@waveform", "ch0_energy", ["ch0_mean", "ch0_std", "ch0_ptp", "ch0_abs_mean", "ch0_dominant_bin"], "NpzWaveformRidge"),
+            (npy_path, "@waveform", "wf_energy", ["wf_mean", "wf_std", "wf_ptp", "wf_abs_mean", "wf_dominant_bin"], "NpyWaveformRidge"),
+        ):
+            trained = self.train(
+                name=exp_name,
+                task="regression",
+                algorithm="ridge",
+                dataset={"path": str(ds_path), "key": ds_key, "start": 0, "rowLimit": 40},
+                target=target_col,
+                features=feat_cols,
+                scaling="standard",
+                testFraction=0.2,
+                seed=17,
+                split="random",
+                folds=3,
+                hyperparameters={"alpha": 1.0},
+            )
+            pred = engine.predict(
                 {
-                    "project": "WaveformParity",
-                    "modelId": model_id,
+                    "modelId": trained["id"],
                     "dataset": {"path": str(ds_path), "key": ds_key, "start": 40, "rowLimit": 8},
                 },
-                self.limits,
+                self.project,
+                RESOURCE,
             )
             self.assertEqual(pred["rows"], 8)
-            self.assertEqual(len(pred["preview"]), 8)
+            self.assertEqual(len(pred["predictions"]), 8)
 
-            out_dir = self.root / f"export_{exp_name}"
-            exported = export(
-                self.root,
-                {"project": "WaveformParity", "experimentId": exp["id"], "outputDir": str(out_dir)},
-                self.limits,
-            )
-            script_path = Path(exported["files"][0])
+            exported = engine.export({"experimentId": trained["id"]}, self.project)
+            destination = self.root / f"export_{exp_name}"
+            destination.mkdir()
             proc = subprocess.run(
-                [sys.executable, "-B", str(script_path)],
+                [sys.executable, "-I", "-B", exported["path"]],
+                cwd=destination,
                 capture_output=True,
                 text=True,
                 timeout=30,
-                check=True,
             )
-            repro = json.loads(proc.stdout.strip())
-            self.assertAlmostEqual(repro["rmse"], exp["metrics"]["test"]["rmse"], places=10)
-            self.assertAlmostEqual(repro["mae"], exp["metrics"]["test"]["mae"], places=10)
-            self.assertAlmostEqual(repro["r2"], exp["metrics"]["test"]["r2"], places=10)
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            output = pd.read_csv(destination / "reproduced_predictions.csv")
+            original = pd.read_csv(trained["outputPath"])
+            self.assertEqual(output.shape[1], 1)
+            np.testing.assert_allclose(output.iloc[:, 0], original["prediction"], atol=1e-9)
 
 
 if __name__ == "__main__":
