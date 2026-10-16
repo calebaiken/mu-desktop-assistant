@@ -322,6 +322,25 @@ def _h5_dataset(handle, key):
     return current
 
 
+def _read_npz_header(archive, entry, budget: int):
+    """Read and validate a bounded .npy header from an NPZ member without loading array payload."""
+    with archive.open(entry) as stream:
+        version = np.lib.format.read_magic(stream)
+        if version == (1, 0):
+            shape, _, dtype = np.lib.format.read_array_header_1_0(stream, max_header_size=10000)
+        elif version == (2, 0):
+            shape, _, dtype = np.lib.format.read_array_header_2_0(stream, max_header_size=10000)
+        else:
+            fail("This NPZ header version is not supported. Save numeric arrays in standard NPY or HDF5 format.")
+        if dtype.hasobject or dtype.kind not in "biufSU":
+            fail("NPZ arrays must be bounded numeric/fixed-text arrays; object arrays are refused.")
+        elements = math.prod(shape)
+        size = elements * dtype.itemsize
+        if size * 8 > budget or stream.tell() + size > entry.file_size:
+            fail("The NPZ array's declared shape exceeds its file or memory bounds.", "resource_limit")
+    return shape, dtype
+
+
 def _admit_npz_array(path, key, budget, *, channel_index=None, waveform_mode: bool = False):
     """Read a bounded .npy header before np.load may allocate its declared shape."""
     if path.stat().st_size * 8 > budget:
@@ -339,30 +358,17 @@ def _admit_npz_array(path, key, budget, *, channel_index=None, waveform_mode: bo
         if selected not in arrays:
             fail("Choose an array key from the NPZ file using Browse.")
         entry = arrays[selected]
-        with archive.open(entry) as stream:
-            version = np.lib.format.read_magic(stream)
-            if version == (1, 0):
-                shape, _, dtype = np.lib.format.read_array_header_1_0(stream, max_header_size=10000)
-            elif version == (2, 0):
-                shape, _, dtype = np.lib.format.read_array_header_2_0(stream, max_header_size=10000)
-            else:
-                fail("This NPZ header version is not supported. Save numeric arrays in standard NPY or HDF5 format.")
-            if dtype.hasobject:
-                fail("NPZ arrays must be bounded numeric/fixed-text arrays; object arrays are refused.")
-            if channel_index is not None or waveform_mode:
-                if dtype.kind not in "biuf" or len(shape) not in (1, 2, 3):
-                    fail("NPZ waveform/channel selection requires a 1D, 2D or 3D numeric array.")
-                if len(shape) == 3 and (shape[1] < 1 or shape[1] > MAX_CHANNELS or shape[2] < 1 or shape[2] > MAX_WAVEFORM_SAMPLES):
-                    fail("NPZ 3D array exceeds channel or sample bounds.", "resource_limit")
-                if len(shape) == 2 and (shape[1] < 1 or shape[1] > MAX_WAVEFORM_SAMPLES):
-                    fail("NPZ 2D waveform array exceeds sample bounds.", "resource_limit")
-            else:
-                if len(shape) not in (1, 2) or (len(shape) == 2 and shape[1] > MAX_COLUMNS):
-                    fail("NPZ arrays must be bounded numeric/fixed-text one- or two-dimensional tables.")
-            elements = math.prod(shape)
-            size = elements * dtype.itemsize
-            if size * 8 > budget or stream.tell() + size > entry.file_size:
-                fail("The NPZ array's declared shape exceeds its file or memory bounds.", "resource_limit")
+        shape, dtype = _read_npz_header(archive, entry, budget)
+        if channel_index is not None or waveform_mode:
+            if dtype.kind not in "biuf" or len(shape) not in (1, 2, 3):
+                fail("NPZ waveform/channel selection requires a 1D, 2D or 3D numeric array.")
+            if len(shape) == 3 and (shape[1] < 1 or shape[1] > MAX_CHANNELS or shape[2] < 1 or shape[2] > MAX_WAVEFORM_SAMPLES):
+                fail("NPZ 3D array exceeds channel or sample bounds.", "resource_limit")
+            if len(shape) == 2 and (shape[1] < 1 or shape[1] > MAX_WAVEFORM_SAMPLES):
+                fail("NPZ 2D waveform array exceeds sample bounds.", "resource_limit")
+        else:
+            if len(shape) not in (1, 2) or (len(shape) == 2 and shape[1] > MAX_COLUMNS):
+                fail("NPZ arrays must be bounded numeric/fixed-text one- or two-dimensional tables.")
     return selected
 
 
@@ -600,12 +606,25 @@ def browse(spec: dict, resource: dict):
     entries = []
     warnings = []
     if path.suffix.lower() == ".npz":
-        if path.stat().st_size * 8 > resource["memory_mb"] * 1024 * 1024:
+        budget = resource["memory_mb"] * 1024 * 1024
+        if path.stat().st_size * 8 > budget:
             fail("NPZ archive size exceeds the browser admission limit. Use NPY or HDF5 for large arrays.", "resource_limit")
         with zipfile.ZipFile(path) as archive:
-            for entry in archive.infolist()[:128]:
-                entries.append({"key": entry.filename.removesuffix(".npy"), "kind": "array", "shape": None,
-                                "dtype": None, "attributes": {"uncompressedBytes": entry.file_size}, "selectors": []})
+            info_list = archive.infolist()
+            if len(info_list) > 128 or sum(x.file_size for x in info_list) * 8 > budget:
+                fail("NPZ decompression exceeds the RAM estimate; use NPY or HDF5.", "resource_limit")
+            if any(x.flag_bits & 1 for x in info_list):
+                fail("Encrypted NPZ files are not supported.")
+            arrays = {entry.filename.removesuffix(".npy"): entry for entry in info_list if entry.filename.endswith(".npy")}
+            if len(arrays) != len(info_list):
+                fail("NPZ must contain only uniquely named NumPy arrays.")
+            for key, entry in arrays.items():
+                shape, dtype = _read_npz_header(archive, entry, budget)
+                item_shape = list(shape)
+                selectors = _recommended_selectors(key, item_shape) if dtype.kind in "biuf" else []
+                entries.append({"key": key, "kind": "array", "shape": item_shape,
+                                "dtype": str(dtype), "attributes": {"uncompressedBytes": entry.file_size},
+                                "selectors": selectors})
         return {"path": str(path), "entries": entries, "warnings": warnings}
     if path.suffix.lower() not in (".h5", ".hdf5"):
         fail("Browse is available for HDF5 and NPZ containers.")
