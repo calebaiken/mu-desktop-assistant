@@ -129,7 +129,7 @@ class EngineSmokeTests(unittest.TestCase):
 
     def test_hdf5_waveform_and_attribute_inspection(self):
         import h5py
-        h5_path = self.root / "author_waveforms.h5"
+        h5_path = self.temp / "author_waveforms.h5"
         t = np.linspace(0.0, 1.0, 32, endpoint=False)
         data = np.stack([np.sin(2.0 * np.pi * (i + 1) * t) for i in range(24)], axis=0)[:, None, :]
         with h5py.File(h5_path, "w") as handle:
