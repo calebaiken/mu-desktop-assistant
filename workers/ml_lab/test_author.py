@@ -134,7 +134,7 @@ class EngineSmokeTests(unittest.TestCase):
         data = np.stack([np.sin(2.0 * np.pi * (i + 1) * t) for i in range(24)], axis=0)[:, None, :]
         with h5py.File(h5_path, "w") as handle:
             ds = handle.create_dataset("signals", data=data)
-            ds.attrs["unit"] = "mV"
+            ds.attrs["unit"] = np.bytes_("mV")
             ds.attrs["rate_hz"] = 500
         browsed = engine.browse({"path": str(h5_path)}, self.resource)
         entry = browsed["entries"][0]

@@ -303,12 +303,16 @@ class IndependentDataTests(unittest.TestCase):
             grp = handle.create_group("detector")
             ds = grp.create_dataset("waveforms", data=waveforms, chunks=(5, 1, 64))
             ds.attrs["sampling_rate_hz"] = 2000.0
-            ds.attrs["detector_name"] = "calorimeter-A"
+            ds.attrs["detector_name"] = np.bytes_("calorimeter-A")
+            ds.attrs["vlen_note"] = "variable-length-string-not-materialized"
             ds.attrs["calibrated"] = np.bool_(True)
             ds.attrs["gains"] = np.array([1.0, 2.5, 5.0], dtype=np.float64)
             ds.attrs["non_finite_cal"] = np.nan
             ds.attrs["oversized_lut"] = np.arange(64, dtype=np.int32)
             grp.create_dataset("wide_pulses", data=wide_2d)
+            grp.create_dataset("string_cube", data=np.full((4, 2, 8), b"ok", dtype="S2"))
+            grp.create_dataset("measurements@2026", data=waveforms[:, 0, :])
+            grp.create_dataset("raw@waveform", data=np.ones((6, 4), dtype=np.float64))
 
         info = browse({"path": str(path)}, limits({"limits": {}}))
         entries = {entry["key"]: entry for entry in info["entries"]}
@@ -319,6 +323,8 @@ class IndependentDataTests(unittest.TestCase):
         self.assertIn("/detector/waveforms@channel:0", wf_entry["selectors"])
         self.assertEqual(wf_entry["attributes"]["sampling_rate_hz"]["value"], 2000.0)
         self.assertEqual(wf_entry["attributes"]["detector_name"]["value"], "calorimeter-A")
+        self.assertIn("vlen_note", wf_entry["attributes"])
+        self.assertNotIn("value", wf_entry["attributes"]["vlen_note"])
         self.assertIs(wf_entry["attributes"]["calibrated"]["value"], True)
         self.assertEqual(wf_entry["attributes"]["gains"]["value"], [1.0, 2.5, 5.0])
         self.assertIsNone(wf_entry["attributes"]["non_finite_cal"].get("value"))
@@ -326,12 +332,36 @@ class IndependentDataTests(unittest.TestCase):
 
         wide_entry = entries["/detector/wide_pulses"]
         self.assertEqual(wide_entry["selectors"], ["/detector/wide_pulses@waveform"])
+        self.assertEqual(entries["/detector/string_cube"]["selectors"], [])
+        self.assertEqual(entries["/detector/raw@waveform"]["selectors"], [])
 
-        np.savez_compressed(self.root / "detector_events.npz", waveforms=waveforms)
+        # Literal '@' in dataset keys and literal '@waveform' dataset names
+        at_raw_frame, at_raw_meta, _, _ = self.read("detector_events.h5", key="/detector/measurements@2026", start=0, rowLimit=4)
+        self.assertEqual(at_raw_frame.shape, (4, 64))
+        self.assertEqual(at_raw_meta["key"], "/detector/measurements@2026")
+        at_wf_frame, at_wf_meta, _, _ = self.read("detector_events.h5", key="/detector/measurements@2026@waveform", start=0, rowLimit=4)
+        self.assertEqual(at_wf_frame.shape, (4, 15))
+        self.assertEqual(at_wf_meta["key"], "/detector/measurements@2026@waveform")
+        literal_wf_frame, literal_wf_meta, _, _ = self.read("detector_events.h5", key="/detector/raw@waveform", start=0, rowLimit=4)
+        self.assertEqual(literal_wf_frame.shape, (4, 4))
+        self.assertEqual(literal_wf_meta["key"], "/detector/raw@waveform")
+        extracted_literal_wf, _, _, _ = self.read("detector_events.h5", key="/detector/raw@waveform@waveform", start=0, rowLimit=4)
+        self.assertEqual(extracted_literal_wf.shape, (4, 15))
+
+        np.savez_compressed(
+            self.root / "detector_events.npz",
+            waveforms=waveforms,
+            labels_cube=np.full((4, 2, 8), b"ok", dtype="S2"),
+            **{"measurements@2026": waveforms[:, 0, :]},
+        )
         npz_info = browse({"path": str(self.root / "detector_events.npz")}, limits({"limits": {}}))
-        npz_entry = npz_info["entries"][0]
+        npz_entries = {entry["key"]: entry for entry in npz_info["entries"]}
+        npz_entry = npz_entries["waveforms"]
         self.assertEqual(npz_entry["shape"], [20, 3, 64])
         self.assertIn("waveforms@waveform", npz_entry["selectors"])
+        self.assertEqual(npz_entries["labels_cube"]["selectors"], [])
+        npz_at_frame, _, _, _ = self.read("detector_events.npz", key="measurements@2026@waveform", start=0, rowLimit=4)
+        self.assertEqual(npz_at_frame.shape, (4, 15))
 
         # Multi-channel waveform extraction (3 channels * 15 features = 45 columns)
         all_ch_frame, all_meta, _, _ = self.read("detector_events.h5", key="/detector/waveforms@waveform", start=2, rowLimit=6)

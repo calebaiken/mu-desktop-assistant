@@ -27,6 +27,7 @@ try {
         if ($process.ExitCode -ne 0) { throw "ML native diagnostic failed ($($process.ExitCode)); inspect $profile." }
         $receipt = Join-Path $profile 'ml-lab-smoke.json'
         if (-not (Test-Path -LiteralPath $receipt)) { throw 'ML native diagnostic did not write its receipt.' }
+        Copy-Item -LiteralPath $receipt -Destination (Join-Path $repo 'artifacts/qa/ml-lab-smoke.json') -Force
         Get-Content -LiteralPath $receipt
         Write-Output "ML native evidence: $profile"
     }

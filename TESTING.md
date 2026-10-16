@@ -501,6 +501,6 @@ not to manufacture evidence by rerunning unchanged successful suites.
 In GitHub Actions (`.github/workflows/verify.yml`), after `scripts/verify.ps1` (398/398 .NET tests,
 11/11 architecture checks, composed WPF startup/shutdown smoke) and `scripts/verify-negative.ps1`
 (9/9 negative controls) complete against the bare runtime interpreter, the workflow installs
-`workers/requirements-ml.in` into `artifacts/ml-runtime` and executes the full Python ML suites
-(`tests/ml_lab/test_independent_*.py` — 52/52 tests; `workers/ml_lab/test_author.py` — 7/7 tests)
-and native WPF ML Lab smoke verification (`scripts/verify-ml-lab.ps1 -SkipBuild` — 63/63 checks).
+`workers/requirements-ml.lock` (`--require-hashes`) into `artifacts/ml-runtime` and executes the full Python ML suites
+(`tests/ml_lab/test_independent_*.py` — 54/54 tests; `workers/ml_lab/test_author.py` — 7/7 tests)
+and native WPF ML Lab smoke verification (`scripts/verify-ml-lab.ps1 -SkipBuild` — 64/64 checks).

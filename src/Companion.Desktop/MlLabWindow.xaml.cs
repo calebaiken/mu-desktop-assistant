@@ -22,6 +22,7 @@ public partial class MlLabWindow : Window
     private readonly ObservableCollection<JobRow> jobs = [];
     private readonly List<JsonElement> experiments = [];
     private readonly List<JsonElement> models = [];
+    private readonly List<JsonElement> browseEntries = [];
     private readonly List<AlgorithmChoice> algorithms = [];
     private MlDatasetSelection? inspectedSelection;
     private JsonElement? selectedExperiment;
@@ -290,22 +291,19 @@ public partial class MlLabWindow : Window
     private void Structure_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (StructureGrid.SelectedItem is not DataRowView row || !row.Row.Table.Columns.Contains("key")) return;
-        var key = row["key"]?.ToString() ?? "";
-        if (row.Row.Table.Columns.Contains("selectors") && row["selectors"]?.ToString() is { Length: > 2 } selectorsText &&
-            selectorsText.StartsWith('['))
+        var rowIndex = row.Row.Table.Rows.IndexOf(row.Row);
+        var rowKey = row["key"]?.ToString() ?? "";
+        JsonElement? matched = rowIndex >= 0 && rowIndex < browseEntries.Count
+            ? browseEntries[rowIndex]
+            : browseEntries.Cast<JsonElement?>().FirstOrDefault(item => item is { } entry && Text(entry, "key") == rowKey);
+        if (matched is { } record)
         {
-            try
-            {
-                using var doc = JsonDocument.Parse(selectorsText);
-                if (doc.RootElement.ValueKind == JsonValueKind.Array && doc.RootElement.GetArrayLength() > 0 &&
-                    doc.RootElement[0].GetString() is { Length: > 0 } firstSelector)
-                {
-                    key = firstSelector;
-                }
-            }
-            catch (JsonException) { }
+            var key = Text(record, "key");
+            var firstSelector = Array(record, "selectors").Select(s => s.GetString()).FirstOrDefault(s => !string.IsNullOrEmpty(s));
+            DatasetKey.Text = firstSelector ?? key;
+            return;
         }
-        DatasetKey.Text = key;
+        DatasetKey.Text = rowKey;
     }
     private void History_SelectionChanged(object sender, SelectionChangedEventArgs e) => selectedExperiment = FindSelected(HistoryGrid, experiments);
     private void Models_SelectionChanged(object sender, SelectionChangedEventArgs e)

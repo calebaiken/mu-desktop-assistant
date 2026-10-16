@@ -149,18 +149,29 @@ internal static class MlLabSmokeChecks
             Check("hdf5-browse-populates-structure", browsedH5 is not null && window.StructureGrid.Items.Count >= 2);
 
             var wfRowIndex = -1;
+            var longKeyRowIndex = -1;
             var attrsText = "";
+            const string longDatasetKey = "/detector/subdetector_calorimeter_array_alpha/station_north_sector_01/channel_bank_primary_waveforms";
             for (var i = 0; i < window.StructureGrid.Items.Count; i++)
             {
-                if (window.StructureGrid.Items[i] is System.Data.DataRowView drv &&
-                    drv["key"]?.ToString() == "/detector/waveforms")
+                if (window.StructureGrid.Items[i] is System.Data.DataRowView drv)
                 {
-                    wfRowIndex = i;
-                    attrsText = drv["attributes"]?.ToString() ?? "";
-                    break;
+                    var rowKey = drv["key"]?.ToString();
+                    if (rowKey == "/detector/waveforms")
+                    {
+                        wfRowIndex = i;
+                        attrsText = drv["attributes"]?.ToString() ?? "";
+                    }
+                    else if (rowKey == longDatasetKey)
+                    {
+                        longKeyRowIndex = i;
+                    }
                 }
             }
             Check("hdf5-browse-shows-attribute-values", wfRowIndex >= 0 && attrsText.Contains("1000", StringComparison.Ordinal) && attrsText.Contains("calorimeter-A", StringComparison.Ordinal));
+            window.StructureGrid.SelectedIndex = longKeyRowIndex;
+            await window.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.Background);
+            Check("hdf5-long-key-selection-uses-untruncated-selector", longKeyRowIndex >= 0 && window.DatasetKey.Text == longDatasetKey + "@waveform");
             window.StructureGrid.SelectedIndex = wfRowIndex;
             await window.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.Background);
             Check("hdf5-selection-autofills-waveform-selector", window.DatasetKey.Text == "/detector/waveforms@waveform");
@@ -233,7 +244,11 @@ internal static class MlLabSmokeChecks
                 grp = handle.create_group("detector")
                 ds = grp.create_dataset("waveforms", data=events, chunks=(12, 2, 64))
                 ds.attrs["sampling_rate_hz"] = 1000.0
-                ds.attrs["detector"] = "calorimeter-A"
+                ds.attrs["detector"] = np.bytes_("calorimeter-A")
+                handle.create_dataset(
+                    "detector/subdetector_calorimeter_array_alpha/station_north_sector_01/channel_bank_primary_waveforms",
+                    data=np.zeros((4, 4, 16), dtype=np.float64),
+                )
             """;
         var psi = new ProcessStartInfo(pythonExe)
         {
@@ -245,8 +260,14 @@ internal static class MlLabSmokeChecks
         psi.ArgumentList.Add(script);
         psi.ArgumentList.Add(h5Path);
         using var proc = Process.Start(psi) ?? throw new InvalidOperationException("Failed to start python for HDF5 fixture.");
-        var stderr = proc.StandardError.ReadToEnd();
-        proc.WaitForExit(30000);
+        var stderrTask = proc.StandardError.ReadToEndAsync();
+        if (!proc.WaitForExit(30000))
+        {
+            try { proc.Kill(entireProcessTree: true); } catch { }
+            throw new TimeoutException("Timed out waiting for HDF5 smoke fixture generation.");
+        }
+        proc.WaitForExit();
+        var stderr = stderrTask.GetAwaiter().GetResult();
         if (proc.ExitCode != 0)
             throw new InvalidOperationException($"HDF5 fixture creation failed: {stderr}");
     }

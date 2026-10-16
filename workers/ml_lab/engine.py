@@ -705,20 +705,52 @@ elif suffix == ".jsonl":
         rows = (json.loads(line) for line in stream if line.strip())
         frame = pd.DataFrame(itertools.islice(rows, start, start + count))
 elif suffix in (".npy", ".npz", ".h5", ".hdf5"):
-    def _parse_key(raw_key):
+    def _has_h5_dataset(handle, candidate):
+        if not candidate:
+            return False
+        import h5py
+        current = handle
+        parts = [p for p in str(candidate).strip("/").split("/") if p]
+        if not parts:
+            return False
+        for part in parts:
+            if part in (".", "..") or not isinstance(current, h5py.Group):
+                return False
+            link = current.get(part, getlink=True)
+            if not isinstance(link, h5py.HardLink):
+                return False
+            current = current[part]
+        return isinstance(current, h5py.Dataset)
+
+    def _key_exists(existing_keys, candidate):
+        if existing_keys is None or not candidate:
+            return False
+        if isinstance(existing_keys, (set, list, tuple, dict)):
+            return candidate in existing_keys
+        return _has_h5_dataset(existing_keys, candidate)
+
+    def _parse_key(raw_key, existing_keys=None):
         if not raw_key:
             return None, None, False
         text = str(raw_key).strip()
+        if _key_exists(existing_keys, text):
+            return text, None, False
+        escaped = text.replace("@@", "\x00")
         wf = False
         ch = None
-        if text.endswith("@waveform"):
+        if escaped.endswith("@waveform"):
             wf = True
-            text = text[:-len("@waveform")]
-        if "@channel:" in text:
-            base, _, ch_str = text.rpartition("@channel:")
-            ch = int(ch_str)
-            text = base
-        return (text if text else None), ch, wf
+            escaped = escaped[:-len("@waveform")]
+        candidate_after_wf = escaped.replace("\x00", "@")
+        if wf and _key_exists(existing_keys, candidate_after_wf):
+            return candidate_after_wf, None, True
+        if "@channel:" in escaped:
+            base, _, ch_str = escaped.rpartition("@channel:")
+            if ch_str.isdigit():
+                ch = int(ch_str)
+                escaped = base
+        base_key = escaped.replace("\x00", "@")
+        return (base_key if base_key else None), ch, wf
 
     def _extract_wf(matrix, prefix="wf"):
         data = np.asarray(matrix, dtype=np.float64)
@@ -772,16 +804,18 @@ elif suffix in (".npy", ".npz", ".h5", ".hdf5"):
             f"{prefix}_dominant_bin": dominant_bin,
         })
 
-    base_key, ch_idx, wf_mode = _parse_key(key)
     if suffix == ".npy":
+        base_key, ch_idx, wf_mode = _parse_key(key)
         raw_arr = np.load(path, mmap_mode="r", allow_pickle=False)[start:start + count]
     elif suffix == ".npz":
         with np.load(path, allow_pickle=False) as archive:
+            base_key, ch_idx, wf_mode = _parse_key(key, set(archive.files))
             resolved_key = base_key or (next(iter(archive.files)) if len(archive.files) == 1 else None)
             raw_arr = archive[resolved_key][start:start + count]
     else:
         import h5py
         with h5py.File(path, "r") as handle:
+            base_key, ch_idx, wf_mode = _parse_key(key, handle)
             current = handle
             for part in (base_key or "").strip("/").split("/"):
                 if part in ("", ".", "..") or not isinstance(current, h5py.Group):

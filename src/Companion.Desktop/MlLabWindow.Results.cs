@@ -24,7 +24,9 @@ public partial class MlLabWindow
                 if (algorithms.Count == 0) StatusLabel.Text = "The local runtime did not report any available algorithms.";
                 break;
             case "browse":
-                StructureGrid.ItemsSource = Table(Array(data, "entries"), 256).DefaultView;
+                browseEntries.Clear();
+                foreach (var item in Array(data, "entries").Take(256)) browseEntries.Add(item.Clone());
+                StructureGrid.ItemsSource = Table(browseEntries, 256).DefaultView;
                 LabTabs.SelectedItem = DataTab;
                 break;
             case "inspect":

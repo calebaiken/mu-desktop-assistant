@@ -25,7 +25,33 @@ WAVEFORM_STAT_NAMES = (
 )
 
 
-def parse_dataset_key(raw_key):
+def _h5_has_dataset(handle, key: str) -> bool:
+    import h5py
+    if not isinstance(key, str) or not key or len(key) > 1024:
+        return False
+    current = handle
+    parts = [part for part in key.strip("/").split("/") if part]
+    if not parts:
+        return False
+    for part in parts:
+        if part in (".", "..") or not isinstance(current, h5py.Group):
+            return False
+        link = current.get(part, getlink=True)
+        if not isinstance(link, h5py.HardLink):
+            return False
+        current = current[part]
+    return isinstance(current, h5py.Dataset)
+
+
+def _key_exists(existing_keys, key: str | None) -> bool:
+    if existing_keys is None or not key:
+        return False
+    if isinstance(existing_keys, (set, list, tuple, dict)):
+        return key in existing_keys
+    return _h5_has_dataset(existing_keys, key)
+
+
+def parse_dataset_key(raw_key, existing_keys=None):
     """Parse optional @channel:<index> and @waveform suffixes from a dataset key."""
     if raw_key is None:
         return None, None, False
@@ -34,23 +60,31 @@ def parse_dataset_key(raw_key):
     text = raw_key.strip()
     if not text:
         return None, None, False
+    if _key_exists(existing_keys, text):
+        return text, None, False
+    escaped = text.replace("@@", "\x00")
     waveform_mode = False
     channel_index = None
-    if text.endswith("@waveform"):
+    if escaped.endswith("@waveform"):
         waveform_mode = True
-        text = text[:-len("@waveform")]
-    if "@channel:" in text:
-        base, _, ch_str = text.rpartition("@channel:")
+        escaped = escaped[:-len("@waveform")]
+    candidate_after_wf = escaped.replace("\x00", "@")
+    if waveform_mode and _key_exists(existing_keys, candidate_after_wf):
+        return candidate_after_wf, None, True
+    if "@channel:" in escaped:
+        base, _, ch_str = escaped.rpartition("@channel:")
         if not ch_str.isdigit():
             fail("Channel selector must be a non-negative integer in @channel:<index>.")
         channel_index = int(ch_str)
         if channel_index < 0 or channel_index >= MAX_CHANNELS:
             fail(f"Channel selector must be between 0 and {MAX_CHANNELS - 1}.", "resource_limit")
-        text = base
-    if "@" in text:
-        fail("Unsupported dataset key selector. Use @waveform, @channel:<index> or @channel:<index>@waveform.")
-    base_key = text if text else None
-    return base_key, channel_index, waveform_mode
+        escaped = base
+    base_key = escaped.replace("\x00", "@")
+    if "@" in escaped and existing_keys is not None and not _key_exists(existing_keys, base_key):
+        prefix, _, _ = base_key.rpartition("@")
+        if not prefix or _key_exists(existing_keys, prefix):
+            fail("Unsupported dataset key selector. Use @waveform, @channel:<index> or @channel:<index>@waveform.")
+    return (base_key if base_key else None), channel_index, waveform_mode
 
 
 def format_canonical_key(base_key, channel_index, waveform_mode):
@@ -61,7 +95,10 @@ def format_canonical_key(base_key, channel_index, waveform_mode):
         suffix += "@waveform"
     if not suffix:
         return base_key
-    return (base_key or "") + suffix
+    escaped_base = base_key or ""
+    if escaped_base.endswith("@waveform") or "@channel:" in escaped_base:
+        escaped_base = escaped_base.replace("@", "@@")
+    return escaped_base + suffix
 
 
 def _extract_waveform_features(matrix, prefix: str = "wf") -> pd.DataFrame:
@@ -346,7 +383,7 @@ def _read_npz_header(archive, entry, budget: int):
     return shape, dtype
 
 
-def _admit_npz_array(path, key, budget, *, channel_index=None, waveform_mode: bool = False):
+def _admit_npz_array(path, key, budget, *, channel_index=None, waveform_mode: bool = False, raw_key=None):
     """Read a bounded .npy header before np.load may allocate its declared shape."""
     if path.stat().st_size * 8 > budget:
         fail("NPZ archive size exceeds the RAM estimate. Use memory-mapped NPY or sliced HDF5.", "resource_limit")
@@ -359,6 +396,8 @@ def _admit_npz_array(path, key, budget, *, channel_index=None, waveform_mode: bo
         arrays = {entry.filename.removesuffix(".npy"): entry for entry in entries if entry.filename.endswith(".npy")}
         if len(arrays) != len(entries):
             fail("NPZ must contain only uniquely named NumPy arrays.")
+        if raw_key is not None:
+            key, channel_index, waveform_mode = parse_dataset_key(raw_key, existing_keys=arrays)
         selected = key or (next(iter(arrays)) if len(arrays) == 1 else None)
         if selected not in arrays:
             fail("Choose an array key from the NPZ file using Browse.")
@@ -374,6 +413,8 @@ def _admit_npz_array(path, key, budget, *, channel_index=None, waveform_mode: bo
         else:
             if len(shape) not in (1, 2) or (len(shape) == 2 and shape[1] > MAX_COLUMNS):
                 fail("NPZ arrays must be bounded numeric/fixed-text one- or two-dimensional tables.")
+    if raw_key is not None:
+        return selected, channel_index, waveform_mode
     return selected
 
 
@@ -451,8 +492,11 @@ def read_dataset(spec: dict, resource: dict, *, preview=False):
         if waveform_mode:
             warnings.append("Waveform mode extracted 15 time- and frequency-domain summary features per channel.")
     elif suffix == ".npz":
-        base_key, channel_index, waveform_mode = parse_dataset_key(raw_key)
-        selected = _admit_npz_array(path, base_key, budget, channel_index=channel_index, waveform_mode=waveform_mode)
+        if raw_key is not None:
+            selected, channel_index, waveform_mode = _admit_npz_array(path, None, budget, raw_key=raw_key)
+        else:
+            selected = _admit_npz_array(path, None, budget)
+            channel_index, waveform_mode = None, False
         with np.load(path, allow_pickle=False, max_header_size=10000) as archive:
             array = archive[selected]
             key = format_canonical_key(selected, channel_index, waveform_mode)
@@ -464,9 +508,9 @@ def read_dataset(spec: dict, resource: dict, *, preview=False):
                 warnings.append("Waveform mode extracted 15 time- and frequency-domain summary features per channel.")
     elif suffix in (".h5", ".hdf5"):
         import h5py
-        base_key, channel_index, waveform_mode = parse_dataset_key(raw_key)
-        key = format_canonical_key(base_key, channel_index, waveform_mode)
         with h5py.File(path, "r") as handle:
+            base_key, channel_index, waveform_mode = parse_dataset_key(raw_key, existing_keys=handle)
+            key = format_canonical_key(base_key, channel_index, waveform_mode)
             array = _h5_dataset(handle, base_key)
             if array.chunks and math.prod(array.chunks) * array.dtype.itemsize * 4 > budget:
                 fail("An HDF5 storage chunk exceeds the memory estimate even for this small slice. Rechunk the source externally.", "resource_limit")
@@ -547,20 +591,25 @@ def _safe_attr_value(item, attr_name, aid):
     elements = math.prod(shape) if shape else 1
     if elements < 1 or elements > 16:
         return None
-    if h5py.check_dtype(ref=dtype) is not None:
-        return None
-    vlen_type = h5py.check_dtype(vlen=dtype)
-    if vlen_type is not None and vlen_type not in (str, bytes):
-        return None
-    if dtype.hasobject and vlen_type not in (str, bytes):
+    try:
+        atype = aid.get_type()
+        is_vlen_str = hasattr(atype, "is_variable_str") and bool(atype.is_variable_str())
+    except Exception:
+        is_vlen_str = False
+    if (
+        dtype.hasobject
+        or is_vlen_str
+        or h5py.check_dtype(ref=dtype) is not None
+        or h5py.check_dtype(vlen=dtype) is not None
+    ):
         return None
     try:
         storage_size = aid.get_storage_size()
     except Exception:
         storage_size = 0
-    if storage_size > 256:
+    if storage_size <= 0 or storage_size > 256:
         return None
-    if not dtype.hasobject and elements * dtype.itemsize > 256:
+    if elements * dtype.itemsize > 256:
         return None
     try:
         raw = item.attrs[attr_name]
@@ -589,20 +638,23 @@ def _safe_attr_value(item, attr_name, aid):
     return [_format_scalar(x) for x in arr.tolist()]
 
 
-def _recommended_selectors(key: str, shape):
+def _recommended_selectors(key: str, shape, dtype=None):
     if not shape:
         return []
+    if dtype is not None and (getattr(dtype, "hasobject", False) or getattr(dtype, "kind", "") not in "biuf"):
+        return []
+    escaped_key = key.replace("@", "@@") if (key.endswith("@waveform") or "@channel:" in key) else key
     if len(shape) == 3:
         nchannels, nsamples = shape[1], shape[2]
         if 1 <= nchannels <= MAX_CHANNELS and 1 <= nsamples <= MAX_WAVEFORM_SAMPLES:
-            selectors = [f"{key}@waveform"]
+            selectors = [f"{escaped_key}@waveform"]
             for ch in range(min(nchannels, 4)):
-                selectors.append(f"{key}@channel:{ch}@waveform")
+                selectors.append(f"{escaped_key}@channel:{ch}@waveform")
             if nsamples <= MAX_COLUMNS:
-                selectors.append(f"{key}@channel:0")
+                selectors.append(f"{escaped_key}@channel:0")
             return selectors
     elif len(shape) == 2 and MAX_COLUMNS < shape[1] <= MAX_WAVEFORM_SAMPLES:
-        return [f"{key}@waveform"]
+        return [f"{escaped_key}@waveform"]
     return []
 
 
@@ -626,7 +678,7 @@ def browse(spec: dict, resource: dict):
             for key, entry in arrays.items():
                 shape, dtype = _read_npz_header(archive, entry, budget)
                 item_shape = list(shape)
-                selectors = _recommended_selectors(key, item_shape) if dtype.kind in "biuf" else []
+                selectors = _recommended_selectors(key, item_shape, dtype)
                 entries.append({"key": key, "kind": "array", "shape": item_shape,
                                 "dtype": str(dtype), "attributes": {"uncompressedBytes": entry.file_size},
                                 "selectors": selectors})
@@ -666,7 +718,7 @@ def browse(spec: dict, resource: dict):
                                 "shape": item_shape,
                                 "dtype": str(item.dtype) if is_dataset else None,
                                 "attributes": attrs,
-                                "selectors": _recommended_selectors(key, item_shape) if is_dataset else []})
+                                "selectors": _recommended_selectors(key, item_shape, item.dtype) if is_dataset else []})
                 if not is_dataset:
                     visit(item, key, depth + 1)
         visit(handle, "", 0)

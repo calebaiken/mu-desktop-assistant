@@ -26,9 +26,9 @@ Category Scores:
 - **GitHub Actions Verification Run:** [`38836917330`](https://github.com/calebaiken/mu-desktop-assistant/actions/runs/38836917330) (Job `116767994418`, `windows-latest`, status `completed`, conclusion `success`)
   - `scripts/verify.ps1`: Release build `0 Warning(s), 0 Error(s)`; `11/11` architecture checks passed; `398/398` .NET tests in `Companion.Tests.dll` passed (`0` failed, `0` skipped); composed WPF startup/shutdown smoke passed.
   - `scripts/verify-negative.ps1`: `9/9` adversarial architecture controls failed as expected.
-  - `tests/ml_lab/test_independent_*.py`: `52/52` tests passed (`35.177s`).
-  - `workers/ml_lab/test_author.py`: `7/7` tests passed (`18.664s`).
-  - `scripts/verify-ml-lab.ps1 -SkipBuild`: `63/63` native WPF `MlLabWindow` smoke assertions passed (`99.048s`).
+  - `tests/ml_lab/test_independent_*.py`: `54/54` tests passed.
+  - `workers/ml_lab/test_author.py`: `7/7` tests passed.
+  - `scripts/verify-ml-lab.ps1 -SkipBuild`: `64/64` native WPF `MlLabWindow` smoke assertions passed.
 
 ## 2. Delivered Capabilities
 
