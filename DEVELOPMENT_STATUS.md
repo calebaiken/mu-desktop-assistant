@@ -53,7 +53,13 @@ two live local schema-planning fixtures and 38 prior UI supervisor checks. Indep
 Python coverage spans 48 distinct tests across retained runs; author tests cover
 22 task/algorithm pairs in six cases. The [independent ML review](docs/qa/ML_LAB_FOUNDATION_REVIEW.md)
 scores this bounded increment **89/100 (8.9/10), PASS**, with no identified critical
-defect in the reviewed scope. Full ML Phase 1 and release gates remain open.
+defect in the reviewed scope. The subsequent [HDF5 waveform & attribute increment review](docs/qa/ML_LAB_HDF5_WAVEFORM_REVIEW.md)
+extends the ML Lab with bounded HDF5 attribute value previews, 3D `(events, channels, samples)`
+channel slicing (`@channel:<index>`), and 15-feature deterministic time/frequency waveform
+extraction (`@waveform` and `@channel:<index>@waveform`) across HDF5, NPZ, and NPY datasets,
+with standalone reproduction script parity, 52/52 independent Python ML tests, 7/7 author
+Python tests, and 63/63 native WPF ML Lab smoke assertions in GitHub Actions (**90/100, 9.0/10, PASS**).
+Full ML Phase 1 and release gates remain open.
 
 This is a saved working-tree checkpoint based on `22f3dae`; ML changes and the
 separate preserved voice-input WIP remain uncommitted. The retained receipts and

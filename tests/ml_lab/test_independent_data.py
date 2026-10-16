@@ -227,13 +227,14 @@ class IndependentDataTests(unittest.TestCase):
         zeros = np.zeros(n_samples, dtype=np.float64)
         impulse = np.zeros(n_samples, dtype=np.float64)
         impulse[4] = -8.0
-        matrix = np.vstack([sine, constant, zeros, impulse])
+        exact_zero_cross = np.array([1.0, 0.0, -1.0, 0.0, 1.0, -1.0, 0.0, 2.0] + [2.0] * 8, dtype=np.float64)
+        matrix = np.vstack([sine, constant, zeros, impulse, exact_zero_cross])
         np.save(self.root / "oracles.npy", matrix)
 
         frame, meta, warnings, more = self.read("oracles.npy", key="@waveform")
         self.assertFalse(more)
         self.assertEqual(meta["key"], "@waveform")
-        self.assertEqual(frame.shape, (4, 15))
+        self.assertEqual(frame.shape, (5, 15))
         self.assertTrue(any("Waveform mode" in w for w in warnings))
 
         # Row 0: pure sine wave (amplitude 2, 3 cycles in 16 samples)
@@ -267,6 +268,7 @@ class IndependentDataTests(unittest.TestCase):
         self.assertAlmostEqual(frame.loc[3, "wf_rms"], 2.0, places=12)
         self.assertAlmostEqual(frame.loc[3, "wf_crest_factor"], 4.0, places=12)
         self.assertAlmostEqual(frame.loc[3, "wf_peak_index"], 4.0, places=12)
+        self.assertAlmostEqual(frame.loc[4, "wf_zero_crossings"], 4.0, places=12)
 
     def test_hdf5_3d_waveform_channel_slicing_and_attribute_previews(self):
         path = self.root / "detector_events.h5"
@@ -305,6 +307,12 @@ class IndependentDataTests(unittest.TestCase):
 
         wide_entry = entries["/detector/wide_pulses"]
         self.assertEqual(wide_entry["selectors"], ["/detector/wide_pulses@waveform"])
+
+        np.savez_compressed(self.root / "detector_events.npz", waveforms=waveforms)
+        npz_info = browse({"path": str(self.root / "detector_events.npz")}, limits({"limits": {}}))
+        npz_entry = npz_info["entries"][0]
+        self.assertEqual(npz_entry["shape"], [20, 3, 64])
+        self.assertIn("waveforms@waveform", npz_entry["selectors"])
 
         # Multi-channel waveform extraction (3 channels * 15 features = 45 columns)
         all_ch_frame, all_meta, _, _ = self.read("detector_events.h5", key="/detector/waveforms@waveform", start=2, rowLimit=6)

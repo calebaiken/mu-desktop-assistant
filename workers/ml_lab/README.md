@@ -138,7 +138,9 @@ provenance, source schema mismatch and export. Actual WPF responsiveness and
 owned-job cancellation are verified through the desktop integration suite.
 
 This is a working bounded foundation, not completion of every requested Phase 1
-item. Rich plot coloring/3D, full HDF5 dimension selectors, editable feature
-engineering, project lifecycle editing, model delete/rename/export UX, detailed
-learning explanations, automatic multi-model search and advanced optional
-backends remain separate increments.
+item.  Bounded 1D/2D/3D `@waveform` feature extraction (15 time/frequency features per channel),
+`@channel:<index>` slicing, and scalar/1D HDF5 attribute previews are supported across
+`data.py` and standalone reproduction scripts in `engine.py`. Rich plot coloring/3D,
+arbitrary N-D tensor slicing, editable feature engineering, project lifecycle editing,
+model delete/rename/export UX, detailed learning explanations, automatic multi-model
+search and advanced optional backends remain separate increments.

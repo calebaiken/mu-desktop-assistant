@@ -4,21 +4,25 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   verify:
     runs-on: windows-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
+
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
@@ -37,15 +41,25 @@ jobs:
       - name: Install ML Lab Python dependencies for worker and UI verification
         shell: pwsh
         run: |
-          & ./artifacts/ml-runtime/Scripts/python.exe -m pip install --upgrade pip
-          & ./artifacts/ml-runtime/Scripts/python.exe -m pip install -r workers/requirements-ml.in
+          & artifacts/ml-runtime/Scripts/python.exe -m pip install --upgrade pip
+          & artifacts/ml-runtime/Scripts/python.exe -m pip install -r workers/requirements-ml.in
 
       - name: Run ML Lab Python test suites
         shell: pwsh
         run: |
-          & ./artifacts/ml-runtime/Scripts/python.exe -B -m unittest discover -s tests/ml_lab -p "test_independent_*.py" -v
-          & ./artifacts/ml-runtime/Scripts/python.exe -B workers/ml_lab/test_author.py -v
+          & artifacts/ml-runtime/Scripts/python.exe -B -m unittest discover -s tests/ml_lab -p "test_independent_*.py" -v
+          & artifacts/ml-runtime/Scripts/python.exe -B workers/ml_lab/test_author.py -v
 
       - name: Run ML Lab WPF smoke verification
         shell: pwsh
         run: ./scripts/verify-ml-lab.ps1 -SkipBuild
+
+      - name: Upload test results and smoke receipts
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-verification-results
+          path: |
+            artifacts/test-results
+            artifacts/qa/ml-lab-smoke.json
+          if-no-files-found: ignore
