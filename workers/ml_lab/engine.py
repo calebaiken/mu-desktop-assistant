@@ -738,7 +738,12 @@ elif suffix in (".npy", ".npz", ".h5", ".hdf5"):
         iqr = q75 - q25
         if n_samples >= 2:
             signs = np.sign(data)
-            zero_crossings = np.sum(signs[:, 1:] * signs[:, :-1] < 0, axis=1).astype(np.float64)
+            filled_signs = np.take_along_axis(
+                signs,
+                np.maximum.accumulate(np.where(signs != 0.0, np.arange(n_samples), 0), axis=1),
+                axis=1,
+            )
+            zero_crossings = np.sum(filled_signs[:, 1:] * filled_signs[:, :-1] < 0.0, axis=1).astype(np.float64)
         else:
             zero_crossings = np.zeros(n_rows, dtype=np.float64)
         peak_abs = np.max(abs_data, axis=1)

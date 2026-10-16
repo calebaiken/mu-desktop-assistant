@@ -384,6 +384,51 @@ class IndependentEngineTests(unittest.TestCase):
             self.assertEqual(output.shape[1], 1)
             np.testing.assert_allclose(output.iloc[:, 0], original["prediction"], atol=1e-9)
 
+    def test_zero_crossing_production_and_export_parity(self):
+        patterns = [
+            [1.0, 0.0, -1.0, 0.0, 1.0, -1.0, 0.0, 2.0],
+            [0.0, 0.0, 1.0, 0.0, 0.0, -1.0, 0.0, 0.0],
+            [1.0, 0.0, 0.0, 2.0, -1.0, 0.0, -2.0, 0.0],
+            [0.0, -2.0, 0.0, 2.0, 0.0, -2.0, 0.0, 0.0],
+        ]
+        rows = []
+        for i in range(36):
+            scale = 1.0 + 0.1 * (i + 1)
+            base = np.array(patterns[i % len(patterns)], dtype=np.float64) * scale
+            rows.append(base)
+        matrix = np.vstack(rows)
+        npy_path = self.root / "zc_parity.npy"
+        np.save(npy_path, matrix)
+
+        trained = self.train(
+            name="ZeroCrossingExportParity",
+            task="regression",
+            algorithm="ridge",
+            dataset={"path": str(npy_path), "key": "@waveform", "start": 0, "rowLimit": 32},
+            target="wf_energy",
+            features=["wf_zero_crossings", "wf_rms", "wf_ptp"],
+            scaling="standard",
+            testFraction=0.25,
+            seed=23,
+            split="random",
+            folds=3,
+            hyperparameters={"alpha": 0.5},
+        )
+        exported = engine.export({"experimentId": trained["id"]}, self.project)
+        destination = self.root / "export_zc_parity"
+        destination.mkdir()
+        proc = subprocess.run(
+            [sys.executable, "-I", "-B", exported["path"]],
+            cwd=destination,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        output = pd.read_csv(destination / "reproduced_predictions.csv")
+        original = pd.read_csv(trained["outputPath"])
+        np.testing.assert_allclose(output.iloc[:, 0], original["prediction"], atol=1e-9)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

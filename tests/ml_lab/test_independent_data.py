@@ -270,6 +270,25 @@ class IndependentDataTests(unittest.TestCase):
         self.assertAlmostEqual(frame.loc[3, "wf_peak_index"], 4.0, places=12)
         self.assertAlmostEqual(frame.loc[4, "wf_zero_crossings"], 4.0, places=12)
 
+    def test_zero_crossing_conventions_and_edge_cases(self):
+        cases = np.array([
+            [1.0, 0.0, -1.0, 0.0, 1.0, -1.0, 0.0, 2.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 3.0, -2.0, 0.0, 0.0, 0.0, 0.0],
+            [2.0, 0.0, 0.0, 0.0, -3.0, 0.0, 0.0, 4.0],
+            [2.0, 0.0, 0.0, 0.0, 5.0, -1.0, 0.0, -4.0],
+            [0.0, 0.0, -7.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        ], dtype=np.float64)
+        expected = [4.0, 0.0, 1.0, 2.0, 1.0, 0.0]
+        np.save(self.root / "zc_cases.npy", cases)
+        frame, _, _, _ = self.read("zc_cases.npy", key="@waveform")
+        np.testing.assert_allclose(frame["wf_zero_crossings"].to_numpy(), expected, rtol=0.0, atol=1e-12)
+
+        single_col = np.array([[1.0], [0.0], [-1.0]], dtype=np.float64)
+        np.save(self.root / "zc_single.npy", single_col)
+        single_frame, _, _, _ = self.read("zc_single.npy", key="@waveform")
+        np.testing.assert_allclose(single_frame["wf_zero_crossings"].to_numpy(), [0.0, 0.0, 0.0], rtol=0.0, atol=1e-12)
+
     def test_hdf5_3d_waveform_channel_slicing_and_attribute_previews(self):
         path = self.root / "detector_events.h5"
         t = np.linspace(0.0, 1.0, 64, endpoint=False)
