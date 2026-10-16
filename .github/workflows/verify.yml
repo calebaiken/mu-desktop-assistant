@@ -1,45 +1,51 @@
 name: Windows verification
-on: [push, pull_request]
-permissions:
-  contents: read
+
+on:
+  push:
+  pull_request:
+
 jobs:
   verify:
     runs-on: windows-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-dotnet@v6
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
         with:
           global-json-file: global.json
-      # The ML, LAYA and neural-speech process-boundary tests resolve an
-      # interpreter from artifacts/ml-runtime/Scripts/python.exe, which is
-      # created by the setup-*.ps1 scripts and therefore never present on a
-      # clean checkout. Provision a bare venv at that path so those checks
-      # actually execute instead of reporting inconclusive.
-      #
-      # Deliberately NOT scripts/setup-ml-lab.ps1: the 24 packages in
-      # workers/requirements-ml.lock are --generate-hashes locked against
-      # CPython 3.12.14 and would fail to sync on a runner. The tests spawn
-      # stdlib-only synthetic workers and import none of those packages, so an
-      # interpreter is the whole requirement. Re-test before changing this.
-      - uses: actions/setup-python@v7
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
-      - name: Provision optional ML runtime interpreter
-        shell: powershell
+          python-version: "3.12"
+
+      - name: Provision ML runtime interpreter
+        shell: pwsh
+        run: python -m venv artifacts/ml-runtime
+
+      - name: Run positive verification gate
+        shell: pwsh
+        run: ./scripts/verify.ps1
+
+      - name: Run negative verification gate
+        shell: pwsh
+        run: ./scripts/verify-negative.ps1
+
+      - name: Install ML Lab Python dependencies for worker and UI verification
+        shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force -Path artifacts | Out-Null
-          python -m venv artifacts/ml-runtime
-          & artifacts/ml-runtime/Scripts/python.exe -c "import json,os,sys,base64,pathlib; print('ML runtime interpreter ready:', sys.version)"
-      - name: Build, test and smoke
-        shell: powershell
-        run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify.ps1
-      - name: Adversarial architecture controls
-        shell: powershell
-        run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-negative.ps1
-      - name: Preserve test results
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: test-results
-          path: artifacts/test-results
+          & ./artifacts/ml-runtime/Scripts/python.exe -m pip install --upgrade pip
+          & ./artifacts/ml-runtime/Scripts/python.exe -m pip install -r workers/requirements-ml.in
+
+      - name: Run ML Lab Python test suites
+        shell: pwsh
+        run: |
+          & ./artifacts/ml-runtime/Scripts/python.exe -B -m unittest discover -s tests/ml_lab -p "test_independent_*.py" -v
+          & ./artifacts/ml-runtime/Scripts/python.exe -B workers/ml_lab/test_author.py -v
+
+      - name: Run ML Lab WPF smoke verification
+        shell: pwsh
+        run: ./scripts/verify-ml-lab.ps1 -SkipBuild

@@ -289,7 +289,23 @@ public partial class MlLabWindow : Window
 
     private void Structure_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (StructureGrid.SelectedItem is DataRowView row && row.Row.Table.Columns.Contains("key")) DatasetKey.Text = row["key"]?.ToString() ?? "";
+        if (StructureGrid.SelectedItem is not DataRowView row || !row.Row.Table.Columns.Contains("key")) return;
+        var key = row["key"]?.ToString() ?? "";
+        if (row.Row.Table.Columns.Contains("selectors") && row["selectors"]?.ToString() is { Length: > 2 } selectorsText &&
+            selectorsText.StartsWith('['))
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(selectorsText);
+                if (doc.RootElement.ValueKind == JsonValueKind.Array && doc.RootElement.GetArrayLength() > 0 &&
+                    doc.RootElement[0].GetString() is { Length: > 0 } firstSelector)
+                {
+                    key = firstSelector;
+                }
+            }
+            catch (JsonException) { }
+        }
+        DatasetKey.Text = key;
     }
     private void History_SelectionChanged(object sender, SelectionChangedEventArgs e) => selectedExperiment = FindSelected(HistoryGrid, experiments);
     private void Models_SelectionChanged(object sender, SelectionChangedEventArgs e)

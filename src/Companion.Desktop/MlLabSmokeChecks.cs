@@ -140,6 +140,42 @@ internal static class MlLabSmokeChecks
             Check("multiple-experiments-remain-visible", window.HistoryGrid.Items.Count == 5);
             var trainedSourceBytes = await File.ReadAllBytesAsync(csv);
             Check("all-training-preserves-source", originalHash.SequenceEqual(SHA256.HashData(trainedSourceBytes)));
+
+            var h5Path = Path.Combine(fixtureDirectory, "waveforms.h5");
+            CreateWaveformHdf5Fixture(h5Path);
+            window.DatasetPath.Text = h5Path;
+            window.DatasetKey.Text = "";
+            var browsedH5 = await window.ExecuteActionAsync(new MlBrowse(new(h5Path, RowLimit: 100)));
+            Check("hdf5-browse-populates-structure", browsedH5 is not null && window.StructureGrid.Items.Count >= 2);
+
+            var wfRowIndex = -1;
+            var attrsText = "";
+            for (var i = 0; i < window.StructureGrid.Items.Count; i++)
+            {
+                if (window.StructureGrid.Items[i] is System.Data.DataRowView drv &&
+                    drv["key"]?.ToString() == "/detector/waveforms")
+                {
+                    wfRowIndex = i;
+                    attrsText = drv["attributes"]?.ToString() ?? "";
+                    break;
+                }
+            }
+            Check("hdf5-browse-shows-attribute-values", wfRowIndex >= 0 && attrsText.Contains("1000", StringComparison.Ordinal) && attrsText.Contains("calorimeter-A", StringComparison.Ordinal));
+            window.StructureGrid.SelectedIndex = wfRowIndex;
+            await window.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.Background);
+            Check("hdf5-selection-autofills-waveform-selector", window.DatasetKey.Text == "/detector/waveforms@waveform");
+
+            var wfInspection = await window.ExecuteActionAsync(new MlInspect(new(h5Path, "/detector/waveforms@waveform", 0, 100)));
+            Check("hdf5-waveform-inspect-extracts-30-channel-features", wfInspection is not null && window.StatisticsGrid.Items.Count == 30);
+
+            var ch0Inspection = await window.ExecuteActionAsync(new MlInspect(new(h5Path, "/detector/waveforms@channel:0@waveform", 0, 100)));
+            Check("hdf5-channel0-waveform-inspect-extracts-15-features", ch0Inspection is not null && window.StatisticsGrid.Items.Count == 15);
+
+            var wfTrain = await window.ExecuteActionAsync(new MlTrain(
+                new(h5Path, "/detector/waveforms@channel:0@waveform", 0, 100),
+                "regression", "ridge", ["ch0_mean", "ch0_rms", "ch0_ptp", "ch0_dominant_bin"],
+                "ch0_energy", Scaling: "standard", Name: "SmokeWaveformRidge"));
+            Check("hdf5-waveform-regression-trains", wfTrain is not null && window.MetricsGrid.Items.Count >= 4);
             await CheckCancellationAsync(service, Check);
             await CheckProposalLimitsAsync(service, csv, Check);
 
@@ -165,6 +201,54 @@ internal static class MlLabSmokeChecks
                 limits = new[] { "Synthetic data only; no physical input or screen-reader qualification.", "Window reopen checked; complete application restart and export-script execution use separate checks.", "Cancellation observes real owned child startup; it does not prove cancellation at a particular estimator fit instruction." }
             }, new JsonSerializerOptions { WriteIndented = true }));
         }
+    }
+
+    private static void CreateWaveformHdf5Fixture(string h5Path)
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        string? pythonExe = null;
+        while (dir is not null)
+        {
+            var candidate = Path.Combine(dir.FullName, "artifacts", "ml-runtime", "Scripts", "python.exe");
+            if (File.Exists(candidate))
+            {
+                pythonExe = candidate;
+                break;
+            }
+            dir = dir.Parent;
+        }
+        if (pythonExe is null)
+            throw new InvalidOperationException("Could not locate artifacts/ml-runtime/Scripts/python.exe for HDF5 smoke fixture.");
+
+        var script = """
+            import sys, h5py, numpy as np
+            rng = np.random.default_rng(42)
+            t = np.linspace(0.0, 1.0, 64, endpoint=False)
+            events = np.zeros((36, 2, 64), dtype=np.float64)
+            for i in range(36):
+                amp = 1.0 + 0.15 * i
+                events[i, 0, :] = amp * np.sin(2.0 * np.pi * 4.0 * t) + 0.05 * rng.standard_normal(64)
+                events[i, 1, :] = 0.5 * amp * np.cos(2.0 * np.pi * 8.0 * t) + 0.05 * rng.standard_normal(64)
+            with h5py.File(sys.argv[1], "w") as handle:
+                grp = handle.create_group("detector")
+                ds = grp.create_dataset("waveforms", data=events, chunks=(12, 2, 64))
+                ds.attrs["sampling_rate_hz"] = 1000.0
+                ds.attrs["detector"] = "calorimeter-A"
+            """;
+        var psi = new ProcessStartInfo(pythonExe)
+        {
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            RedirectStandardError = true,
+        };
+        psi.ArgumentList.Add("-c");
+        psi.ArgumentList.Add(script);
+        psi.ArgumentList.Add(h5Path);
+        using var proc = Process.Start(psi) ?? throw new InvalidOperationException("Failed to start python for HDF5 fixture.");
+        var stderr = proc.StandardError.ReadToEnd();
+        proc.WaitForExit(30000);
+        if (proc.ExitCode != 0)
+            throw new InvalidOperationException($"HDF5 fixture creation failed: {stderr}");
     }
 
     private static async Task CheckLayoutAsync(MlLabWindow window, Action<string, bool> check)
