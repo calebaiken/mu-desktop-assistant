@@ -94,20 +94,44 @@ internal static class Program
         var errorView = new ResearchProjectsWindow(new PublicProjects(fail: true)) { Width = 800, Height = 600, ShowActivated = false, ShowInTaskbar = false };
         try { errorView.Show(); await SettleAsync(errorView); Save(errorView, mode + "-800x600-error.png"); }
         finally { errorView.Close(); }
+        if (mode == "candidate")
+        {
+            using var contrast = new WindowsContrastScope();
+            await Task.Delay(250); // Allow Windows' setting-change broadcast to reach the dispatcher.
+            var observed = SystemParameters.HighContrast;
+            File.WriteAllText(Path.Combine(directory, "high-contrast-observation.json"), JsonSerializer.Serialize(new
+            {
+                requested = true, nativeEnabled = contrast.Enabled, wpfEnabled = observed,
+                nativeError = contrast.NativeError, scope = "Disposable CI desktop; no physical monitor or screen reader qualification"
+            }));
+            if (contrast.Enabled && observed)
+            {
+                var highContrast = new ResearchProjectsWindow(store) { Width = 800, Height = 600, ShowInTaskbar = false };
+                try
+                {
+                    highContrast.Show();
+                    await SettleAsync(highContrast);
+                    ((ListBox)highContrast.FindName("ProjectsList")).SelectedIndex = 0;
+                    await SettleAsync(highContrast);
+                    if (((SolidColorBrush)highContrast.FindResource("Mu.Text")).Color != SystemColors.WindowTextColor)
+                        throw new InvalidOperationException("Windows contrast palette did not apply.");
+                    Save(highContrast, mode + "-800x600-high-contrast.png");
+                }
+                finally { highContrast.Close(); }
+            }
+            // An unavailable SPI setting is recorded as unverified, never a passing contrast check.
+        }
         File.WriteAllText(Path.Combine(directory, "captures.json"), JsonSerializer.Serialize(new
         {
             source, mode, fixture = "Fixed synthetic metadata only; no dataset, model or worker",
-            capture = "Shown native WPF visual tree client area; no OS chrome; not an HTML mockup",
+            capture = "Actual shown native window client pixels via Win32 GetDC/BitBlt; no OS chrome; not an HTML mockup",
             images
         }, new JsonSerializerOptions { WriteIndented = true }));
 
         void Save(ResearchProjectsWindow window, string name)
         {
-            var content = (FrameworkElement)window.Content;
-            var dpi = VisualTreeHelper.GetDpi(content);
-            var bitmap = new RenderTargetBitmap((int)Math.Ceiling(content.ActualWidth * dpi.DpiScaleX),
-                (int)Math.Ceiling(content.ActualHeight * dpi.DpiScaleY), dpi.PixelsPerInchX, dpi.PixelsPerInchY, PixelFormats.Pbgra32);
-            bitmap.Render(content);
+            var dpi = VisualTreeHelper.GetDpi(window);
+            var bitmap = NativeClientCapture.Capture(window);
             var encoder = new PngBitmapEncoder();
             encoder.Frames.Add(BitmapFrame.Create(bitmap));
             using var output = File.Create(Path.Combine(directory, name));

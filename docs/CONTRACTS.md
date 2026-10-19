@@ -1,5 +1,14 @@
 # Application contracts
 
+## Research Projects UI v3
+
+The picker is an opt-in client of IResearchProjectStore. Selection updates only
+transient review; explicit Open requires the same stable ID, unchanged immutable
+metadata and same selected row after asynchronous resolution. Refresh clears
+acceptance/selection before listing. Closing cancels UI lifetime and ignores late
+results. No dataset/planner/worker/catalog/permission contract changes; workspace
+still owns switching and job admission. See [design/evidence](UI_DESIGN_V3.md).
+
 ## Implemented Chat-to-Research transfer increment
 
 `ResearchRequestHandoff` is bounded process-local request data, not action authority.

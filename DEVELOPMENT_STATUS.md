@@ -1,5 +1,24 @@
 # Development status
 
+## Current UI increment — Research Projects v3 (2026-10-19)
+
+`feature/research-projects-ui-v3` starts at PR #4's documented `6e4ba5d`.
+The existing picker opts into shared Crimson Archive v3 WPF resources, Instrument
+by default, with a disposable local Archive choice and OS contrast override.
+It adds Cancel/Refresh, validation/count bounds, exact identity/storage review,
+async destination revalidation and a scrollable narrow layout. Muon, other views,
+storage, admission, approvals and worker contracts remain unchanged.
+See [source provenance, usage and limits](docs/UI_DESIGN_V3.md).
+
+Initial candidate `1d09dc8` passed both mandatory Windows gates (524 passed,
+zero failed, one expected skip), but the separate native UI harness failed.
+Baseline image inspection exposed a capture-tool background/margin defect;
+those images are retained as failed evidence pending comparable recapture.
+Initial independent [QA](docs/qa/RESEARCH_PROJECTS_UI_V3_REVIEW_INITIAL.md) scores
+65/100 = 6.5/10 FAIL/INCOMPLETE. No visual/Gauntlet/accessibility acceptance is
+claimed. Python regression/project isolation suites pass 49/49. Native receipts
+and remaining qualification are tracked in TESTING; the >8.5 gate is unchanged.
+
 ## Current increment — explicit Chat-to-Research handoff (2026-10-19)
 
 [Draft stacked PR #4](https://github.com/calebaiken/mu-desktop-assistant/pull/4),

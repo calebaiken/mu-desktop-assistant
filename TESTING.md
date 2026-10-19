@@ -1,5 +1,26 @@
 # Testing
 
+## Native Research Projects UI v3 — 2026-10-19 (in progress)
+
+Branch derives from PR #4's `6e4ba5d`. [Frozen independent protocol](docs/qa/RESEARCH_PROJECTS_UI_V3_PROTOCOL.md),
+[initial QA 6.5/10 FAIL/INCOMPLETE](docs/qa/RESEARCH_PROJECTS_UI_V3_REVIEW_INITIAL.md),
+and [source/workflow/evidence limits](docs/UI_DESIGN_V3.md).
+
+| Actually executed | Result | Evidence |
+| --- | --- | --- |
+| Unchanged-UI baseline `7744f56`, Windows [39338407912](https://github.com/calebaiken/mu-desktop-assistant/actions/runs/39338407912) | positive/negative gates pass; 524 passed, zero failed, one expected skip of525; 21 project +28 handoff native checkpoints | job118353597991, artifact12227546936 |
+| Initial candidate `1d09dc8`, Windows [39339073773](https://github.com/calebaiken/mu-desktop-assistant/actions/runs/39339073773) | both mandatory gates pass with same counts; separate native UI harness **failed** | job118355817904, artifact12227064445; retained |
+| Initial baseline image inspection | **capture failure**: omitted window background/transparent pixels and cropped margins; not proof of product clipping; excluded from acceptance | `artifacts/qa/ui-v3/independent/baseline-native.zip`; original tool retained in Git |
+| Linux strict Release/architecture | zero warnings/errors; 11/11; no native execution claimed | SDK10.0.401 |
+| Pinned Python author/data/engine/pipeline/project-isolation suites | 6+16+19+7+1 = **49 passed**, zero failed | ignored `artifacts/qa/ui-v3/python-*.txt` |
+
+Recapture uses actual shown-window client pixels with the same current developer
+tool against frozen baseline6e4ba5d and candidate. No private data is captured.
+Mandatory15-second smoke, resource thresholds and historical receipts below are
+unchanged. Windows11 physical hardware, monitor scaling125–200%, screen readers,
+qualified pretrained models and real-user timing remain unverified. No blind
+visual winner or completed accessibility acceptance is claimed.
+
 ## Verified Chat-to-Research handoff — 2026-10-19
 
 Reviewed executable checkpoint: **a33401fe7e595bf4fb1148a32aba3b913530df4b**,
