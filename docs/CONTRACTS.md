@@ -45,9 +45,28 @@ Typed fixed failures exclude input text and native exception payloads. Failed cl
 poisons the provider instance. Separate synthesis/capture/playback/recognition ports
 below remain the broader voice-loop design; this output slice does not implement them.
 
+## Implemented text inspection candidate (2026-10-19)
+
+`Application.Tools` now implements the narrow `IToolExecutor`, `ITool` and
+`IPermissionService` slice in the design below. `PrepareAsync` returns a sealed
+metadata-only preview; the trusted UI alone receives the approval port. The executor
+retains the prepared resource, binds its exact immutable proposal/arguments, descriptor
+and identity to an opaque one-use grant, and emits a typed completed/denied/cancelled/
+failed result. The one registered tool denies by default and requires fresh consent.
+Neither untrusted JSON nor a model can deserialize a preview/grant/context.
+
+The first proposal is one typed selected text-file read, not a general DAG planner or
+a model tool-call protocol. No raw implementation executes without an internally
+constructed `AuthorizedContext`. Cancellation, expiry, stale identity and all failed
+attempts consume/invalidate authority. The Windows adapter holds no-follow,
+write/delete-denying ancestor/file leases through its bounded read. See
+[actual limits and outstanding qualification](TRUSTED_TEXT_INSPECTION.md); the broader
+future descriptor JSON schemas and multi-step task contracts below remain design.
+
 ## Remaining proposed contracts
 
-These are design specifications, **not implemented interfaces**. Introduce code as each
+Except for the narrow Tools candidate above, these are design specifications,
+**not implemented interfaces**. Introduce code as each
 phase can supply a real implementation and contract tests. All ports are asynchronous
 where I/O occurs, cancellable, injectable, and exchange owned immutable values or
 explicitly disposable buffers. No secrets in DTOs, exception text or `ToString`.

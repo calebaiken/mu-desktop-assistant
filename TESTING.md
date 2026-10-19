@@ -1,5 +1,65 @@
 # Testing
 
+## Approved text inspection — 2026-10-19
+
+The new panel, contracts and native adapter are described in
+[the action guide](docs/TRUSTED_TEXT_INSPECTION.md). Local evidence below is from
+Debian Linux with SDK 10.0.401 and `EnableWindowsTargeting=true`. Windows CI evidence
+is attributed separately to its exact source/run. Initial failures remain retained.
+
+| Check | Actual current result | Receipt under `artifacts/qa/` |
+|---|---|---|
+| Baseline `pwsh -File scripts/verify.ps1` | Restore/build/11 architecture pass; tests 344 passed, 23 Windows failures, 31 skipped; WPF not reached | `trusted-text-20261019/baseline-verify.log`, `baseline.trx` |
+| Candidate Release cross-build | Zero warnings/errors | `trusted-text-20261019/build-checked.log` |
+| New policy/decoder/real-stream/Windows integration selection | 40 passed, 0 failed, 3 Windows-only skipped, 43 total | `trusted-text-20261019/targeted-final.trx` |
+| Independent rerun of same 43 cases | 40 passed, 0 failed, 3 skipped | `trusted-text/independent/independent-trusted-actions-unicode-final.trx` |
+| Independent architecture check | 11/11, exit 0 | `trusted-text/independent/architecture-final.log` |
+| Candidate full Linux gate before final additional Unicode-path case | 383 passed, same 23 baseline failing names, 34 skipped, 440 total; WPF not reached | `trusted-text-20261019/final-full-gate.log`, `final-full-gate.trx` |
+| Portable existing ML suites | 48 passed: author 6, independent data 16, pipeline 7, engine 19 | `trusted-text-20261019/ml-{author,data,pipeline,engine}.log` |
+| Direct WPF launch on Linux | Exit 150: Microsoft.WindowsDesktop.App unavailable | `trusted-text-20261019/native-unavailable.log` |
+| Final stronger native checks, local selection | Release zero warnings/errors; 40 passed, 0 failed, 3 Windows-only skipped, 43 total | `trusted-text-20261019/build-native-evidence.log`, `targeted-native-evidence.trx` |
+
+Windows CI on `a999ae4f59b16a9e435185726a647668a5aac51f` passes **2/2 checks**:
+[push run 39293630026](https://github.com/calebaiken/mu-desktop-assistant/actions/runs/39293630026)
+and [PR run 39293637612](https://github.com/calebaiken/mu-desktop-assistant/actions/runs/39293637612).
+The exact-head public checks payload identifies both `verify` jobs as succeeded;
+the immutable unchanged workflow runs `scripts/verify.ps1` followed by
+`scripts/verify-negative.ps1` without continue-on-error. This executes the actual
+production-reader/native-HWND/control smoke and the normal Windows file identity/
+sharing/ancestor-rename assertions. This is real remote Windows evidence, not a
+Linux simulation. The preceding `d2607b6` Windows runs also succeeded, and their
+individual positive/negative step success was independently read through REST.
+
+Detailed log/TRX downloads redirect to a storage host denied by the runtime network
+policy. Exact Windows case counters and the conditional symlink fixture's actual
+pass/skip outcome are therefore **not reported**. Public exact-head status receipt:
+`trusted-text-20261019/windows-final-public-status.json`. Full gates succeeding does
+not substitute for physical picker/keyboard/screen-reader or resource measurements.
+
+The full required Windows gate is `scripts/verify.ps1` then
+`scripts/verify-negative.ps1`. The composed `--smoke` now includes the actual WPF
+inspection panel and production file reader with an isolated public fixture.
+Windows tests exercise locked target identity, post-read lease release, redacted
+real log storage, oversized files and leaf/ancestor links. Link fixture creation
+requires Developer Mode or the Windows symlink privilege. Unsupported-platform
+denial has a separate Linux test. Skips do not count as native success.
+
+Independent tests include exact monotonic expiry under UTC rollback, same/foreign
+grant replay, stale resources, cancellation/disposal, audit errors and audit races,
+noncooperative late callbacks, redacted/literal results, malformed inputs and Unicode
+boundaries. Physical picker/keyboard/high-contrast/accessibility, adversarial native
+ancestor swaps and full workload resource qualification remain required. Future
+source changes retain the complete Windows gates.
+The independent protocol and initial failed review are under `docs/qa/`; a passing
+Linux suite alone cannot advance the phase. Historical receipts below stay unchanged.
+The independent Linux checkpoint in `docs/qa/TRUSTED_TEXT_INSPECTION_REVIEW_LINUX.md`
+scores **8.2/10, FAIL / incomplete qualification** under the unchanged >8.5 gate.
+The subsequent exact-code [Windows review](docs/qa/TRUSTED_TEXT_INSPECTION_REVIEW_WINDOWS.md)
+scores **94/100 = 9.4/10, PASS** for the bounded A development slice, with zero
+confirmed unresolved critical defects. Its detailed evidence provenance and remaining
+deductions are explicit; no precise Windows counters or conditional symlink result
+were invented from aggregate CI success. This does not certify release or other modules.
+
 ## Optional neural voices — 2026-09-30
 
 This unit extends explicit local speech, without opening a microphone or completing
@@ -446,8 +506,9 @@ mouse/keyboard actions were attempted. The process smoke alone does not prove us
 reader behavior, keyboard coverage, mixed DPI or compositor quality.
 
 CI configuration in `.github/workflows/verify.yml` runs the positive and negative
-scripts on Windows and uploads TRX. It has not run remotely until a repository is
-published and the workflow executes. Visible interactive QA is local, separate from
+scripts on Windows and uploads TRX. Remote execution was absent at that historical
+baseline; actual later CI executions are recorded above/in the current source audit.
+Visible interactive QA is local, separate from
 headless CI. Do not equate a configuration file with a successful CI run.
 
 ## Dependency review
@@ -488,7 +549,9 @@ absolute and relative tolerances, nonfinite and boundary tests. First-order unce
 uses variance(f) approximately J Σ Jᵀ, with covariance, differentiability and small-error
 assumptions documented; compare nonlinear cases independently. Affine temperatures
 must distinguish values from intervals. Model text never supplies the numerical oracle.
-No scientific calculation is implemented or verified yet. QA arithmetic uses exact
+This planned general-purpose science engine is not implemented or verified; the
+separate ML Lab computations and PR #1's proposed waveform work have narrower scopes.
+QA arithmetic uses exact
 decimals and the strict score >8.5 condition; 8.5 fails.
 
 Tests use isolated temporary directories with guarded cleanup, never the user's actual

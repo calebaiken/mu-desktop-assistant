@@ -5,6 +5,15 @@ at 9.4/10; Phase 1 independently passed at 9.0/10; Phase 2 development passed at
 none advances with a score of 8.5 or lower. Cross-cutting security is designed now,
 implemented with each feature and adversarially tested again in Phase 11.
 
+**2026-10-19 priority: modules A, B, C, G, I.** The first candidate implements only
+A's selected plain-text read with I's adversarial policy/lifecycle tests and an actual
+WPF panel. Required Windows CI gates pass on `a999ae4`; independent review and the
+remaining physical/resource qualification are recorded in docs/qa and Testing. Follow with
+PR #1 review/integration and explicit project identity/Chat→Lab approval reuse (B),
+approved project SQLite memory (C), then independently qualified model profiles and
+workload admission (G/I). See [the audited dependency sequence](docs/AGENTIC_EVOLUTION_AUDIT.md).
+This does not deliver the larger roadmap phases or any unselected module.
+
 Phase 3's first **local pretrained chat increment passed at 9.0/10**. This approves
 the bounded in-memory chat slice. History, branching/search, separate temporary mode,
 exact token admission and native Markdown/code/math now pass the

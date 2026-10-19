@@ -1,5 +1,17 @@
 # Architecture
 
+The 2026-10-19 [text inspection increment](docs/TRUSTED_TEXT_INSPECTION.md) introduces
+the first implemented tool/permission ports and a separate native inspection panel.
+Application owns the typed descriptor/proposal, sealed preview, opaque single-use
+grant and serialized default-deny executor; Infrastructure owns strict text decoding
+and retained Windows file/ancestor leases; Desktop owns selection and exact approval.
+The App retains executor ownership across view reopenings and cancels on sleep/close.
+Intent/outcome logging uses the existing enum-only audit channel. Text and paths never
+enter logs, Chat or memory. General task planning, file mutations, memory and model
+selection remain unimplemented. Required Windows CI gates, the native window/control
+smoke and file/ancestor lease assertions pass on `a999ae4`; physical interaction,
+the broader hostile-path matrix and resource qualification remain open.
+
 Status: Phase 2 desktop interactions complete as a development milestone at independent
 QA 8.7/10; resource and physical qualification still block release. Configuration, log ports/adapters, instance
 activation and WPF shell now exist. Phase 3 adds owned local model inference and

@@ -67,12 +67,14 @@ public partial class App : System.Windows.Application
             companion.SettingsRequested += (_, _) => OpenSettings();
             companion.ChatRequested += (_, _) => OpenChat();
             companion.MlLabRequested += (_, _) => OpenMlLab();
+            companion.TextInspectionRequested += (_, _) => OpenTextInspection();
             companion.SleepChanged += (_, _) =>
             {
                 if (companion.CurrentState == AvatarState.Sleeping)
                 {
                     chatWindow?.StopGeneration();
                     chatWindow?.StopSpeech();
+                    textInspectionWindow?.ClearInspection();
                 }
             };
             companion.Closing += (_, closing) =>
@@ -93,6 +95,7 @@ public partial class App : System.Windows.Application
                 var content = (FrameworkElement)companion.Content;
                 content.Measure(new Size(companion.Width, companion.Height));
                 content.Arrange(new Rect(0, 0, companion.Width, companion.Height));
+                await TextInspectionSmokeChecks.RunAsync(runtime.Log, options.DataDirectory);
                 await StopAsync(content.DesiredSize.Width > 0 && content.DesiredSize.Height > 0 ? 0 : 1);
                 return;
             }
@@ -372,6 +375,18 @@ public partial class App : System.Windows.Application
         if (companion is not null) companion.IsEnabled = false;
         settingsWindow?.BeginShutdown();
         chatWindow?.BeginShutdown();
+        var inspector = textInspectionWindow;
+        inspector?.Close();
+        if (inspector is not null)
+        {
+            try { await inspector.ShutdownTask.WaitAsync(TimeSpan.FromSeconds(3)); }
+            catch (Exception) { exitCode = 1; }
+        }
+        if (textInspectionWorkflow is not null)
+        {
+            try { await textInspectionWorkflow.DisposeAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(3)); }
+            catch (Exception) { exitCode = 1; }
+        }
         mlLabWindow?.Close();
         if (mlLabService is not null)
         {
