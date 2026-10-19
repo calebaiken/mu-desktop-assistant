@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Automation;
@@ -25,7 +26,16 @@ internal static class IndependentChecks
 {
     private static readonly TimeSpan Deadline = TimeSpan.FromSeconds(5);
     private static string? selectionStep;
+    private static string? waitStep, keyboardStep;
     private static SelectionObservation? selectionObservation;
+    private static readonly List<object> keyboardTrace = [], inputCalls = [], keyboardSnapshots = [];
+    private static readonly HashSet<string> WaitLabels = new(StringComparer.Ordinal)
+    {
+        "failed refresh returned", "repaired refresh returned", "deferred catalog began", "deferred create began",
+        "explicit modal Open completed", "explicit modal Cancel completed", "native Escape completed",
+        "cancelled pending destination", "changed destination revalidation returned", "stale destination dismissed",
+        "access key dropdown dismissed", "native theme dropdown opened", "native theme choice applied", "catalog ready"
+    };
 
     private sealed record SelectionObservation(int Index, int ItemCount, bool ListEnabled)
     {
@@ -43,7 +53,9 @@ internal static class IndependentChecks
         var completed = false;
         string? failedCheck = null, failureType = null, failureDetail = null;
         selectionStep = null;
+        waitStep = keyboardStep = null;
         selectionObservation = null;
+        keyboardTrace.Clear(); inputCalls.Clear(); keyboardSnapshots.Clear();
         var stage = "late catalog";
         void Check(bool condition, string label)
         {
@@ -67,15 +79,17 @@ internal static class IndependentChecks
             await LateAndChangedOpenAsync(Check);
             stage = "viewport and footer";
             await ViewportRegressionAsync(outputDirectory, Check);
+            stage = "native keyboard";
+            await KeyboardScenarioAsync(outputDirectory, Check);
             completed = true;
             return passed;
         }
-        catch (Exception error) { failureType = error.GetType().Name; failureDetail = selectionStep; throw; }
+        catch (Exception error) { failureType = error.GetType().Name; failureDetail = selectionStep ?? waitStep ?? keyboardStep; throw; }
         finally
         {
             Directory.CreateDirectory(outputDirectory);
             await File.WriteAllTextAsync(Path.Combine(outputDirectory, "independent-native-checks.json"),
-                JsonSerializer.Serialize(new { completed, stage, failedCheck, failureType, failureDetail, selectionObservation, passed }));
+                JsonSerializer.Serialize(new { completed, stage, failedCheck, failureType, failureDetail, waitStep, selectionObservation, passed }));
         }
     }
 
@@ -347,7 +361,6 @@ internal static class IndependentChecks
             SetValue(Find<TextBox>(window, "ProjectName"), "Keyboard creation candidate");
             await TurnAsync();
             await ThemeContrastAsync(window, check);
-            await NativeKeyboardAsync(window, check);
         }
         finally { window.Close(); }
     }
@@ -415,14 +428,22 @@ internal static class IndependentChecks
             await WaitAsync(() => !window.IsVisible, "explicit modal Cancel completed");
         });
         check(cancelled != true && cancelledId is null, "UIA Cancel leaves no accepted destination");
+    }
+
+    private static async Task NativeEscapeAsync(Action<bool, string> check)
+    {
+        var store = new FixtureStore { Rows = [Project(7, "First explicit destination"), Project(8, "Second explicit destination")] };
         var (escaped, escapedId) = await ModalAsync(store, async window =>
         {
             await ReadyAsync(window, store);
+            using var trace = new KeyboardTraceScope(window);
             var handle = new WindowInteropHelper(window).Handle;
             window.Activate();
             _ = SetForegroundWindow(handle);
             await TurnAsync();
             check(GetForegroundWindow() == handle, "modal picker owns injected Escape foreground");
+            keyboardStep = "native Escape injection";
+            SnapshotKeyboard(window, "before Escape");
             SendKey(0x1B);
             await WaitAsync(() => !window.IsVisible, "native Escape completed");
         });
@@ -530,34 +551,180 @@ internal static class IndependentChecks
         selectionStep = null;
     }
 
+    private static async Task KeyboardScenarioAsync(string outputDirectory, Action<bool, string> check)
+    {
+        var environmentBefore = DesktopDiagnostics();
+        var completed = false;
+        try
+        {
+            var store = new FixtureStore { Rows = [Project(3, "Same visible name"), Project(4, "Same visible name")] };
+            var window = NewWindow(store);
+            try
+            {
+                window.Show();
+                await ReadyAsync(window, store);
+                SelectRow(Find<ListBox>(window, "ProjectsList"), 1);
+                SetValue(Find<TextBox>(window, "ProjectName"), "Keyboard creation candidate");
+                await TurnAsync();
+                using var trace = new KeyboardTraceScope(window);
+                try { await NativeKeyboardAsync(window, check); }
+                finally { SnapshotKeyboard(window, "keyboard scenario exit"); }
+            }
+            finally { window.Close(); }
+            await NativeEscapeAsync(check); // Native input remains last; earlier UIA modal checks still run.
+            keyboardStep = null;
+            completed = true;
+        }
+        finally
+        {
+            Directory.CreateDirectory(outputDirectory);
+            await File.WriteAllTextAsync(Path.Combine(outputDirectory, "independent-keyboard-observation.json"),
+                JsonSerializer.Serialize(new
+                {
+                    completed, keyboardStep, waitStep, environmentBefore, environmentAfter = DesktopDiagnostics(),
+                    injection = "Real Win32 SendInput with checked queued count, mapped scan codes and extended navigation flags",
+                    scope = "Fixed synthetic keys and public control labels only; no physical input or session reconfiguration",
+                    inputCalls, keyboardTrace, keyboardSnapshots
+                }));
+        }
+    }
+
+    private sealed class KeyboardTraceScope : IDisposable
+    {
+        private readonly Window window;
+        private readonly KeyEventHandler handler;
+        internal KeyboardTraceScope(Window window)
+        {
+            this.window = window;
+            handler = (_, e) =>
+            {
+                if (keyboardTrace.Count < 64) keyboardTrace.Add(new
+                {
+                    key = PublicKey(e.Key), systemKey = PublicKey(e.SystemKey),
+                    alt = (Keyboard.Modifiers & ModifierKeys.Alt) != 0,
+                    focused = FocusLabel(), windowActive = window.IsActive
+                });
+            };
+            window.AddHandler(Keyboard.PreviewKeyDownEvent, handler, true);
+        }
+        public void Dispose() => window.RemoveHandler(Keyboard.PreviewKeyDownEvent, handler);
+    }
+
+    private static string PublicKey(Key key) => key switch
+    {
+        Key.System or Key.LeftAlt or Key.RightAlt or Key.Tab or Key.M or Key.N or Key.Down or Key.End or Key.Enter or Key.Escape or Key.Home => key.ToString(),
+        _ => "Other"
+    };
+
+    private static string FocusLabel()
+    {
+        var value = Keyboard.FocusedElement as DependencyObject;
+        for (var depth = 0; value is not null && depth < 24; depth++, value = Parent(value))
+            if (value is FrameworkElement element && element.Name is "ProjectsList" or "ProjectTarget" or "ProjectName" or
+                "CreateProject" or "OpenProject" or "ThemeModeSelector" or "RetryProjectsButton" or "CancelProjectsButton") return element.Name;
+        return Keyboard.FocusedElement is null ? "None" : "Other element";
+    }
+
+    private static void SnapshotKeyboard(Window window, string label)
+    {
+        if (keyboardSnapshots.Count >= 48) return;
+        var handle = new WindowInteropHelper(window).Handle;
+        keyboardSnapshots.Add(new
+        {
+            label, focused = FocusLabel(), windowActive = window.IsActive, visible = window.IsVisible,
+            foregroundMatches = GetForegroundWindow() == handle, nativeFocusMatches = GetFocus() == handle,
+            themeFocused = Find<ComboBox>(window, "ThemeModeSelector").IsKeyboardFocusWithin,
+            themeOpen = Find<ComboBox>(window, "ThemeModeSelector").IsDropDownOpen
+        });
+    }
+
+    private static object DesktopDiagnostics()
+    {
+        var threadName = DesktopName(GetThreadDesktop(GetCurrentThreadId()), out var threadError);
+        var input = OpenInputDesktop(0, false, 0x0001); // DESKTOP_READOBJECTS only; never switch or reconfigure a desktop.
+        var inputError = input == IntPtr.Zero ? Marshal.GetLastWin32Error() : 0;
+        string? inputName = null;
+        try { if (input != IntPtr.Zero) inputName = DesktopName(input, out inputError); }
+        finally { if (input != IntPtr.Zero) _ = CloseDesktop(input); }
+        static string PublicDesktop(string? name) => name switch
+        { null => "Unavailable", "Default" => "Default", "Winlogon" => "Winlogon", "Screen-saver" => "Screen saver", _ => "Other desktop" };
+        return new
+        {
+            Environment.UserInteractive, sessionId = Process.GetCurrentProcess().SessionId,
+            threadDesktop = PublicDesktop(threadName), inputDesktop = PublicDesktop(inputName), threadError, inputError,
+            inputMatchesThread = threadName is not null && inputName is not null ? (bool?)(threadName == inputName) : null
+        };
+    }
+
+    private static string? DesktopName(IntPtr handle, out int error)
+    {
+        error = 0;
+        if (handle == IntPtr.Zero) { error = Marshal.GetLastWin32Error(); return null; }
+        var name = new StringBuilder(256);
+        if (GetUserObjectInformation(handle, 2, name, name.Capacity * sizeof(char), out _)) return name.ToString();
+        error = Marshal.GetLastWin32Error();
+        return null;
+    }
+
     private static async Task NativeKeyboardAsync(Window window, Action<bool, string> check)
     {
+        keyboardStep = "foreground acquisition";
         var handle = new WindowInteropHelper(window).Handle;
         window.Activate();
         _ = SetForegroundWindow(handle);
         await TurnAsync();
+        SnapshotKeyboard(window, "foreground acquired");
         check(GetForegroundWindow() == handle, "shown picker owns injected keyboard foreground");
         var theme = Find<ComboBox>(window, "ThemeModeSelector");
+        var name = Find<TextBox>(window, "ProjectName");
+        var originalName = name.Text;
+        keyboardStep = "access key M";
+        Keyboard.Focus(name); // Start on a different target so the access key must move focus.
+        await TurnAsync();
+        SnapshotKeyboard(window, "before Alt M");
+        SendAltKey(0x4D); // Alt+M: Reading mode.
+        await Task.Delay(50);
+        await TurnAsync();
+        SnapshotKeyboard(window, "after Alt M");
+        check(theme.IsKeyboardFocusWithin && GetForegroundWindow() == handle
+            && window.IsVisible && SelectedId(window) is null,
+            "native Alt M focuses reading mode without project activation");
+        if (theme.IsDropDownOpen)
+        {
+            SendKey(0x1B);
+            await WaitAsync(() => !theme.IsDropDownOpen, "access key dropdown dismissed");
+        }
+        keyboardStep = "access key N";
+        SendAltKey(0x4E); // Alt+N: New project name.
+        await Task.Delay(50);
+        await TurnAsync();
+        SnapshotKeyboard(window, "after Alt N");
+        check(name.IsKeyboardFocusWithin && GetForegroundWindow() == handle && name.Text == originalName
+            && window.IsVisible && SelectedId(window) is null,
+            "native Alt N focuses project name without project activation");
         Keyboard.Focus(theme);
-        keybd_event(0x12, 0, 0, UIntPtr.Zero); // Alt+Down exercises the native ComboBox route.
-        SendKey(0x28);
-        keybd_event(0x12, 0, 0x0002, UIntPtr.Zero);
+        await TurnAsync();
+        keyboardStep = "theme Alt Down";
+        SnapshotKeyboard(window, "before Alt Down");
+        SendAltKey(0x28);
         await WaitAsync(() => theme.IsDropDownOpen, "native theme dropdown opened");
+        keyboardStep = "theme choice";
         SendKey(0x23); // End.
         SendKey(0x0D); // Enter consumes only the local theme choice.
         await WaitAsync(() => !theme.IsDropDownOpen && theme.SelectedIndex == 1, "native theme choice applied");
         check(window.IsVisible && SelectedId(window) is null, "theme keyboard Enter cannot activate project");
         theme.SelectedIndex = 0;
         await TurnAsync();
-        var name = Find<TextBox>(window, "ProjectName");
         Keyboard.Focus(name);
         await TurnAsync();
         check(name.IsKeyboardFocusWithin, "project name accepts native keyboard focus");
         var visited = new HashSet<DependencyObject>();
+        keyboardStep = "native Tab traversal";
         for (var i = 0; i < 18; i++)
         {
             SendKey(0x09); // Actual Win32-injected Tab, not a fabricated routed event.
             await Task.Delay(25);
+            SnapshotKeyboard(window, "after Tab");
             if (Keyboard.FocusedElement is DependencyObject focused)
                 for (var current = focused; current is not null; current = Parent(current)) visited.Add(current);
             check(window.IsKeyboardFocusWithin, "native Tab remains within picker " + i);
@@ -565,10 +732,12 @@ internal static class IndependentChecks
         foreach (var controlName in new[] { "ProjectsList", "ProjectTarget", "ProjectName", "CreateProject", "OpenProject" })
             check(visited.Contains(Find<FrameworkElement>(window, controlName)), "native Tab reaches " + controlName);
         var list = Find<ListBox>(window, "ProjectsList");
+        keyboardStep = "native Home";
         Keyboard.Focus(list);
         SendKey(0x24); // Home selects the first row using actual keyboard input.
         await Task.Delay(50);
         check(list.SelectedIndex == 0, "native Home selects intended first project");
+        keyboardStep = null;
     }
 
     private static DependencyObject? Parent(DependencyObject value) => value switch
@@ -613,12 +782,15 @@ internal static class IndependentChecks
 
     private static async Task WaitAsync(Func<bool> condition, string label)
     {
+        if (!WaitLabels.Contains(label)) throw new ArgumentException("Wait diagnostics require an owned fixed label.", nameof(label));
+        waitStep = label;
         var clock = Stopwatch.StartNew();
         while (!condition())
         {
             if (clock.Elapsed > Deadline) throw new TimeoutException(label);
             await Task.Delay(10);
         }
+        waitStep = null;
     }
 
     private static async Task TurnAsync() => await Dispatcher.CurrentDispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
@@ -630,9 +802,46 @@ internal static class IndependentChecks
 
     private static void SendKey(byte key)
     {
-        keybd_event(key, 0, 0, UIntPtr.Zero);
-        keybd_event(key, 0, 0x0002, UIntPtr.Zero);
+        SendNativeKey(key, false);
+        SendNativeKey(key, true);
     }
+
+    private static void SendAltKey(byte key)
+    {
+        SendNativeKey(0x12, false);
+        try { SendKey(key); }
+        finally { SendNativeKey(0x12, true); }
+    }
+
+    private static void SendNativeKey(byte key, bool released)
+    {
+        var scan = MapVirtualKey(key, 4); // MAPVK_VK_TO_VSC_EX retains the E0 navigation-key prefix.
+        var extended = (scan & 0xff00) is 0xe000 or 0xe100 || key is >= 0x21 and <= 0x28;
+        var flags = (released ? 0x0002u : 0u) | (extended ? 0x0001u : 0u);
+        var inputs = new[] { new NativeInput { Type = 1, Data = new InputUnion
+            { Keyboard = new KeyboardInput { VirtualKey = key, Scan = (ushort)(scan & 0xff), Flags = flags } } } };
+        var queued = SendInput(1, inputs, Marshal.SizeOf<NativeInput>());
+        var error = queued == 1 ? 0 : Marshal.GetLastWin32Error();
+        if (inputCalls.Count < 96) inputCalls.Add(new
+        {
+            key = key switch { 0x12 => "Alt", 0x4D => "M", 0x4E => "N", 0x28 => "Down", 0x23 => "End", 0x24 => "Home", 0x09 => "Tab", 0x0D => "Enter", 0x1B => "Escape", _ => "Other" },
+            released, scan = scan & 0xff, extended, queued, error
+        });
+        if (queued != 1) throw new InvalidOperationException("Native keyboard input was not queued.");
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativeInput { internal uint Type; internal InputUnion Data; }
+    [StructLayout(LayoutKind.Explicit)]
+    private struct InputUnion
+    {
+        [FieldOffset(0)] internal KeyboardInput Keyboard;
+        [FieldOffset(0)] internal MouseInput Mouse; // Preserves the native INPUT union size/alignment on x86 and x64.
+    }
+    [StructLayout(LayoutKind.Sequential)]
+    private struct KeyboardInput { internal ushort VirtualKey, Scan; internal uint Flags, Time; internal UIntPtr Extra; }
+    [StructLayout(LayoutKind.Sequential)]
+    private struct MouseInput { internal int X, Y; internal uint Data, Flags, Time; internal UIntPtr Extra; }
 
     [DllImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
@@ -644,8 +853,24 @@ internal static class IndependentChecks
     [DllImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool GetClientRect(IntPtr window, out NativeRect rectangle);
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern uint SendInput(uint count, [In] NativeInput[] inputs, int size);
+    [DllImport("user32.dll", EntryPoint = "MapVirtualKeyW")]
+    private static extern uint MapVirtualKey(uint code, uint type);
     [DllImport("user32.dll")]
-    private static extern void keybd_event(byte key, byte scan, uint flags, UIntPtr extra);
+    private static extern IntPtr GetFocus();
+    [DllImport("kernel32.dll")]
+    private static extern uint GetCurrentThreadId();
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern IntPtr GetThreadDesktop(uint thread);
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern IntPtr OpenInputDesktop(uint flags, [MarshalAs(UnmanagedType.Bool)] bool inherit, uint access);
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool CloseDesktop(IntPtr desktop);
+    [DllImport("user32.dll", EntryPoint = "GetUserObjectInformationW", CharSet = CharSet.Unicode, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetUserObjectInformation(IntPtr value, int index, StringBuilder output, int bytes, out int needed);
 
     private sealed class FixtureStore : IResearchProjectStore
     {

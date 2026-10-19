@@ -264,6 +264,8 @@ public partial class ResearchProjectsWindow : Window
     {
         if (SelectionPanel is null) return;
         var wide = ActualWidth >= 800;
+        ReadingModePanel.Orientation = wide ? Orientation.Horizontal : Orientation.Vertical;
+        ReadingModeLabel.Padding = wide ? new Thickness(0, 0, 8, 0) : new Thickness(0, 0, 0, 4);
         ProjectLayout.ColumnDefinitions[1].Width = wide ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
         Grid.SetColumn(SelectionPanel, wide ? 1 : 0);
         Grid.SetRow(SelectionPanel, wide ? 0 : 1);

@@ -39,7 +39,7 @@
         <Style.Triggers><Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter Property="BorderBrush" Value="{DynamicResource Mu.Focus}"/><Setter Property="BorderThickness" Value="2"/></Trigger></Style.Triggers>
     </Style>
     <Style x:Key="Mu.ProjectItem" TargetType="ListBoxItem">
-        <Setter Property="HorizontalContentAlignment" Value="Stretch"/><Setter Property="Padding" Value="12"/><Setter Property="Margin" Value="4"/>
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/><Setter Property="Padding" Value="12,4"/><Setter Property="Margin" Value="4"/>
         <Setter Property="Background" Value="{DynamicResource Mu.Surface}"/><Setter Property="Foreground" Value="{DynamicResource Mu.Text}"/>
         <Setter Property="FocusVisualStyle" Value="{StaticResource Mu.FocusVisual}"/>
         <Setter Property="AutomationProperties.Name" Value="{Binding AccessibleLabel}"/>

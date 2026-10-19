@@ -22,8 +22,8 @@
                 <TextBlock Text="MU / RESEARCH" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource Mu.Accent}"/>
                 <TextBlock Text="Research projects" FontFamily="{DynamicResource Mu.DisplayFont}" FontSize="30" Margin="0,4,16,0"/>
             </StackPanel>
-            <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                <Label Content="_Reading mode" Target="{Binding ElementName=ThemeModeSelector}" Foreground="{DynamicResource Mu.SecondaryText}" Padding="0,0,0,4" FontSize="12"/>
+            <StackPanel x:Name="ReadingModePanel" Grid.Column="1" VerticalAlignment="Center">
+                <Label x:Name="ReadingModeLabel" Content="Reading _mode" Target="{Binding ElementName=ThemeModeSelector}" Foreground="{DynamicResource Mu.SecondaryText}" Padding="0,0,0,4" FontSize="12" VerticalAlignment="Center"/>
                 <ComboBox x:Name="ThemeModeSelector" Style="{StaticResource Mu.ComboBox}" SelectedIndex="0" SelectionChanged="Theme_Changed"
                           AutomationProperties.Name="Research projects reading mode" AutomationProperties.HelpText="Only this window. Windows high contrast takes priority.">
                     <ComboBoxItem Content="Instrument · dark"/><ComboBoxItem Content="Archive · light"/>
@@ -32,7 +32,7 @@
         </Grid>
         <ScrollViewer x:Name="ProjectBodyScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Focusable="False" Padding="0,0,8,4">
             <StackPanel>
-                <TextBlock Text="Datasets are chosen in the Lab. Inspections, experiments and exports stay local to the project. Opening a project transfers no chat and runs no analysis."
+                <TextBlock Text="Opening a project copies no chat and runs no analysis. Artifacts stay local."
                            TextWrapping="Wrap" Foreground="{DynamicResource Mu.SecondaryText}" Margin="0,0,0,8"/>
                 <Grid x:Name="ProjectLayout">
                     <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
@@ -44,7 +44,7 @@
                         </DockPanel>
                         <TextBlock x:Name="BusyProjectsLabel" Text="Loading projects…" Margin="0,0,0,8" AutomationProperties.LiveSetting="Polite"/>
                         <ListBox x:Name="ProjectsList" SelectionChanged="Project_Changed" PreviewKeyDown="Projects_KeyDown"
-                                 MinHeight="112" MaxHeight="160" Background="{DynamicResource Mu.Canvas}" Foreground="{DynamicResource Mu.Text}"
+                                 MinHeight="112" MaxHeight="184" Background="{DynamicResource Mu.Canvas}" Foreground="{DynamicResource Mu.Text}"
                                  BorderBrush="{DynamicResource Mu.ControlBorder}" BorderThickness="1" Padding="2"
                                  ItemContainerStyle="{StaticResource Mu.ProjectItem}" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                                  FocusVisualStyle="{StaticResource Mu.FocusVisual}" AutomationProperties.Name="Local research projects">
@@ -71,13 +71,16 @@
                     </Border>
                 </Grid>
                 <Border Height="1" Background="{DynamicResource Mu.QuietBorder}" Margin="0,12,0,8"/>
-                <Label Content="_New project name" Target="{Binding ElementName=ProjectName}" Foreground="{DynamicResource Mu.Text}" Padding="0,0,0,4" FontWeight="SemiBold"/>
+                <Grid Margin="0,0,0,4">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                    <Label Content="_New project name" Target="{Binding ElementName=ProjectName}" Foreground="{DynamicResource Mu.Text}" Padding="0" FontWeight="SemiBold"/>
+                    <TextBlock x:Name="NameValidation" Grid.Column="1" Text="1–80 characters. Creates local metadata only." Foreground="{DynamicResource Mu.SecondaryText}" FontSize="12" Margin="12,0,0,0" VerticalAlignment="Center" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite"/>
+                </Grid>
                 <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                     <TextBox x:Name="ProjectName" MaxLength="80" Style="{StaticResource Mu.TextBox}" TextChanged="Name_Changed" PreviewKeyDown="Name_KeyDown"
                              AutomationProperties.Name="New research project name" AutomationProperties.HelpText="1 to 80 characters. Creating a project writes local metadata; it opens no dataset."/>
                     <Button x:Name="CreateProject" Grid.Column="1" Content="_Create" Style="{StaticResource Mu.Button}" Click="Create_Click" Margin="8,0,0,0" IsEnabled="False"/>
                 </Grid>
-                <TextBlock x:Name="NameValidation" Text="Up to 32 named projects, plus the original Lab location." Foreground="{DynamicResource Mu.SecondaryText}" FontSize="12" Margin="0,6,0,0" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite"/>
             </StackPanel>
         </ScrollViewer>
         <StackPanel Grid.Row="2" Margin="0,16,0,0">
@@ -87,7 +90,7 @@
             <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                 <Button x:Name="RetryProjectsButton" Content="_Refresh" Click="Retry_Click" Style="{StaticResource Mu.Button}" HorizontalAlignment="Left" AutomationProperties.HelpText="Reload the project catalog. Clears the selection."/>
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
-                    <Button x:Name="CancelProjectsButton" Content="_Cancel" IsCancel="True" Click="Cancel_Click" Style="{StaticResource Mu.Button}" Margin="8,0,8,0"/>
+                    <Button x:Name="CancelProjectsButton" Content="C_ancel" IsCancel="True" Click="Cancel_Click" Style="{StaticResource Mu.Button}" Margin="8,0,8,0"/>
                     <Button x:Name="OpenProject" Content="_Open selected project" Click="Open_Click" IsEnabled="False" Style="{StaticResource Mu.PrimaryButton}"/>
                 </StackPanel>
             </Grid>

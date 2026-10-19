@@ -132,14 +132,14 @@ foreach ($captureMode in @('baseline', 'candidate')) {
             $checks = Get-Content -LiteralPath $checksPath -Raw | ConvertFrom-Json
             if ($checks.completed -isnot [bool] -or @($checks.passed).Count -gt 200) { throw 'Invalid native UI result.' }
             $lines.Add('Independent native UI completed: ' + $checks.completed + '; passed checkpoints: ' + @($checks.passed).Count)
-            foreach ($field in @('stage','failedCheck','failureType','failureDetail')) {
+            foreach ($field in @('stage','failedCheck','failureType','failureDetail','waitStep')) {
                 $value = $checks.$field
                 if ($null -ne $value) {
                     if ($value -isnot [string] -or $value.Length -gt 120 -or $value -notmatch '^[A-Za-z0-9 .-]+$') { throw 'Invalid fixed UI checkpoint.' }
                     $lines.Add("UI ${field}: $value")
                 }
             }
-            $shortNotices.Add("Independent native UI completed: $($checks.completed); passed: $(@($checks.passed).Count); stage: $($checks.stage); failed: $($checks.failedCheck); type: $($checks.failureType); detail: $($checks.failureDetail)")
+            $shortNotices.Add("Independent native UI completed: $($checks.completed); passed: $(@($checks.passed).Count); stage: $($checks.stage); failed: $($checks.failedCheck); type: $($checks.failureType); detail: $($checks.failureDetail); wait: $($checks.waitStep)")
         }
         catch { $lines.Add('Independent native UI receipt invalid; no passing result inferred.') }
     }
