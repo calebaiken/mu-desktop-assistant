@@ -41,6 +41,13 @@ public partial class App
         if (stopping || companion is null || options is null || options.IsTestSession) return;
         if (mlLabWindow is not null)
         { mlLabWindow.Show(); mlLabWindow.WindowState = WindowState.Normal; mlLabWindow.Activate(); return; }
+        if (researchWorkspace?.Current is { } active)
+        {
+            try { ShowResearchLab(active); }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException or ArgumentException)
+            { MessageBox.Show("The active Lab view could not reopen. Its jobs still belong to Mu; restart Mu if the view remains unavailable.", "Mu Research projects"); }
+            return;
+        }
         _ = SelectResearchProjectAsync();
     }
 
@@ -70,18 +77,7 @@ public partial class App
             var selection = await researchWorkspace.OpenAsync(id, runtime!.Lifetime.Token);
             if (stopping) return;
             previous?.Close();
-            layaService ??= CreateLayaService();
-            if (mlPlannerHost is null && options.LocalModelDirectory is { } modelDirectory)
-            {
-                try { mlPlannerHost = new LocalModelHost(modelDirectory); }
-                catch (Exception error) when (error is IOException or UnauthorizedAccessException or ArgumentException) { }
-            }
-            Func<CancellationToken, Task<IChatModel>>? planner = mlPlannerHost is null ? null : token => mlPlannerHost.GetModelAsync(token);
-            mlLabWindow = new MlLabWindow(selection.Service, planner, layaService, selection.Project) { Owner = companion };
-            var window = mlLabWindow;
-            window.Closed += (_, _) => { if (ReferenceEquals(mlLabWindow, window)) mlLabWindow = null; };
-            window.ChangeProjectRequested += (_, _) => _ = SelectResearchProjectAsync();
-            mlLabWindow.Show();
+            ShowResearchLab(selection);
         }
         catch (OperationCanceledException) { }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or ArgumentException or MlException or ObjectDisposedException)
@@ -94,5 +90,22 @@ public partial class App
             selectingResearchProject = false;
             if (!stopping && previous is not null && ReferenceEquals(mlLabWindow, previous)) previous.IsEnabled = true;
         }
+    }
+
+    private void ShowResearchLab(ResearchLabSelection selection)
+    {
+        if (stopping || options is null || companion is null) return;
+        layaService ??= CreateLayaService();
+        if (mlPlannerHost is null && options.LocalModelDirectory is { } modelDirectory)
+        {
+            try { mlPlannerHost = new LocalModelHost(modelDirectory); }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException or ArgumentException) { }
+        }
+        Func<CancellationToken, Task<IChatModel>>? planner = mlPlannerHost is null ? null : token => mlPlannerHost.GetModelAsync(token);
+        mlLabWindow = new MlLabWindow(selection.Service, planner, layaService, selection.Project) { Owner = companion };
+        var window = mlLabWindow;
+        window.Closed += (_, _) => { if (ReferenceEquals(mlLabWindow, window)) mlLabWindow = null; };
+        window.ChangeProjectRequested += (_, _) => _ = SelectResearchProjectAsync();
+        window.Show();
     }
 }

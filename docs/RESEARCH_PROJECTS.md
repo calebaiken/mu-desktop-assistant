@@ -9,7 +9,9 @@ Model explanations remain separate from the worker's verified result records.
 
 **Change project…** opens the picker again. Existing queued/running work must finish
 or be cancelled first. Choosing the same project creates a fresh view; closing a
-Lab view retains its App-owned service/work. Selecting another project retires the
+Lab view retains its App-owned service/work. Reopening ML Lab resumes that same selected
+project even while jobs are active, so Jobs/cancel controls remain accessible.
+Switching projects is a separate guarded operation. Selecting another project retires the
 old service before admitting a new one. Old view/planner references cannot execute
 against either project after retirement. New views have no inherited dataset,
 features, proposed action, metrics or plot; saved history is reloaded only from the
@@ -93,6 +95,12 @@ local-model JSON response is an explicit fixture. Passing that smoke does not pr
 physical picker/accessibility interaction or qualified model inference. Check
 [Testing](../TESTING.md) and the independent reports for actual run results; a source
 check or skipped case is never a passing native execution.
+
+The close/reopen/cancel control diagnostic also uses an explicitly declared blocking
+service fixture. A fixed-label smoke receipt and additive always-run CI summary
+publish counts, class/method names and checkpoint/type labels, never DataRow values,
+error text, stack traces or private content. Missing/invalid evidence is labeled
+unavailable; these diagnostics do not replace or soften either required gate.
 
 Next: the explicitly approved Chat-to-project request handoff, captured dataset and
 existing single-use reviewed Run. Then approved SQLite project memory. PR #1's

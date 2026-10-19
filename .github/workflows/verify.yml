@@ -43,3 +43,7 @@ jobs:
         with:
           name: test-results
           path: artifacts/test-results
+      - name: Summarize bounded verification evidence
+        if: always()
+        shell: powershell
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts/write-verification-summary.ps1

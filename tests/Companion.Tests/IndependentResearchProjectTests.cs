@@ -25,7 +25,7 @@ public sealed class IndependentResearchProjectTests
         var second = await firstStore.CreateAsync(first.Name);
         Assert.AreNotEqual(first.Id, second.Id);
         Assert.AreNotEqual(first.Directory, second.Directory);
-        Assert.AreEqual(files.FilePath("ml-lab/projects/" + first.Id.ToString("N")), first.Directory);
+        Assert.AreEqual(Path.Combine(files.PathValue, "ml-lab", "projects", first.Id.ToString("N")), first.Directory);
         var restarted = new JsonResearchProjectStore(files.PathValue);
         var projects = await restarted.ListAsync();
         Assert.HasCount(3, projects);
@@ -292,6 +292,39 @@ public sealed class IndependentResearchProjectTests
     }
 
     [TestMethod]
+    public async Task CurrentSelectionReopensTheSameProjectWhileAnUnpublishedRequestIsActive()
+    {
+        using var files = new TestDirectory();
+        var store = new JsonResearchProjectStore(files.PathValue);
+        var a = await store.CreateAsync("Running project");
+        var b = await store.CreateAsync("Another project");
+        var result = NewSource<MlResult>();
+        var lab = new Lab(a.Directory) { Run = _ => result.Task };
+        var calls = 0;
+        await using var workspace = new ResearchLabWorkspace(store, project =>
+        { calls++; return project.Id == a.Id ? lab : new Lab(project.Directory); });
+        var originallyOpened = await workspace.OpenAsync(a.Id);
+        var running = originallyOpened.Service.ExecuteAsync(new MlList());
+        try
+        {
+            Assert.IsEmpty(lab.Jobs, "No Queued publication is needed to preserve current-project visibility.");
+            Assert.IsTrue(workspace.IsBusy);
+            var reopened = workspace.Current;
+            Assert.IsNotNull(reopened, "A closed view must be able to regain its running project and cancellation controls.");
+            Assert.AreEqual(a, reopened.Project);
+            Assert.AreSame(originallyOpened.Service, reopened.Service);
+            await Assert.ThrowsAsync<MlException>(() => workspace.OpenAsync(b.Id));
+            Assert.AreEqual(1, calls);
+            Assert.AreEqual(0, lab.Disposals);
+        }
+        finally { result.TrySetResult(Result()); }
+        await running.WaitAsync(Deadline);
+        await workspace.OpenAsync(b.Id);
+        Assert.AreEqual(b, workspace.Current!.Project);
+        Assert.AreEqual(1, lab.Disposals);
+    }
+
+    [TestMethod]
     public async Task SecondQueuedAdmissionKeepsProjectBusyAfterFirstRequestCompletes()
     {
         using var files = new TestDirectory();
@@ -341,6 +374,7 @@ public sealed class IndependentResearchProjectTests
         try
         {
             Assert.HasCount(1, services);
+            Assert.IsNull(workspace.Current, "A retired project must not be returned for view reopening during transition.");
             await Assert.ThrowsAsync<MlException>(() => first.Service.ExecuteAsync(new MlCapabilities()));
             await Assert.ThrowsAsync<MlException>(() => workspace.OpenAsync(a.Id));
             Assert.IsTrue(workspace.IsBusy);
@@ -478,6 +512,7 @@ public sealed class IndependentResearchProjectTests
         try
         {
             Assert.AreSame(disposal, second);
+            Assert.IsNull(workspace.Current);
             await Assert.ThrowsAsync<ObjectDisposedException>(() => first.Service.ExecuteAsync(new MlList()));
             await Assert.ThrowsAsync<ObjectDisposedException>(() => workspace.OpenAsync(a.Id));
             Assert.AreEqual(1, lab.Disposals);

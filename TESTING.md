@@ -32,6 +32,23 @@ Receipts under `artifacts/qa/research-projects/`:
   `ml-data.log`, `ml-pipeline.log`, `ml-engine.log`) pass 6+16+7+19=48 tests;
   with the new production-worker case, 49 actual Python tests pass.
 
+Subsequent repair receipts: `build-diagnostics.log` is zero warnings/errors;
+`research-projects-reopen.trx` is **51 passed / 1 native skip of 52**. Independent
+review found and documented the close-view/reopen-active-job regression after the
+initial checkpoint; `Current`/App resume and native cancel-control diagnostics now
+cover the repaired invariant. A nonportable expected test path was also canonicalized.
+The old `9ed4f51` push run 39298675100 failed the positive step; negative was skipped.
+Its aggregate exit1 annotation is preserved in `first-windows-annotations.json`;
+precise test failure attribution remains unconfirmed because blob downloads fail.
+
+`scripts/write-verification-summary.ps1` is an additive always-run diagnostic step,
+without changing the required gates. A real-TRX local harness verified actual counts,
+class/method-only output (synthetic private DataRow sentinel absent), fixed smoke
+labels, DTD rejection and explicit missing evidence; `summary-real-trx.md` is retained.
+XML is limited to 8 MiB, smoke receipts to 8 KiB, individual method/checkpoint lists
+and total summary characters are bounded. No errors/stack/stdout or private fixtures
+are published. Native evidence/re-review of the repaired source is still pending.
+
 The ordinary Windows `--smoke` path now also creates project picker/Lab HWNDs and
 exercises real catalog/session controls, exact identity/storage preview, proposal
 without execution, fresh view state, stale-project denial and production missing-

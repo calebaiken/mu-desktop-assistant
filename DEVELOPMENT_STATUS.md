@@ -26,6 +26,23 @@ supported-platform gates and native behavior have not executed for this candidat
 No confirmed unresolved critical defect was found; the evidence requirement still
 blocks phase advancement despite clearing the numeric threshold.
 
+Subsequent review found a real regression in `9ed4f51`: a running job survived view
+closure but the busy-project guard prevented reopening its controls. The repaired
+entry point resumes the workspace's current borrowed selection even during work;
+project switching remains blocked. A new independent admission test and actual
+native close/reopen/Cancel-button fixture cover it. Current portable selection is
+51 passed/1 native skip of 52; its real process routing check still requires Windows.
+The reviewer also repaired a nonportable expected path separator in its Windows
+fixture without weakening path assertions.
+
+The initial candidate's Windows push run 39298675100 failed its positive step and
+skipped negative verification. Detailed logs/TRX remain destination-blocked, so its
+precise failure is not inferred from the aggregate exit1 annotation. This failure
+and the initial review remain preserved. Additive bounded CI summaries now expose
+TRX counts/method names and fixed public-smoke labels without DataRow/error/private
+content; the positive/negative scripts and acceptance thresholds are unchanged.
+Repaired-candidate Windows evidence and final independent re-review remain pending.
+
 Next objective after verification: explicit Chat-to-project handoff reusing Lab's
 captured selection and reviewed Run, then approved SQLite project memory and
 separate model/resource qualification. D/E/F/H and PR #1 remain outside this change.

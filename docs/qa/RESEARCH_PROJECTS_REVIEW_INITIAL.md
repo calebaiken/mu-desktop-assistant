@@ -187,3 +187,26 @@ cite that evidence and retain this incomplete checkpoint.
 unresolved critical production defect was found. Numerical score 8.6 does not turn
 missing supported-platform evidence into a pass. Do not call this a release or an
 implemented main-Chat bridge; final supported-platform independent review is pending.
+
+
+## Subsequent finding at committed candidate `9ed4f51` — phase remains blocked
+
+After this initial incomplete-native checkpoint was recorded, the independent
+reviewer traced the actual close/reopen composition at
+`9ed4f5122c88febb5addaa6e4195d1e88f274160` and found a concrete workflow regression.
+Closing a Lab view leaves its existing App-owned job running, but `OpenMlLab()`
+then routes to `SelectResearchProjectAsync()`, which rejects a busy workspace.
+The user cannot reopen that project's Jobs controls to inspect or cancel the work;
+the message recommends cancellation through controls that are no longer reachable.
+This violates the existing close/reopen lifetime contract. A passing Windows gate
+for that source cannot establish this missing behavioral scenario.
+
+The implementation author confirmed the finding. Required repair: expose a current
+borrowed selection for view resumption while work is active, reopen that selection
+before trying to select another project, keep actual project changes denied while
+busy, and verify cancellation through reopened native controls. Independent tests
+will cover a running zero-Jobs request, same façade/factory identity, no premature
+cleanup, current-selection absence during retirement/shutdown and continued switch
+denial. This is a significant correctness regression and a phase blocker; no final
+passing verdict applies to `9ed4f51`. The initial 8.6 arithmetic above records its
+original checkpoint, not a reassessment after this newly discovered defect.

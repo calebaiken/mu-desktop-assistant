@@ -9,6 +9,8 @@
   bounded versioned atomic metadata and retained catalog backup. No chat is copied.
 - Serialized project switches with job admission; active/queued work blocks switching,
   retired views cannot execute, and uncertain cleanup prevents a new service.
+- Preserved reopening/cancelling an active project's jobs after closing its view;
+  added bounded CI evidence summaries while keeping both required gates unchanged.
 - Added real filesystem/session, production Python two-project and native control
   diagnostics. Candidate Windows/independent qualification is pending; no scientific
   algorithms, dependencies, memory or model-profile capabilities are added.

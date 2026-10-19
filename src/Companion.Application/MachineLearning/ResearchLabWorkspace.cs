@@ -13,6 +13,12 @@ public sealed class ResearchLabWorkspace(IResearchProjectStore projects, Func<Re
     private int active;
     private bool switching, disposed, poisoned;
     public bool IsBusy { get { lock (sync) return switching || active != 0; } }
+    // Reopening the active project's view is allowed while its jobs run. This
+    // grants no project switch and exposes no new service/factory admission.
+    public ResearchLabSelection? Current
+    {
+        get { lock (sync) return !disposed && !poisoned && !switching && current is { } selected ? new(selected.Project, selected) : null; }
+    }
 
     public Task<ResearchLabSelection> OpenAsync(Guid id, CancellationToken cancellationToken = default)
     {

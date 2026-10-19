@@ -13,6 +13,9 @@ The service is a borrowed, project-bound façade: views may execute/cancel/obser
 but disposal is explicitly rejected because App owns the workspace. Admission is
 counted synchronously before calling the inner Lab; queued/running jobs and another
 transition block switching. Old façades cannot admit work after retirement. The
+`Current` selection remains borrowable while work runs, so closing/reopening a view
+never hides its owned jobs/cancel controls. It is unavailable during a project
+transition or after shutdown/poison, and grants no new service admission. The
 old inner service must finish disposal before factory admission for a new project;
 six-second timeout or failure poisons the workspace and retains cleanup ownership.
 `DisposeAsync` is shared/idempotent and awaits transitions and owned cleanup; App
