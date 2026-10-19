@@ -98,7 +98,8 @@ check or skipped case is never a passing native execution.
 
 The close/reopen/cancel control diagnostic also uses an explicitly declared blocking
 service fixture. A fixed-label smoke receipt and additive always-run CI summary
-publish counts, class/method names and checkpoint/type labels, never DataRow values,
+and escaped check annotation publish counts, class/method names, four selected native
+method outcomes and checkpoint/type labels, never DataRow values,
 error text, stack traces or private content. Missing/invalid evidence is labeled
 unavailable; these diagnostics do not replace or soften either required gate.
 

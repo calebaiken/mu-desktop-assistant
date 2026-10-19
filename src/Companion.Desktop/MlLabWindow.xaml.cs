@@ -31,7 +31,7 @@ public partial class MlLabWindow : Window
     private CancellationTokenSource? planning;
     private bool closed;
     private bool busy;
-    private bool initialized;
+    private Task? initialization;
 
     public MlLabWindow(IMlLabService service, Func<CancellationToken, Task<IChatModel>>? modelFactory = null,
         ILayaDecisionService? laya = null, ResearchProject? project = null)
@@ -70,9 +70,12 @@ public partial class MlLabWindow : Window
     internal IReadOnlyList<string> SelectedFeatures => features.Where(feature => feature.Use).Select(feature => feature.Name).ToArray();
 
     private async void OnLoaded(object sender, RoutedEventArgs e)
+        => await InitializeAsync();
+
+    internal Task InitializeAsync() => initialization ??= InitializeCoreAsync();
+
+    private async Task InitializeCoreAsync()
     {
-        if (initialized) return;
-        initialized = true;
         await ExecuteActionAsync(new MlCapabilities());
         if (!closed) await ExecuteActionAsync(new MlList());
     }

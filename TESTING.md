@@ -49,6 +49,24 @@ XML is limited to 8 MiB, smoke receipts to 8 KiB, individual method/checkpoint l
 and total summary characters are bounded. No errors/stack/stdout or private fixtures
 are published. Native evidence/re-review of the repaired source is still pending.
 
+Actual `72206a0` Windows annotation (`diagnostic-annotations-push.json`, run
+39300426711, job118223866106) reports **493 total / 492 passed / 0 failed /
+1 NotExecuted**. The sole skip is the Linux-only unsupported-platform assertion.
+The real Windows research-worker routing test and all three text file/lease/link
+integration methods explicitly **Passed**. Overall positive verification still
+**failed**, and negative verification was skipped, because the native research smoke
+failed `minimum layout actions` after its first four checkpoints. Preserve this
+failed measurement; unit success is not a gate pass.
+
+The smoke now shows a nonactivated transparent picker at its actual minimum size
+and awaits dispatcher layout rather than measuring an unshown Window. Picker/Lab
+initialization share a Task so Loaded and explicit awaits cannot race. Proposal
+checks await the two initial metadata jobs and prove no additional job is admitted
+by planning. Minimum button size and within-window assertions and the 15s gate are
+retained. A single escaped bounded notice annotation exposes the same redacted
+facts through the supported checks API when summary pages/downloads are unavailable.
+The local summary harness's failure receipt is synthetic; it claims no native run.
+
 The ordinary Windows `--smoke` path now also creates project picker/Lab HWNDs and
 exercises real catalog/session controls, exact identity/storage preview, proposal
 without execution, fresh view state, stale-project denial and production missing-

@@ -210,3 +210,31 @@ cleanup, current-selection absence during retirement/shutdown and continued swit
 denial. This is a significant correctness regression and a phase blocker; no final
 passing verdict applies to `9ed4f51`. The initial 8.6 arithmetic above records its
 original checkpoint, not a reassessment after this newly discovered defect.
+
+## Supported-platform evidence at diagnostic commit `72206a0` — still FAIL
+
+The independent reviewer read the actual normal GitHub annotations API for push
+run `39300426711`, job/check run `118223866106`, source
+`72206a0e514912581122b946f1935521a55fe34b`. The bounded diagnostic annotation reports
+**493 total, 492 executed/passed, 0 failed, 1 NotExecuted**. The sole nonexecuted
+case is the deliberately unsupported-platform-only
+`TextInspectionTests.NativeCapabilityIsUnavailableOnUnsupportedPlatforms`.
+The real Windows owned-worker research-project routing method and all three A
+native file/lease/oversize/leaf-and-ancestor-link methods are individually reported
+**Passed**. This closes their earlier unknown conditional outcome for this source;
+it does not qualify arbitrary same-user path swapping or physical interaction.
+
+The native research control smoke nevertheless reports `completed: false`,
+`failedCheck: minimum layout actions`, `failureType: InvalidOperationException`.
+Only native picker HWND, no implicit selection, explicit create/select and trusted
+storage preview are listed as passed. Required positive verification therefore
+fails and the negative gate is skipped. These are real failed measurements, not
+an accepted native delivery. The unit/process results cannot overrule the smoke.
+
+The layout fixture attempted to measure an unshown Window. The author is repairing
+it to display an invisible, nonactivated native window and await real minimum-size
+layout, preserving the action-size assertion and the existing smoke deadline.
+Initialization will share its Task across Loaded/explicit callers, with native Lab
+startup jobs separated from proposal-execution assertions. A later source must pass
+the unchanged gates before a final independent verdict is possible. Receipt:
+`artifacts/qa/research-projects/independent/windows-diagnostic-native-annotations.json`.

@@ -8,7 +8,8 @@ public partial class ResearchProjectsWindow : Window
 {
     private readonly IResearchProjectStore store;
     private readonly CancellationTokenSource lifetime = new();
-    private bool closed, busy, initialized;
+    private bool closed, busy;
+    private Task? initialization;
     internal Guid? SelectedProjectId { get; private set; }
     private sealed record ProjectRow(ResearchProject Project)
     {
@@ -23,12 +24,7 @@ public partial class ResearchProjectsWindow : Window
         Closed += (_, _) => { closed = true; lifetime.Cancel(); ProjectsList.ItemsSource = null; ProjectTarget.Clear(); ProjectName.Clear(); };
     }
 
-    internal async Task InitializeAsync()
-    {
-        if (initialized) return;
-        initialized = true;
-        await RefreshAsync();
-    }
+    internal Task InitializeAsync() => initialization ??= RefreshAsync();
 
     private async Task RefreshAsync(Guid? selected = null)
     {

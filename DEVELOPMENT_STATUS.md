@@ -42,6 +42,13 @@ and the initial review remain preserved. Additive bounded CI summaries now expos
 TRX counts/method names and fixed public-smoke labels without DataRow/error/private
 content; the positive/negative scripts and acceptance thresholds are unchanged.
 Repaired-candidate Windows evidence and final independent re-review remain pending.
+The subsequent `72206a0` native diagnostic resolves the failure: all 492 executed
+tests pass (493 total; one unsupported-platform skip), including real research
+worker routing and all three A file/lease/link methods; the overall gate fails at
+the project picker's minimum-layout smoke checkpoint. The next repair shows the
+transparent native picker at minimum size, awaits layout and shares initialization
+Tasks before checking controls/planning. The same minimum dimensions/15s threshold
+remain required; this failed receipt and review addendum stay preserved.
 
 Next objective after verification: explicit Chat-to-project handoff reusing Lab's
 captured selection and reviewed Run, then approved SQLite project memory and
