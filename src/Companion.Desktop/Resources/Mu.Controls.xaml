@@ -38,6 +38,22 @@
         <Setter Property="IsUndoEnabled" Value="False"/><Setter Property="FocusVisualStyle" Value="{StaticResource Mu.FocusVisual}"/>
         <Style.Triggers><Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter Property="BorderBrush" Value="{DynamicResource Mu.Focus}"/><Setter Property="BorderThickness" Value="2"/></Trigger></Style.Triggers>
     </Style>
+    <!-- Keep ListBox selection/UIA/virtualization while avoiding the native
+         disabled template's hard-coded light surface in Instrument mode. -->
+    <Style x:Key="Mu.ProjectList" TargetType="ListBox">
+        <Setter Property="ScrollViewer.CanContentScroll" Value="True"/>
+        <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
+        <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ListBox">
+            <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
+                <ScrollViewer x:Name="PART_ScrollViewer" Focusable="False" Padding="{TemplateBinding Padding}"
+                              CanContentScroll="{TemplateBinding ScrollViewer.CanContentScroll}"
+                              HorizontalScrollBarVisibility="{TemplateBinding ScrollViewer.HorizontalScrollBarVisibility}"
+                              VerticalScrollBarVisibility="{TemplateBinding ScrollViewer.VerticalScrollBarVisibility}">
+                    <ItemsPresenter/>
+                </ScrollViewer>
+            </Border>
+        </ControlTemplate></Setter.Value></Setter>
+    </Style>
     <Style x:Key="Mu.ProjectItem" TargetType="ListBoxItem">
         <Setter Property="HorizontalContentAlignment" Value="Stretch"/><Setter Property="Padding" Value="12,4"/><Setter Property="Margin" Value="4"/>
         <Setter Property="Background" Value="{DynamicResource Mu.Surface}"/><Setter Property="Foreground" Value="{DynamicResource Mu.Text}"/>

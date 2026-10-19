@@ -43,7 +43,7 @@
                             <TextBlock x:Name="ProjectCountLabel" Text="Catalog not loaded" Foreground="{DynamicResource Mu.SecondaryText}" HorizontalAlignment="Right" FontSize="12"/>
                         </DockPanel>
                         <TextBlock x:Name="BusyProjectsLabel" Text="Loading projects…" Margin="0,0,0,8" AutomationProperties.LiveSetting="Polite"/>
-                        <ListBox x:Name="ProjectsList" SelectionChanged="Project_Changed" PreviewKeyDown="Projects_KeyDown"
+                        <ListBox x:Name="ProjectsList" Style="{StaticResource Mu.ProjectList}" SelectionChanged="Project_Changed" PreviewKeyDown="Projects_KeyDown"
                                  MinHeight="112" MaxHeight="184" Background="{DynamicResource Mu.Canvas}" Foreground="{DynamicResource Mu.Text}"
                                  BorderBrush="{DynamicResource Mu.ControlBorder}" BorderThickness="1" Padding="2"
                                  ItemContainerStyle="{StaticResource Mu.ProjectItem}" ScrollViewer.HorizontalScrollBarVisibility="Disabled"

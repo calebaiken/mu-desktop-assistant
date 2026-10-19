@@ -4,7 +4,10 @@
 Projects picker. This is not a replacement application shell. The feature branch
 `feature/research-projects-ui-v3` derives from Chat handoff PR #4's documented
 `6e4ba5d5f0edd5af23eabf3493e41c07dd6b592e`; main and PR #1 are not merged.
-Native visual acceptance is pending corrected comparable captures and independent criticism.
+[Draft PR #5](https://github.com/calebaiken/mu-desktop-assistant/pull/5) targets
+`feature/chat-project-handoff`. Corrected native captures and fresh blind criticism
+are available; the complete independent interaction suite now passes. Final
+engineering acceptance awaits verification of the observed disabled-list surface repair.
 
 ## Authority and provenance
 
@@ -40,7 +43,7 @@ follow-up, not a global theme option.
 ## Scoped resources
 
 `src/Companion.Desktop/Resources/Mu.Controls.xaml` has only explicitly keyed
-styles: `Mu.Button`, `Mu.PrimaryButton`, `Mu.TextBox`, `Mu.ProjectItem`,
+styles: `Mu.Button`, `Mu.PrimaryButton`, `Mu.TextBox`, `Mu.ProjectList`, `Mu.ProjectItem`,
 `Mu.ComboBox`, `Mu.ScrollBar`, and `Mu.FocusVisual`. A view must opt in. App resources and other
 windows' implicit styles are unchanged. Dynamic brush roles come from
 `Mu.Instrument.xaml`, `Mu.Archive.xaml`, or `Mu.HighContrast.xaml`.
@@ -69,6 +72,12 @@ keyboard focus is 2 DIPs. DIPs and physical screenshot pixels are recorded separ
 Vertical scrolling uses a keyed, palette-aware native ScrollBar template, native
 system scrollbar width, 32-DIP thumb minimum and the existing paging/range commands.
 Keyboard/UIA scrolling remains native; horizontal templates remain unchanged.
+The keyed ListBox template keeps the actual ListBox owner, native selection/UIA,
+default ItemsPanel, ItemsPresenter and nonfocusable PART_ScrollViewer, forwarding
+padding and logical scrolling/scrollbar visibility. This avoids the platform
+disabled template's bright surface in Instrument while retaining IsEnabled guards.
+Unloaded/unavailable catalogs hide absent rows; empty catalogs show the actual
+first-project state. No disabled interaction is re-enabled for appearance.
 
 The local reading-mode selector changes only this picker instance and is disposed
 with it. It neither writes Settings nor changes another view. Actual Windows high
@@ -113,7 +122,9 @@ from real screen-reader announcements, which must not be inferred from attribute
 
 The body scrolls at the existing 540×460-DIP minimum; footer Refresh/Cancel/Open
 remain reachable outside it. At 800 DIPs the identity review moves beside the
-catalog. Long names wrap and the exact path remains selectable/scrollable. No
+catalog and the reading-mode label sits beside its selector. Compact rows retain
+44-DIP targets. Validation sits beside the creation label and wraps for errors.
+Long names wrap and the exact path remains selectable/scrollable. No
 navigation sidebar or fake activity counters were added.
 
 ## Native evidence and limits
@@ -152,14 +163,55 @@ GetClientRect/GetDC/BitBlt with GDI cleanup and opaque actual shown-window pixel
 including inherited background/margins, against both source versions.
 Detailed candidate receipts are appended to TESTING.
 
-Standard GitHub Actions artifact retrieval was initially denied at signed blob
-redirects. Baseline sa2 retrieval later succeeded through the ordinary download
-path; candidate sa3 remains denied at this checkpoint. A configuration draft
+Standard GitHub Actions artifact retrieval was initially denied at some signed
+blob redirects. Later ordinary downloads succeeded, including corrected baseline
+and candidate artifact12229771010 from run39341858853. A configuration draft
 preserves the known allowlist and adds observed artifact hosts; saving it does
 not prove publication/access. No alternate transport bypasses denied destinations.
 Status annotations contain bounded counters/labels only, never screenshot bytes,
 private content, signed URLs or a substitute for visual evidence. No claim of visual
-acceptance, current-interface Gauntlet win or complete accessibility is made.
+complete interaction acceptance, current-interface Gauntlet win or complete
+accessibility is made.
+
+Corrected captures record 100% DPI, actual 1024×720-DIP work area, and
+800×600, 540×460 and 1024×680-DIP windows. The earlier 1024×768 window extended
+beyond that work area and is not whole-viewport evidence. At abefea7, actual OS
+high contrast and WPF SystemParameters.HighContrast both became true; system
+brushes were verified and the original false state was restored/read back.
+The 56 completed abefea7 independent checkpoints cover identity, selection, capacity,
+UIA names and actual Instrument/Archive brush contrast. A subsequent native
+Alt+Down wait timed out; that failure is preserved. d5d1a8c adds
+checked real SendInput and bounded input-desktop/focus diagnostics, and runs
+unaffected modal/stale/viewport checks before keyboard. No fabricated WPF key
+event substitutes for native input. Diagnostic JSON contains only public fixture
+labels and synthetic key classes, never request text, private paths or audio.
+Its Windows push run39343066837 and PR run39343072663 both succeed: each required
+gate passes, all112 independent native checks complete, and the unchanged companion
+resource step passes. The checks include real SendInput traversal/access keys,
+theme Enter isolation, modal Open/Cancel/Escape, late/changed Open and strict
+800×600/540×460 viewport/footer assertions. Artifact12229159632 contains the push
+captures/receipts,
+but its ordinary redirect to productionresultssa5.blob.core.windows.net is denied
+here. The exact host is saved in the supported environment draft, which still
+requires publishing for that host. The distinct, naturally triggered PR run's own
+artifact12229109729 downloaded normally through its permitted sa8 redirect. Its
+current pixels and detailed keyboard/viewport receipts were independently inspected.
+The denied push artifact was not transported elsewhere. PR binaries/captures identify
+checked-out merge `ae22dbb17fe06d70903daf67c2dba861658a6395`; both that merge and
+branch head d5d1a8c have exact Git tree `b32189ff431cab3b037ea8a0423759db3b421d5f`.
+These identities are retained separately. No older image is relabeled as a later build.
+The two runs' actual visible/reduced/hidden CPU observations are
+0.312489/0.078123/0.104164% and0.416652/0.078123/0.130205% of one core, with
+peak private bytes below27.2MB. These pass the unchanged <1%/<150,000,000-byte
+limits on these CI runs, not general Windows11/model workload qualification.
+The PR resource artifact12230520144 was also retrieved normally and its raw CPU
+arithmetic independently recomputed. Windows animations were disabled on this
+runner: no idle blink/timer was observed in any interval. This does not establish
+animated-idle resource acceptance or replace historical failures. The short picker
+observation was1500ms,1.041607% one-core CPU and47,374,336 private bytes, including
+the capture harness; it is not compared to the companion's60-second idle gate.
+The native error PNG exposed a bright default disabled-list surface; the bounded
+keyed ListBox/template repair still requires its own native evidence.
 
 The [frozen independent protocol](qa/RESEARCH_PROJECTS_UI_V3_PROTOCOL.md) has 50
 criteria. Passing requires >8.5/10 and zero unresolved critical defects; missing
@@ -176,8 +228,16 @@ Its SHA-256 is `7790c927c2aa29e64a8933a90e5b45ec1266f641e951cd2d2f66856c2cea356f
 Research also checked official Obsidian Manage vaults, Joplin profiles and GitHub
 Desktop clone dialogs. The fetched Obsidian image shows beta 0.7.1 and is rejected
 as current evidence. Undated/older screenshots are not current-release proof.
-Comparable live, matched-viewport competitor captures are unavailable; the requested
-fresh blind binary comparison must remain open until actual evidence is accessible.
+Comparable live, matched-viewport competitor captures are unavailable. The current
+VS Code download host was denied by environment policy; no download proxy or
+alternate transport was used. Fresh blind native before/after comparisons are
+recorded separately: [round1](qa/RESEARCH_PROJECTS_UI_V3_CRITIC_ROUND1.md) preferred
+the baseline for complete visible review; [round2](qa/RESEARCH_PROJECTS_UI_V3_CRITIC_ROUND2.md)
+preferred abefea7 for hierarchy and explicit destination review, while identifying
+nested scrolling as its largest deficit. [Round3](qa/RESEARCH_PROJECTS_UI_V3_CRITIC_ROUND3.md)
+prefers the compact d5d1a8c tree, with small/wrapped exact metadata as its main
+remaining deficit. The genuine published VS Code reference
+informs research only; no current competitor win is claimed.
 
 After native visual acceptance, use separate PRs for Chat draft/transfer hierarchy
 and keyboard flow; Lab dataset/proposal/review/Run/Jobs distinctions; Settings

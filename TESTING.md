@@ -13,13 +13,33 @@ and [source/workflow/evidence limits](docs/UI_DESIGN_V3.md).
 | Initial baseline image inspection | **capture failure**: omitted window background/transparent pixels and cropped margins; not proof of product clipping; excluded from acceptance | `artifacts/qa/ui-v3/independent/baseline-native.zip`; original tool retained in Git |
 | Linux strict Release/architecture | zero warnings/errors; 11/11; no native execution claimed | SDK10.0.401 |
 | Pinned Python author/data/engine/pipeline/project-isolation suites | 6+16+19+7+1 = **49 passed**, zero failed | ignored `artifacts/qa/ui-v3/python-*.txt` |
+| Corrected capture `91a4645`, Windows [39339769599](https://github.com/calebaiken/mu-desktop-assistant/actions/runs/39339769599) | both mandatory gates pass, same525/524/0/1; separate UI fails after10 checkpoints at stale-selection UIA pattern | job118358133026, artifact12228542403; real opaque baseline/candidate pixels |
+| Item-peer repair `4d1c4f8`, Windows [39340102901](https://github.com/calebaiken/mu-desktop-assistant/actions/runs/39340102901) | both mandatory gates pass, same counts; UI fails after13 checkpoints at repaired-list selection | job118359234502, artifact12228935495; retained |
+| Selection-provider attempt `61afa6b`, Windows [39340726888](https://github.com/calebaiken/mu-desktop-assistant/actions/runs/39340726888) | both mandatory gates pass, same counts; UI fails after10 checkpoints at unavailable optional pattern; image shows Create clipping | job118361309982, artifact12228916363; retained |
+| Actual peer-cache reset `abefea7`, Windows [39341858853](https://github.com/calebaiken/mu-desktop-assistant/actions/runs/39341858853) | both mandatory gates pass, same counts; UI **56 passed then TimeoutException** at native keyboard dropdown; actual OS/WPF contrast enabled and restored | job118365082902, artifact12229771010; real800×600/540×460/1024×680 captures |
+| Fresh blind native criticism | round1 prefers baseline over91a4645; round2 prefersabefea7 over baseline, flags nested scrolling | independent round1/round2 reports; no matched current-competitor win |
+| Compact-layout/native-input source **d5d1a8c0b7b7e336cdd4d727426ff3ab792406d3**, Windows push [39343066837](https://github.com/calebaiken/mu-desktop-assistant/actions/runs/39343066837) and PR [39343072663](https://github.com/calebaiken/mu-desktop-assistant/actions/runs/39343072663) | both mandatory gates, separate native UI and unchanged resource step **successful in both runs**; each525total/524passed/0failed/1expected NotExecuted;21project+28handoff+112independent UI checks completed | jobs118369030429/118369050254; bounded API annotations saved in `artifacts/qa/ui-v3/final-source/` |
+| Current Linux helper crossbuild/architecture | zero warnings/errors;11/11; no native execution claimed | SDK10.0.401; current source |
+| Current native artifact12229159632 | download blocked at normal sa5 blob redirect; current detailed receipts/pixels not inspected | exact observed host saved in environment draft; publication/access not inferred |
+| Unchanged companion budgets, push run | visible CPU0.312489%, reduced0.078123%, hidden0.104164% one core; peak private bytes27,160,576 /27,103,232 /26,574,848; **all intervals pass** | 10s warmup, three60s intervals; no overhead subtraction; resource artifact12230450276 raw download blockedsa5 |
+| Unchanged companion budgets, PR run | visible CPU0.416652%, reduced0.078123%, hidden0.130205% one core; peak private bytes27,189,248 /27,136,000 /26,644,480; **all intervals pass** | distinct real execution; normal API receipt; raw inspection remains separate |
+| PR run's own native artifact12229109729 and resource12230520144 | normal sa8 downloads succeed; all112 native checks, actual keyboard traces, strict viewport and source manifests inspected; raw resource CPU arithmetic independently recomputed | actual mergeae22dbb17fe06d70903daf67c2dba861658a6395 has exact same treeb32189ff431cab3b037ea8a0423759db3b421d5f as branchheadd5d1a8c |
+| Third fresh blind native comparison | current compact primary screen wins against baseline; remaining deficit is small/wrapped metadata; native error screenshot separately exposes bright disabled-list surface | independent round3 report; keyed-template/state repair awaiting native verification |
 
 Recapture uses actual shown-window client pixels with the same current developer
 tool against frozen baseline6e4ba5d and candidate. No private data is captured.
 Mandatory15-second smoke, resource thresholds and historical receipts below are
 unchanged. Windows11 physical hardware, monitor scaling125–200%, screen readers,
-qualified pretrained models and real-user timing remain unverified. No blind
-visual winner or completed accessibility acceptance is claimed.
+qualified pretrained models and real-user timing remain unverified. The native
+before/after critic verdicts above do not qualify live competitors, keyboard
+hardware, assistive technology or complete accessibility. Current injected native
+keyboard checks actually pass as part of112; physical typing remains untested.
+The PR raw resource fixture records Windows10.0.26100X64, .NET10.0.13,96DPI and
+4logical CPUs. Windows animations were disabled; no animated idle is qualified.
+The1500ms picker/harness observation1.041607%CPU/47,374,336B is not a60-second
+companion budget test. These resource observations cover the isolated companion, not a scientific/model
+workload or a percentile/long-term performance certification. Historical failures
+and their raw CPU/memory values below are unchanged.
 
 ## Verified Chat-to-Research handoff — 2026-10-19
 

@@ -49,6 +49,7 @@ public partial class ResearchProjectsWindow : Window
         ClearSelection();
         catalogLoaded = false;
         ProjectsList.ItemsSource = null;
+        ProjectsList.Visibility = Visibility.Collapsed;
         ProjectCountLabel.Text = "Loading catalog";
         EmptyProjectsPanel.Visibility = Visibility.Collapsed;
         SetBusy(true, "Loading projects…");
