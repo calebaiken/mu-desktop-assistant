@@ -24,12 +24,26 @@ namespace ResearchProjects.UiChecks;
 internal static class IndependentChecks
 {
     private static readonly TimeSpan Deadline = TimeSpan.FromSeconds(5);
+    private static string? selectionStep;
+    private static SelectionObservation? selectionObservation;
+
+    private sealed record SelectionObservation(int Index, int ItemCount, bool ListEnabled)
+    {
+        public string? OwnerPeerType { get; set; }
+        public int? ItemPeerCount { get; set; }
+        public string? ItemPeerType { get; set; }
+        public bool? CurrentItemMatched { get; set; }
+        public bool? ItemEnabled { get; set; }
+        public bool? SelectionPatternAvailable { get; set; }
+    }
 
     internal static async Task<IReadOnlyList<string>> RunAsync(string outputDirectory)
     {
         var passed = new List<string>();
         var completed = false;
-        string? failedCheck = null, failureType = null;
+        string? failedCheck = null, failureType = null, failureDetail = null;
+        selectionStep = null;
+        selectionObservation = null;
         var stage = "late catalog";
         void Check(bool condition, string label)
         {
@@ -51,16 +65,127 @@ internal static class IndependentChecks
             await ExplicitModalActionsAsync(Check);
             stage = "late and changed open";
             await LateAndChangedOpenAsync(Check);
+            stage = "viewport and footer";
+            await ViewportRegressionAsync(outputDirectory, Check);
             completed = true;
             return passed;
         }
-        catch (Exception error) { failureType = error.GetType().Name; throw; }
+        catch (Exception error) { failureType = error.GetType().Name; failureDetail = selectionStep; throw; }
         finally
         {
             Directory.CreateDirectory(outputDirectory);
             await File.WriteAllTextAsync(Path.Combine(outputDirectory, "independent-native-checks.json"),
-                JsonSerializer.Serialize(new { completed, stage, failedCheck, failureType, passed }));
+                JsonSerializer.Serialize(new { completed, stage, failedCheck, failureType, failureDetail, selectionObservation, passed }));
         }
+    }
+
+    private static async Task ViewportRegressionAsync(string outputDirectory, Action<bool, string> check)
+    {
+        var first = Project(20, "Detector study") with { Directory = @"C:\Mu-UI-fixtures\projects\00000000000000000000000000000020" };
+        var second = Project(21, "Calibration notes") with { Directory = @"C:\Mu-UI-fixtures\projects\00000000000000000000000000000021" };
+        var legacy = Project(0, "Existing Lab project") with { Directory = @"C:\Mu-UI-fixtures\default-project", IsLegacy = true };
+        var observations = new List<object>();
+        var completed = false;
+        try
+        {
+            foreach (var (width, height) in new[] { (800, 600), (540, 460) })
+            {
+                var store = new FixtureStore { Rows = [first, second, legacy] };
+                var window = NewWindow(store);
+                window.Width = width;
+                window.Height = height;
+                try
+                {
+                    window.Show();
+                    await ReadyAsync(window, store);
+                    SelectRow(Find<ListBox>(window, "ProjectsList"), 0);
+                    SetValue(Find<TextBox>(window, "ProjectName"), "Viewport creation candidate");
+                    var scroll = Find<ScrollViewer>(window, "ProjectBodyScroll");
+                    scroll.ScrollToTop();
+                    await Program.SettleAsync(window);
+                    var viewport = scroll.Template.FindName("PART_ScrollContentPresenter", scroll) as ScrollContentPresenter
+                        ?? throw new InvalidOperationException("Actual body scroll viewport unavailable.");
+                    var visible = new Rect(new Point(), viewport.RenderSize);
+                    var target = Find<TextBox>(window, "ProjectTarget");
+                    var name = Find<TextBox>(window, "ProjectName");
+                    var create = Find<Button>(window, "CreateProject");
+                    Record("initial");
+                    check(visible.Width > 0 && visible.Height > 0 && scroll.VerticalOffset == 0,
+                        "initial body viewport measured at top " + width);
+                    check(target.Text.Contains(first.Id.ToString("N"), StringComparison.Ordinal)
+                        && target.Text.Contains(first.Directory, StringComparison.Ordinal),
+                        "viewport reviews exact UIA selected destination " + width);
+                    CheckFooter("initial");
+                    if (width == 800)
+                    {
+                        CheckInside(target, "selected destination");
+                        CheckInside(name, "new project input");
+                        CheckInside(create, "Create action");
+                        check(create.IsEnabled, "visible Create action accepts valid name 800");
+                    }
+                    else
+                    {
+                        target.BringIntoView(); // Narrow scrolling is a real, legitimate recovery path.
+                        await Program.SettleAsync(window);
+                        Record("destination scrolled into view");
+                        CheckInside(target, "reachable selected destination");
+                        CheckFooter("scrolled");
+                    }
+                    check(store.OpenCalls == 0 && store.CreateCalls == 0 && SelectedId(window) is null,
+                        "viewport selection and scrolling grant no action " + width);
+
+                    void CheckInside(FrameworkElement control, string label) => check(control.IsVisible
+                        && FullyInside(control.TransformToAncestor(viewport).TransformBounds(new Rect(new Point(), control.RenderSize)), visible),
+                        "body viewport fully contains " + label + " " + width);
+
+                    void CheckFooter(string phase)
+                    {
+                        var client = ClientBounds(window);
+                        foreach (var controlName in new[] { "OpenProject", "CancelProjectsButton" })
+                        {
+                            var control = Find<Button>(window, controlName);
+                            check(control.IsVisible && control.IsEnabled && !control.IsDescendantOf(scroll)
+                                && FullyInside(control.TransformToAncestor(window).TransformBounds(new Rect(new Point(), control.RenderSize)), client),
+                                "footer remains visible outside scroll " + controlName + " " + phase + " " + width);
+                        }
+                    }
+
+                    void Record(string phase) => observations.Add(new
+                    {
+                        width, height, phase, scroll.VerticalOffset,
+                        viewport = Box(visible), nativeClient = Box(ClientBounds(window)),
+                        target = Box(target.TransformToAncestor(viewport).TransformBounds(new Rect(new Point(), target.RenderSize))),
+                        name = Box(name.TransformToAncestor(viewport).TransformBounds(new Rect(new Point(), name.RenderSize))),
+                        create = Box(create.TransformToAncestor(viewport).TransformBounds(new Rect(new Point(), create.RenderSize)))
+                    });
+                }
+                finally { window.Close(); }
+            }
+            completed = true;
+        }
+        finally
+        {
+            Directory.CreateDirectory(outputDirectory);
+            await File.WriteAllTextAsync(Path.Combine(outputDirectory, "independent-viewport-observation.json"),
+                JsonSerializer.Serialize(new { completed, scope = "Actual native scroll viewport with three fixed metadata rows; no physical display qualification", observations }));
+        }
+
+        static object Box(Rect rectangle) => new { rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height };
+        static bool FullyInside(Rect control, Rect viewport)
+        {
+            const double rounding = 0.01; // Only floating-point layout noise, far below a physical pixel.
+            return control.Width > 0 && control.Height > 0 && control.Left >= viewport.Left - rounding
+                && control.Top >= viewport.Top - rounding && control.Right <= viewport.Right + rounding
+                && control.Bottom <= viewport.Bottom + rounding;
+        }
+    }
+
+    private static Rect ClientBounds(Window window)
+    {
+        if (!GetClientRect(new WindowInteropHelper(window).Handle, out var client))
+            throw new InvalidOperationException("Native client bounds unavailable.");
+        var dpi = VisualTreeHelper.GetDpi(window);
+        return new Rect(0, 0, (client.Right - client.Left) / dpi.DpiScaleX, (client.Bottom - client.Top) / dpi.DpiScaleY);
     }
 
     private static async Task LegacyCapacityAsync(Action<bool, string> check)
@@ -368,28 +493,41 @@ internal static class IndependentChecks
 
     private static void SelectRow(ListBox list, int index)
     {
+        selectionStep = "selection layout";
         list.UpdateLayout();
+        selectionObservation = new(index, list.Items.Count, list.IsEnabled);
+        selectionStep = "selection index bounds";
         if (index < 0 || index >= list.Items.Count) throw new ArgumentOutOfRangeException(nameof(index));
-        // ItemContainer queries WPF's current ItemCollection and resets the peer's
-        // cached children. GetChildren can retain retired items across a reload.
+        selectionStep = "selection owner peer";
         var peer = UIElementAutomationPeer.CreatePeerForElement(list) as ListBoxAutomationPeer
             ?? throw new InvalidOperationException("Native list automation peer unavailable.");
-        var container = peer.GetPattern(PatternInterface.ItemContainer) as IItemContainerProvider
-            ?? throw new InvalidOperationException("Native item container pattern unavailable.");
-        IRawElementProviderSimple? item = null;
-        for (var i = 0; i <= index; i++)
-            item = container.FindItemByProperty(item!, 0, null!)
-                ?? throw new InvalidOperationException("Current native item provider unavailable.");
-        if (item!.GetPatternProvider(VirtualizedItemPatternIdentifiers.Pattern.Id) is IVirtualizedItemProvider virtualized)
-        {
-            virtualized.Realize();
-            list.UpdateLayout();
-        }
-        var selection = item.GetPatternProvider(SelectionItemPatternIdentifiers.Pattern.Id) as ISelectionItemProvider
-            ?? throw new InvalidOperationException("Native selection pattern unavailable.");
+        selectionObservation.OwnerPeerType = peer.GetType().Name;
+        // Public WPF API synchronously rebuilds item children after ItemsSource
+        // replacement. Container wrappers do not own the SelectionItem pattern.
+        selectionStep = "selection reset children";
+        peer.ResetChildrenCache();
+        selectionStep = "selection current children";
+        var items = peer.GetChildren()?.OfType<ListBoxItemAutomationPeer>().ToArray() ?? [];
+        selectionObservation.ItemPeerCount = items.Length;
+        var item = items.ElementAtOrDefault(index)
+            ?? throw new InvalidOperationException("Current native item peer unavailable.");
+        selectionObservation.ItemPeerType = item.GetType().Name;
+        selectionStep = "selection current peer identity";
+        selectionObservation.CurrentItemMatched = ReferenceEquals(item.Item, list.Items[index]);
+        if (selectionObservation.CurrentItemMatched != true)
+            throw new InvalidOperationException("Native item peer did not identify the current catalog item.");
+        selectionStep = "selection enabled observation";
+        selectionObservation.ItemEnabled = item.IsEnabled();
+        selectionStep = "selection pattern";
+        var selection = item.GetPattern(PatternInterface.SelectionItem) as ISelectionItemProvider;
+        selectionObservation.SelectionPatternAvailable = selection is not null;
+        if (selection is null) throw new InvalidOperationException("Native selection pattern unavailable.");
+        selectionStep = "selection invoke";
         selection.Select();
+        selectionStep = "selection accepted current identity";
         if (!ReferenceEquals(list.SelectedItem, list.Items[index]))
             throw new InvalidOperationException("Native selection did not identify the current catalog item.");
+        selectionStep = null;
     }
 
     private static async Task NativeKeyboardAsync(Window window, Action<bool, string> check)
@@ -501,6 +639,11 @@ internal static class IndependentChecks
     private static extern bool SetForegroundWindow(IntPtr window);
     [DllImport("user32.dll")]
     private static extern IntPtr GetForegroundWindow();
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativeRect { internal int Left, Top, Right, Bottom; }
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetClientRect(IntPtr window, out NativeRect rectangle);
     [DllImport("user32.dll")]
     private static extern void keybd_event(byte key, byte scan, uint flags, UIntPtr extra);
 

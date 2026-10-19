@@ -26,6 +26,7 @@ internal sealed class WindowsContrastScope : IDisposable
         if (!SystemParametersInfo(0x0043, requested.Size, ref requested, 2))
         { NativeError = Marshal.GetLastWin32Error(); return; }
         changed = true;
+        NotifyContrastChange();
         var observed = new HighContrast { Size = original.Size };
         Enabled = SystemParametersInfo(0x0042, observed.Size, ref observed, 0) && (observed.Flags & 1) != 0;
     }
@@ -41,6 +42,7 @@ internal sealed class WindowsContrastScope : IDisposable
             if (!SystemParametersInfo(0x0043, restored.Size, ref restored, 2))
                 throw new InvalidOperationException("The disposable test desktop contrast state could not be restored.");
             changed = false;
+            NotifyContrastChange();
         }
         var observed = new HighContrast { Size = original.Size };
         Restored = SystemParametersInfo(0x0042, observed.Size, ref observed, 0) && (observed.Flags & 1) == (original.Flags & 1);
@@ -49,6 +51,15 @@ internal sealed class WindowsContrastScope : IDisposable
 
     [StructLayout(LayoutKind.Sequential)]
     private struct HighContrast { internal uint Size; internal uint Flags; internal IntPtr DefaultScheme; }
+
+    // No UPDATEINIFILE: the dev test does not persist an OS preference. Explicitly
+    // notify real WPF listeners after changing the actual transient native flag.
+    private static void NotifyContrastChange() => _ = SendMessageTimeout(new IntPtr(0xffff),
+        0x001a, new UIntPtr(0x0043), IntPtr.Zero, 0x0002, 100, out _);
+
+    [DllImport("user32.dll", EntryPoint = "SendMessageTimeoutW", SetLastError = true)]
+    private static extern IntPtr SendMessageTimeout(IntPtr window, uint message, UIntPtr parameter,
+        IntPtr value, uint flags, uint timeout, out UIntPtr result);
 
     [DllImport("user32.dll", EntryPoint = "SystemParametersInfoW", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]

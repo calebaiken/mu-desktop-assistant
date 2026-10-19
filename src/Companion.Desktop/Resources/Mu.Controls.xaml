@@ -78,4 +78,33 @@
             <Style.Triggers><Trigger Property="IsHighlighted" Value="True"><Setter Property="Background" Value="{DynamicResource Mu.Primary}"/><Setter Property="Foreground" Value="{DynamicResource Mu.OnPrimary}"/></Trigger></Style.Triggers>
         </Style></Setter.Value></Setter>
     </Style>
+    <Style x:Key="Mu.ScrollBar" TargetType="ScrollBar">
+        <!-- Only the vertical template is opted in here; horizontal platform behavior remains native. -->
+        <Style.Triggers><Trigger Property="Orientation" Value="Vertical">
+            <Setter Property="Width" Value="{DynamicResource {x:Static SystemParameters.VerticalScrollBarWidthKey}}"/>
+            <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ScrollBar">
+                <Border Background="{DynamicResource Mu.Surface}">
+                    <Track x:Name="PART_Track" Orientation="Vertical" IsDirectionReversed="True"
+                           Minimum="{TemplateBinding Minimum}" Maximum="{TemplateBinding Maximum}" ViewportSize="{TemplateBinding ViewportSize}"
+                           Value="{Binding Value, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}">
+                        <Track.DecreaseRepeatButton><RepeatButton Command="{x:Static ScrollBar.PageUpCommand}" CommandTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}" Focusable="False">
+                            <RepeatButton.Template><ControlTemplate><Border Background="Transparent"/></ControlTemplate></RepeatButton.Template>
+                        </RepeatButton></Track.DecreaseRepeatButton>
+                        <Track.Thumb><Thumb MinHeight="32">
+                            <Thumb.Template><ControlTemplate TargetType="Thumb">
+                                <Border x:Name="Handle" Background="{DynamicResource Mu.ControlBorder}" CornerRadius="4" Margin="4,2"/>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Handle" Property="Background" Value="{DynamicResource Mu.Focus}"/></Trigger>
+                                    <Trigger Property="IsDragging" Value="True"><Setter TargetName="Handle" Property="Background" Value="{DynamicResource Mu.Primary}"/></Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate></Thumb.Template>
+                        </Thumb></Track.Thumb>
+                        <Track.IncreaseRepeatButton><RepeatButton Command="{x:Static ScrollBar.PageDownCommand}" CommandTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}" Focusable="False">
+                            <RepeatButton.Template><ControlTemplate><Border Background="Transparent"/></ControlTemplate></RepeatButton.Template>
+                        </RepeatButton></Track.IncreaseRepeatButton>
+                    </Track>
+                </Border>
+            </ControlTemplate></Setter.Value></Setter>
+        </Trigger></Style.Triggers>
+    </Style>
 </ResourceDictionary>

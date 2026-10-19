@@ -50,7 +50,8 @@ internal static class Program
     {
         List<object> images = [];
         var store = new PublicProjects();
-        foreach (var (width, height) in new[] { (800, 600), (1024, 768), (540, 460) })
+        // 1024x680 fits the observed 1024x720 CI work area including native chrome.
+        foreach (var (width, height) in new[] { (800, 600), (1024, 680), (540, 460) })
         {
             var view = new ResearchProjectsWindow(store) { Width = width, Height = height, ShowInTaskbar = false, ShowActivated = false };
             try
@@ -106,15 +107,16 @@ internal static class Program
         finally { errorView.Close(); }
         if (mode == "candidate")
         {
-            using var contrast = new WindowsContrastScope();
-            await Task.Delay(250); // Allow Windows' setting-change broadcast to reach the dispatcher.
-            var observed = SystemParameters.HighContrast;
-            if (contrast.Enabled && observed)
+            var highContrast = new ResearchProjectsWindow(store) { Width = 800, Height = 600, ShowInTaskbar = false };
+            try
             {
-                var highContrast = new ResearchProjectsWindow(store) { Width = 800, Height = 600, ShowInTaskbar = false };
-                try
+                highContrast.Show();
+                await SettleAsync(highContrast);
+                using var contrast = new WindowsContrastScope();
+                await Task.Delay(250); // Allow Windows' setting-change broadcast to reach the dispatcher.
+                var observed = SystemParameters.HighContrast;
+                if (contrast.Enabled && observed)
                 {
-                    highContrast.Show();
                     await SettleAsync(highContrast);
                     ((ListBox)highContrast.FindName("ProjectsList")).SelectedIndex = 0;
                     await SettleAsync(highContrast);
@@ -122,20 +124,20 @@ internal static class Program
                         throw new InvalidOperationException("Windows contrast palette did not apply.");
                     Save(highContrast, mode + "-800x600-high-contrast.png");
                 }
-                finally { highContrast.Close(); }
+                contrast.Dispose();
+                await Task.Delay(250);
+                if (contrast.Restored == true && SystemParameters.HighContrast != contrast.OriginalEnabled)
+                    throw new InvalidOperationException("WPF did not observe restored OS contrast state.");
+                File.WriteAllText(Path.Combine(directory, "high-contrast-observation.json"), JsonSerializer.Serialize(new
+                {
+                    requested = true, nativeEnabled = contrast.Enabled, wpfEnabled = observed,
+                    nativeError = contrast.NativeError, originalEnabled = contrast.OriginalEnabled,
+                    restored = contrast.Restored, restoredWpfEnabled = SystemParameters.HighContrast,
+                    scope = "Disposable CI desktop; no physical monitor or screen reader qualification"
+                }));
+                // An unavailable SPI setting is recorded as unverified, never a passing contrast check.
             }
-            contrast.Dispose();
-            await Task.Delay(250);
-            if (contrast.Restored == true && SystemParameters.HighContrast != contrast.OriginalEnabled)
-                throw new InvalidOperationException("WPF did not observe restored OS contrast state.");
-            File.WriteAllText(Path.Combine(directory, "high-contrast-observation.json"), JsonSerializer.Serialize(new
-            {
-                requested = true, nativeEnabled = contrast.Enabled, wpfEnabled = observed,
-                nativeError = contrast.NativeError, originalEnabled = contrast.OriginalEnabled,
-                restored = contrast.Restored, restoredWpfEnabled = SystemParameters.HighContrast,
-                scope = "Disposable CI desktop; no physical monitor or screen reader qualification"
-            }));
-            // An unavailable SPI setting is recorded as unverified, never a passing contrast check.
+            finally { highContrast.Close(); }
         }
         File.WriteAllText(Path.Combine(directory, "captures.json"), JsonSerializer.Serialize(new
         {

@@ -11,6 +11,7 @@
                 <ResourceDictionary Source="Resources/Mu.Instrument.xaml"/>
                 <ResourceDictionary Source="Resources/Mu.Controls.xaml"/>
             </ResourceDictionary.MergedDictionaries>
+            <Style TargetType="ScrollBar" BasedOn="{StaticResource Mu.ScrollBar}"/>
         </ResourceDictionary>
     </Window.Resources>
     <Grid Margin="24">
@@ -32,7 +33,7 @@
         <ScrollViewer x:Name="ProjectBodyScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Focusable="False" Padding="0,0,8,4">
             <StackPanel>
                 <TextBlock Text="Datasets are chosen in the Lab. Inspections, experiments and exports stay local to the project. Opening a project transfers no chat and runs no analysis."
-                           TextWrapping="Wrap" Foreground="{DynamicResource Mu.SecondaryText}" Margin="0,0,0,16"/>
+                           TextWrapping="Wrap" Foreground="{DynamicResource Mu.SecondaryText}" Margin="0,0,0,8"/>
                 <Grid x:Name="ProjectLayout">
                     <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                     <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="0"/></Grid.ColumnDefinitions>
@@ -64,13 +65,13 @@
                             <TextBlock x:Name="SelectionHeading" Text="No project selected" FontSize="18" FontWeight="SemiBold" Margin="0,8,0,6" TextWrapping="Wrap"/>
                             <TextBlock x:Name="SelectionHint" Text="Select a project to review its identity and exact storage location." Foreground="{DynamicResource Mu.SecondaryText}" TextWrapping="Wrap"/>
                             <TextBox x:Name="ProjectTarget" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" MinHeight="0" MaxHeight="96" Visibility="Collapsed"
-                                     Style="{StaticResource Mu.TextBox}" FontFamily="{DynamicResource Mu.TechnicalFont}" FontSize="12" Margin="0,8,0,0"
+                                     Style="{StaticResource Mu.TextBox}" FontFamily="{DynamicResource Mu.TechnicalFont}" FontSize="13" Margin="0,8,0,0"
                                      AutomationProperties.Name="Selected research project identity and storage"/>
                         </StackPanel>
                     </Border>
                 </Grid>
-                <Border Height="1" Background="{DynamicResource Mu.QuietBorder}" Margin="0,12,0,12"/>
-                <Label Content="_New project name" Target="{Binding ElementName=ProjectName}" Foreground="{DynamicResource Mu.Text}" Padding="0,0,0,8" FontWeight="SemiBold"/>
+                <Border Height="1" Background="{DynamicResource Mu.QuietBorder}" Margin="0,12,0,8"/>
+                <Label Content="_New project name" Target="{Binding ElementName=ProjectName}" Foreground="{DynamicResource Mu.Text}" Padding="0,0,0,4" FontWeight="SemiBold"/>
                 <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                     <TextBox x:Name="ProjectName" MaxLength="80" Style="{StaticResource Mu.TextBox}" TextChanged="Name_Changed" PreviewKeyDown="Name_KeyDown"
                              AutomationProperties.Name="New research project name" AutomationProperties.HelpText="1 to 80 characters. Creating a project writes local metadata; it opens no dataset."/>

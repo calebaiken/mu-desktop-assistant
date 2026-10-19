@@ -41,7 +41,7 @@ follow-up, not a global theme option.
 
 `src/Companion.Desktop/Resources/Mu.Controls.xaml` has only explicitly keyed
 styles: `Mu.Button`, `Mu.PrimaryButton`, `Mu.TextBox`, `Mu.ProjectItem`,
-`Mu.ComboBox`, and `Mu.FocusVisual`. A view must opt in. App resources and other
+`Mu.ComboBox`, `Mu.ScrollBar`, and `Mu.FocusVisual`. A view must opt in. App resources and other
 windows' implicit styles are unchanged. Dynamic brush roles come from
 `Mu.Instrument.xaml`, `Mu.Archive.xaml`, or `Mu.HighContrast.xaml`.
 
@@ -64,8 +64,11 @@ actual WPF brush properties; screenshots and screen-reader checks remain separat
 Font fallbacks: Inter → Segoe UI; EB Garamond → Georgia; JetBrains Mono → Consolas.
 No fonts are downloaded or bundled. Body uses the compact 14-DIP instrument role,
 with 30-DIP display heading, 16-DIP row titles and 12-DIP selectable technical IDs.
-Spacing follows the 4/8/12/16/24 scale, control targets are at least 44 DIPs, and
+Spacing follows the 4/8/12/16/24 scale, primary control targets are at least 44 DIPs, and
 keyboard focus is 2 DIPs. DIPs and physical screenshot pixels are recorded separately.
+Vertical scrolling uses a keyed, palette-aware native ScrollBar template, native
+system scrollbar width, 32-DIP thumb minimum and the existing paging/range commands.
+Keyboard/UIA scrolling remains native; horizontal templates remain unchanged.
 
 The local reading-mode selector changes only this picker instance and is disposed
 with it. It neither writes Settings nor changes another view. Actual Windows high
