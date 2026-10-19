@@ -12,7 +12,12 @@
 - Required explicit Lab dataset capture before planning, enforced proposal dataset
   equality, and invalidated reviewed plans on request/dataset/range/limit edits.
 - Added independent admission/privacy/planner tests and real-App native workflow
-  smoke. Windows gates and independent acceptance pending at this checkpoint.
+  smoke. On `a33401f`, both mandatory Windows gates pass with 524 executed C#
+  cases, one expected platform skip and all 28 handoff native checkpoints complete.
+  Independent QA passes this bounded increment at 9.6/10 with zero confirmed
+  unresolved critical defects. Earlier failed native checkpoints and the initial
+  incomplete review are retained;
+  installed-model, physical accessibility and resource qualification remain separate.
 
 ## Unreleased — Explicit research projects (2026-10-19, bounded increment)
 

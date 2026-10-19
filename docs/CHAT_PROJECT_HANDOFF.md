@@ -64,8 +64,16 @@ Chat edits/history changes and duplicate submissions; closing Chat cancels it.
 ## Verification and remaining qualification
 
 The frozen independent protocol is [CHAT_PROJECT_HANDOFF_PROTOCOL.md](qa/CHAT_PROJECT_HANDOFF_PROTOCOL.md).
-Actual run evidence and independent verdicts are recorded in `TESTING.md` and
-`docs/qa/`; the mandatory Windows gates remain unchanged. Public native smoke uses
+Both mandatory Windows gates pass on executable checkpoint `a33401f` (push
+39307770822 and PR 39307779749): 524 executed/passing C# cases, one explicit platform
+skip, and all 28 native handoff checkpoints complete. Actual run evidence and
+independent verdicts are recorded in `TESTING.md` and `docs/qa/`; the gates and
+15-second smoke deadline remain unchanged. Closing Chat initially exposed a real
+modal-lifecycle stall; cancellation now starts at Closing and unwinds the original
+modal before WPF owner teardown. Failed run history is retained. The independent [final review](qa/CHAT_PROJECT_HANDOFF_REVIEW_WINDOWS.md)
+scores 96/100 = 9.6/10, PASS for this bounded development increment with zero
+confirmed unresolved critical defects; physical/model/resource qualifications below
+are explicitly excluded. Public native smoke uses
 real App routing, WPF windows/controls, production project/service paths, an absent
 runtime and explicitly declared model fixtures. Fixtures do not qualify pretrained
 inference. Physical keyboard/screen-reader use, installed-model success/coexistence,

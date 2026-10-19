@@ -8,29 +8,40 @@ branch `feature/chat-project-handoff`, starts at PR #3's final documented head
 Remote fetch confirmed main `7fe3305`, PR #1 `8c0e119`, PR #2 `376c320` and PR #3
 `7ce7f63`, all earlier PRs open/unmerged. No history was rewritten.
 
-Implemented candidate: Saved Chat draft → explicit project picker → exact request/
+Implemented bounded workflow: Saved Chat draft → explicit project picker → exact request/
 identity preview → Confirm → same project Ask Mu → explicit dataset → Propose →
 Run reviewed plan. Temporary mode refuses transfer. The transfer has no model,
 worker, inspection or experiment side effects. New Lab views defer metadata startup.
 Single-use tickets share workspace admission/retirement locking; proposal edits and
 late callbacks fail closed. See [usage/contracts](docs/CHAT_PROJECT_HANDOFF.md).
 
-Local evidence: strict Linux Release build has zero warnings/errors; architecture
-11/11; selected C# suite 103 passed, four Windows-only skips, 107 total. Independent
-handoff suite 32/32 passed. Initial broader planner selection retained two failures
-from Windows-path fixtures on Linux (93 passed/one skip/96 total). Broad Python
-worker discovery retained 21 Windows `SystemRoot` errors. Relevant portable worker
-and project suites passed 49/49 after setting their existing worker import path;
-the initial one-import-error run is retained. Independent initial review was
-83/100 = 8.3 FAIL/INCOMPLETE pending native evidence; its report is preserved.
-The initial Windows positive gates at `6954729` failed after 524 passing C# tests
-(one expected platform NotExecuted, no failed tests); earlier 21 project-native
-checks passed, no handoff receipt existed, negative gates were skipped. A native
-owner-HWND/setup reporting repair is being rechecked without relaxing the 15 s
-smoke deadline. Final Windows gates and independent QA are pending.
-This candidate is not yet independently accepted. Historical receipts below remain.
+Verified executable checkpoint: **`a33401fe7e595bf4fb1148a32aba3b913530df4b`**.
+Both Windows push [39307770822](https://github.com/calebaiken/mu-desktop-assistant/actions/runs/39307770822)
+and PR [39307779749](https://github.com/calebaiken/mu-desktop-assistant/actions/runs/39307779749)
+passed `verify.ps1` and `verify-negative.ps1`. Each reports 525 total C# cases:
+524 executed/passed, zero failed and one expected unsupported-platform NotExecuted.
+Four named native file/project process cases passed. All 21 prior project and 28
+new native handoff checkpoints completed; handoff smoke took 1,357 ms push / 1,305 ms PR.
 
-Next: complete this bounded handoff qualification, then design a separate Module C
+Linux: strict Release build zero warnings/errors, architecture 11/11; selected
+handoff/project/text cases 103 passed + four Windows-only skips (107 total);
+independent handoff 32/32; relevant production Python/data/pipeline/project suites
+49/49. Earlier Linux fixture/import failures and Windows native failures are
+retained in [Testing](TESTING.md) and the initial independent QA report (8.3 FAIL).
+The owner-close defect was reproduced natively and fixed by cancelling at Closing
+and unwinding the modal before ownership teardown; no deadline/assertion was weakened.
+Independent final QA [review](docs/qa/CHAT_PROJECT_HANDOFF_REVIEW_WINDOWS.md):
+**96/100 = 9.6/10 PASS** for this bounded increment, strictly above 8.5, with zero
+confirmed unresolved critical defects. The initial 8.3 failed/incomplete review
+and subsequent native failure addenda remain unchanged as historical evidence.
+
+Physical keyboard/screen-reader use, qualified pretrained inference after handoff,
+installed ML-runtime successful Run through this UI, model coexistence, CPU/memory
+acceptance and broader process-kill/low-memory stress remain unverified. Current
+native planning uses declared fixtures; its missing-runtime Run is an explicit
+failure test, not scientific computation or inference qualification.
+
+Next: design a separate Module C
 explicitly approved, editable/deletable/disableable project SQLite memory increment.
 No memory, new scientific algorithm, hosted model or agent loop is implemented here.
 

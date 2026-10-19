@@ -1,6 +1,51 @@
 # Testing
 
-## Chat-to-Research handoff candidate — 2026-10-19
+## Verified Chat-to-Research handoff — 2026-10-19
+
+Reviewed executable checkpoint: **a33401fe7e595bf4fb1148a32aba3b913530df4b**,
+stacked on PR #3 final `7ce7f63`. [Draft PR #4](https://github.com/calebaiken/mu-desktop-assistant/pull/4)
+targets `feature/research-projects`; earlier PRs/main remain unmerged.
+
+| Actually executed | Result | Evidence |
+|---|---|---|
+| Windows push [39307770822](https://github.com/calebaiken/mu-desktop-assistant/actions/runs/39307770822) and PR [39307779749](https://github.com/calebaiken/mu-desktop-assistant/actions/runs/39307779749) | both mandatory positive and negative verification scripts successful in each job | `windows-closing-{push,pr}-jobs.json` |
+| Each Windows TRX-derived receipt | 525 total; 524 executed/passed; zero failed; one NotExecuted (Linux-only unsupported-platform assertion) | `windows-closing-{push,pr}-annotations.json` |
+| Named native process/file cases | all four Passed: real owned project worker routing; consent/file identity/redacted audit; oversized-file refusal; leaf/ancestor link refusal | same annotations |
+| Real App handoff native smoke | completed True; 28 distinct checkpoints; 1,357 ms push / 1,305 ms PR; prior 21 project checkpoints also completed | same annotations; fixed public fixture receipts |
+| Linux strict build / architecture | zero warnings/errors / 11 of 11 | `build-closing-modal.log`, `architecture.log` |
+| Linux handoff/project/text selection | 103 passed, four Windows-only skips, 107 total | `handoff-portable-final.trx` |
+| Independent handoff | 32 of 32 passed | `independent/independent-handoff.trx` |
+| Actual pinned scientific worker and project isolation/export | 49 of 49 passed | `python-relevant.log` |
+
+Artifacts are ignored under `artifacts/qa/chat-project-handoff/`. Windows commands
+actually invoked by the unchanged workflow:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-negative.ps1
+```
+
+The real App handler is driven through native Chat, existing picker, exact preview
+and Confirm/Cancel, then deferred Lab Loaded. Assertions cover Temporary refusal,
+no transfer workers/artifacts/model startup, exact request/project/dataset capture,
+closed destination/Chat, duplicate submission, no dataset before model loading,
+exact typed JSON/limits, fresh proposals invalidated by each path/key/start/rows/
+memory/thread/request edit and mode change, noncooperative model cancellation,
+closed-Lab late callbacks, and explicit Run's first ML admission/missing-runtime
+failure. Dataset/project/admission/replay/corrupt state/shutdown are also exercised
+through independent Application/real-filesystem cases. Final independent QA is **96/100 = 9.6/10 PASS**, zero confirmed unresolved critical
+defects: [criterion-level report](docs/qa/CHAT_PROJECT_HANDOFF_REVIEW_WINDOWS.md).
+The independent reviewer separately fetched both Windows jobs/annotations, ran
+32 handoff cases/11 architecture checks and production Python project isolation
+(1/1, 11.932 s). Historical incomplete reviews/failures below are retained.
+
+These fixtures do not qualify pretrained inference or an installed scientific-runtime
+successful Run through the handoff UI. Physical keyboard/screen-reader use, full
+process-kill/low-memory stress, coexistence and CPU/memory acceptance remain unrun.
+Smoke elapsed time is a test observation, not a full performance qualification.
+
+
+## Earlier Chat-to-Research checkpoints — 2026-10-19
 
 Base `7ce7f639c999c79631e786a7365578773e1da530`, branch
 `feature/chat-project-handoff`. Artifacts: ignored `artifacts/qa/chat-project-handoff/`.
