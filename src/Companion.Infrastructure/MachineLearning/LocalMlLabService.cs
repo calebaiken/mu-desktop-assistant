@@ -276,5 +276,6 @@ public sealed class LocalMlLabService : IMlLabService
         try { await Task.WhenAll(remaining).ConfigureAwait(false); }
         catch (Exception) { /* All terminal states were reported by the individual job. */ }
         lifetime.Dispose();
+        lock (sync) if (poisoned) throw new MlException("cleanup", "The ML worker did not stop cleanly. Restart Mu before opening another project.");
     }
 }

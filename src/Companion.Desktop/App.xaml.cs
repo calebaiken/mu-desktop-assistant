@@ -96,6 +96,7 @@ public partial class App : System.Windows.Application
                 content.Measure(new Size(companion.Width, companion.Height));
                 content.Arrange(new Rect(0, 0, companion.Width, companion.Height));
                 await TextInspectionSmokeChecks.RunAsync(runtime.Log, options.DataDirectory);
+                await ResearchProjectSmokeChecks.RunAsync(options.DataDirectory);
                 await StopAsync(content.DesiredSize.Width > 0 && content.DesiredSize.Height > 0 ? 0 : 1);
                 return;
             }
@@ -375,6 +376,7 @@ public partial class App : System.Windows.Application
         if (companion is not null) companion.IsEnabled = false;
         settingsWindow?.BeginShutdown();
         chatWindow?.BeginShutdown();
+        researchProjectsWindow?.Close();
         var inspector = textInspectionWindow;
         inspector?.Close();
         if (inspector is not null)
@@ -388,6 +390,11 @@ public partial class App : System.Windows.Application
             catch (Exception) { exitCode = 1; }
         }
         mlLabWindow?.Close();
+        if (researchWorkspace is not null)
+        {
+            try { await researchWorkspace.DisposeAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(6)); }
+            catch (Exception) { exitCode = 1; }
+        }
         if (mlLabService is not null)
         {
             try { await mlLabService.DisposeAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(6)); }

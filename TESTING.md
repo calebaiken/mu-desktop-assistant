@@ -1,5 +1,118 @@
 # Testing
 
+## Research projects — final development evidence, 2026-10-19
+
+Reviewed executable source **`c8da7e5664faec3f8d5430bec0ab018aa8512f42`**;
+[stacked draft PR #3](https://github.com/calebaiken/mu-desktop-assistant/pull/3),
+base `376c320`. Independent [final review](docs/qa/RESEARCH_PROJECTS_REVIEW_WINDOWS.md):
+**96/100 = 9.6/10 PASS**, zero confirmed unresolved critical defects in this bounded
+B development slice. Physical/resource/model/release qualification remains separate.
+
+| Executed check | Actual result | Receipt under `artifacts/qa/research-projects/` |
+|---|---|---|
+| Windows push 39301163143 / PR 39301178509 | Both jobs successful; each positive and negative verification step successful | `windows-final-code-{push,pr}-jobs.json`; independent `windows-final-{push,pr}-job.json` |
+| Actual Windows TRX-derived annotations | 493 total; 492 executed/passed; zero failed; one NotExecuted (unsupported-platform assertion) | `windows-final-code-push-annotations.json`, `layout-annotations-pr.json`; independent final annotations |
+| Named native integration methods | Real project worker routing plus all three A file/lease/link cases Passed | Same annotations; exact method identities, not inferred counters |
+| Actual WPF project control smoke | Completed True; all 21 checkpoints passed, including minimum-size control bounds and closing/reopening/cancelling the original job | Same annotations; JSON/proposal and active-job service fixtures explicitly identified in the guide |
+| Final Release cross-build, Linux SDK10.0.401 | Zero warnings/errors, exit0 | `build-layout-final.log` |
+| New Linux project cases | 51 passed, zero failed, one Windows-only skip, 52 total | `research-projects-layout-fix.trx`, `tests-layout-fix.log` |
+| Independent Linux project cases | 40 passed, zero failed, one Windows-only skip, 41 total | `independent/layout-independent.trx`, `.log` |
+| Architecture | 11/11, root and independent execution | `architecture.log`, `independent/architecture-repaired.log` |
+| Prior-A Linux regression | 40 passed, three native skips, 43 total | `trusted-action-regression.trx` |
+| Production Python ML | 6+16+7+19 existing cases plus one real two-project subprocess case =49 passed | `ml-{author,data,pipeline,engine}.log`, `python-projects-final.log`; independent production worker log |
+
+Detailed blob logs/TRX still cannot be downloaded under the cloud destination policy.
+The counts, selected native method outcomes and 21 UI checkpoint outcomes above are
+actual bounded observations published by the tested, additive CI reporter and fetched
+through supported check annotations. Required gate status is separately confirmed
+from run/job metadata. No DataRow values, error messages, stack/stdout, private paths
+or dataset contents are published. The reporter does not override gate conclusions.
+Native worker routing uses a real owned stdlib fixture; scientific isolation uses the
+actual Python worker and installed pinned Linux stack. Neither qualifies physical
+input/accessibility, model inference/coexistence or broader crash/resource behavior.
+
+### Earlier research-project development receipts (preserved)
+
+The following records describe their earlier checkpoints; pending/failure statements
+here are historical. The final evidence above supersedes their qualification status
+without changing or deleting any original measurement or failed review.
+
+
+
+Base `376c3206a38fa86b1639e5f72c6a67cc57153cb4`; branch `feature/research-projects`.
+The [project guide](docs/RESEARCH_PROJECTS.md) documents the observable workflow and
+the independently [frozen criteria](docs/qa/RESEARCH_PROJECTS_PROTOCOL.md) cover only
+this bounded increment. Candidate verification is in progress, not yet a phase exit.
+The [initial independent review](docs/qa/RESEARCH_PROJECTS_REVIEW_INITIAL.md) is
+**8.6/10, FAIL / incomplete phase exit** for missing actual native evidence;
+the numerical threshold alone does not establish phase approval.
+
+Receipts under `artifacts/qa/research-projects/`:
+
+- `build-candidate.log`: serialized Release cross-build, SDK10.0.401/Linux,
+  `EnableWindowsTargeting=true`, zero warnings/errors. A prior overlapping developer/
+  reviewer build failed because intermediate DLLs were being regenerated; its
+  `build-native-smoke.log` is retained and final builds are serialized.
+- `python-projects-first.log`: initial test fixture incorrectly expected exit1 for
+  a declared worker error; main's protocol exits0 with `ok:false`. Corrected the
+  assertion without changing the worker or adopting PR #1's transport changes.
+- `python-projects-final.log`: real production-worker subprocess test passes actual
+  train/list/describe/export isolation, cross-project retrieval denial and unchanged
+  source data. No mocked model computation is substituted for that check.
+- `research-projects-author.trx`, `tests-author.log`: 51 new project cases,
+  **50 passed / 0 failed / 1 Windows-only process skip** on Linux. Independent
+  reproduction is 39 passed / 1 native skip of its 40 cases; receipt
+  `independent/checkpoint-independent.trx`. Name/surrogate fixture corrections and
+  earlier discovery/build overlap receipts remain retained there.
+- `architecture.log`: 11/11; `trusted-action-regression.trx`: 40 passed / 3 explicit
+  native skips of 43 prior-A cases. Existing worker suites (`ml-author.log`,
+  `ml-data.log`, `ml-pipeline.log`, `ml-engine.log`) pass 6+16+7+19=48 tests;
+  with the new production-worker case, 49 actual Python tests pass.
+
+Subsequent repair receipts: `build-diagnostics.log` is zero warnings/errors;
+`research-projects-reopen.trx` is **51 passed / 1 native skip of 52**. Independent
+review found and documented the close-view/reopen-active-job regression after the
+initial checkpoint; `Current`/App resume and native cancel-control diagnostics now
+cover the repaired invariant. A nonportable expected test path was also canonicalized.
+The old `9ed4f51` push run 39298675100 failed the positive step; negative was skipped.
+Its aggregate exit1 annotation is preserved in `first-windows-annotations.json`;
+precise test failure attribution remains unconfirmed because blob downloads fail.
+
+`scripts/write-verification-summary.ps1` is an additive always-run diagnostic step,
+without changing the required gates. A real-TRX local harness verified actual counts,
+class/method-only output (synthetic private DataRow sentinel absent), fixed smoke
+labels, DTD rejection and explicit missing evidence; `summary-real-trx.md` is retained.
+XML is limited to 8 MiB, smoke receipts to 8 KiB, individual method/checkpoint lists
+and total summary characters are bounded. No errors/stack/stdout or private fixtures
+are published. Native evidence/re-review of the repaired source is still pending.
+
+Actual `72206a0` Windows annotation (`diagnostic-annotations-push.json`, run
+39300426711, job118223866106) reports **493 total / 492 passed / 0 failed /
+1 NotExecuted**. The sole skip is the Linux-only unsupported-platform assertion.
+The real Windows research-worker routing test and all three text file/lease/link
+integration methods explicitly **Passed**. Overall positive verification still
+**failed**, and negative verification was skipped, because the native research smoke
+failed `minimum layout actions` after its first four checkpoints. Preserve this
+failed measurement; unit success is not a gate pass.
+
+The smoke now shows a nonactivated transparent picker at its actual minimum size
+and awaits dispatcher layout rather than measuring an unshown Window. Picker/Lab
+initialization share a Task so Loaded and explicit awaits cannot race. Proposal
+checks await the two initial metadata jobs and prove no additional job is admitted
+by planning. Minimum button size and within-window assertions and the 15s gate are
+retained. A single escaped bounded notice annotation exposes the same redacted
+facts through the supported checks API when summary pages/downloads are unavailable.
+The local summary harness's failure receipt is synthetic; it claims no native run.
+
+The ordinary Windows `--smoke` path now also creates project picker/Lab HWNDs and
+exercises real catalog/session controls, exact identity/storage preview, proposal
+without execution, fresh view state, stale-project denial and production missing-
+runtime recovery. Its model JSON is an explicit fixture, not installed-model
+inference qualification. A Windows-only real owned-worker routing test reports an
+honest skip when its native/interpreter prerequisites are missing. Native execution,
+physical interaction/accessibility and detailed conditional outcomes must be reported
+from actual evidence; existing Linux failures/history below remain unchanged.
+
 ## Approved text inspection — 2026-10-19
 
 The new panel, contracts and native adapter are described in

@@ -15,6 +15,7 @@
     <Grid Margin="18">
         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
         <DockPanel>
+            <Button x:Name="ChangeProjectButton" Content="Change project…" Click="ChangeProject_Click" DockPanel.Dock="Right" AutomationProperties.Name="Change research project"/>
             <Button Content="Refresh saved work" Click="Refresh_Click" DockPanel.Dock="Right"/>
             <StackPanel><TextBlock Text="Machine Learning Lab" FontSize="23" FontWeight="SemiBold"/><TextBlock Text="Local datasets · Reproducible experiments · Explicit execution" Margin="0,4,0,8"/></StackPanel>
         </DockPanel>

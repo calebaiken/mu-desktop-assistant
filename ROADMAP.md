@@ -1,5 +1,12 @@
 # Implementation roadmap
 
+**Research-project increment (2026-10-19):** explicit creation/selection, stable
+identity, isolated existing Lab artifacts and serialized project admission pass the
+native development gates and independent 9.6/10 review on `c8da7e5`. This is stacked
+on the first A slice, with no PR #1 merge or scientific algorithm duplication. Add an explicit
+Chat-to-project request handoff reusing the Lab's captured dataset/reviewed Run, then
+approved SQLite memory. Existing model/resource and physical release gates remain.
+
 This is a staged delivery plan, not a list of completed capabilities. **Phase 0 passed
 at 9.4/10; Phase 1 independently passed at 9.0/10; Phase 2 development passed at 8.7/10.** Every phase gets an independent QA report;
 none advances with a score of 8.5 or lower. Cross-cutting security is designed now,

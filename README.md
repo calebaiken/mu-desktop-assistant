@@ -2,6 +2,15 @@
 
 A Windows-first personal AI companion built in C#/.NET 10 and WPF.
 
+**Research projects (2026-10-19 bounded increment).** ML Lab first asks you to create/select
+a local project and review its identity/storage. Change project opens a fresh Lab
+view, with existing history/artifacts isolated by project; original default-project
+work stays in place. Jobs block switching, and uncertain cleanup blocks another
+service, while the active project's view can reopen and cancel its jobs. Both Windows
+gates pass on `c8da7e5`; independent development QA passes at 9.6/10. Physical/model/
+resource and release qualification remain separate. See
+[research project workflow and limits](docs/RESEARCH_PROJECTS.md).
+
 **Approved text inspection (2026-10-19, bounded increment).** More → Inspect text file opens
 a separate read-only panel: enable, select one `.txt`/`.md`, review its exact target,
 then approve one bounded read. Text is literal and never automatically enters Chat

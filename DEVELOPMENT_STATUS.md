@@ -1,6 +1,62 @@
 # Development status
 
-## Current increment — approved text inspection (2026-10-19)
+## Current increment — explicit research projects (2026-10-19)
+
+[Draft stacked PR #3](https://github.com/calebaiken/mu-desktop-assistant/pull/3), branch
+`feature/research-projects`, is based on PR #2's
+`376c3206a38fa86b1639e5f72c6a67cc57153cb4`; main remains `7fe3305`.
+Reviewed executable code: **`c8da7e5664faec3f8d5430bec0ab018aa8512f42`**.
+This is a bounded Module B project-selection increment with I's admission/recovery
+verification, not completion of all selected modules.
+
+Workflow: ML Lab → explicitly create/select a project → review identity/storage →
+choose/inspect a dataset → use existing configuration or Propose/Run reviewed plan.
+Change project opens a fresh isolated view after work settles and cleanup is
+confirmed. Closing/reopening the active project retains its jobs/cancel controls.
+Legacy default-project artifacts stay selectable in place. No Chat content transfer,
+memory, model profile or new scientific algorithm is introduced. See
+[workflow, storage and safety boundaries](docs/RESEARCH_PROJECTS.md).
+
+Actual verification:
+
+- Both exact-code Windows runs
+  [39301163143](https://github.com/calebaiken/mu-desktop-assistant/actions/runs/39301163143)
+  and [39301178509](https://github.com/calebaiken/mu-desktop-assistant/actions/runs/39301178509)
+  succeeded, each with both required positive/negative scripts.
+- Bounded TRX-derived annotations report **493 total, 492 passed, 0 failed,
+  1 expected unsupported-platform skip**. Real research-worker routing and all
+  three A file/lease/link methods explicitly Passed. **21 native UI checkpoints**
+  pass, including actual minimum layout and reopened-job cancellation.
+- Linux: strict cross-build zero warnings/errors; architecture 11/11; project cases
+  **51 passed / 1 native skip of 52**; independent subset **40 passed / 1 native skip
+  of 41**; prior-A regression 40 passed / 3 native skips of 43.
+- **49 Python tests passed**: 48 existing ML cases plus a real production-worker
+  subprocess case proving train/list/describe/export isolation, cross-project
+  denial and unchanged source. The latter was independently reproduced.
+- Independent [final review](docs/qa/RESEARCH_PROJECTS_REVIEW_WINDOWS.md):
+  **96/100 = 9.6/10 PASS** for this bounded development slice, zero confirmed
+  unresolved critical defects, against the independently frozen 50 criteria.
+
+Historical failures stay preserved in
+[the initial review/addenda](docs/qa/RESEARCH_PROJECTS_REVIEW_INITIAL.md) and Testing:
+8.6/10 was explicitly an incomplete phase exit; review then found and repaired the
+active-job reopen regression. Initial Windows `9ed4f51` failed without detailed
+attribution; `72206a0` had 492 passing tests but failed minimum-layout smoke. The
+repair measures a shown transparent native picker, shares initialization Tasks and
+separates startup metadata jobs from proposal admission; no assertion, 15s gate,
+resource threshold or required verification command was relaxed. Additive bounded
+CI summaries/annotations publish method/checkpoint outcomes without private content.
+
+Remaining qualification: physical keyboard/accessibility, broader redirect/volume/
+hostile-swap and forced-crash/low-memory matrices, native blocked-retirement latency,
+existing resource/model and release gates. Last selection is session-only; projects
+persist but restart deliberately returns to explicit selection. The trusted profile
+boundary is not protection against arbitrary same-user filesystem modification.
+Next: approved Chat-to-selected-project handoff reusing captured datasets/reviewed
+Run, then approved SQLite project memory and separately qualified model profiles.
+PR #1 stays separate; D/E/F/H remain outside scope.
+
+## Prior increment — approved text inspection (2026-10-19)
 
 Source base: `main` at `7fe3305b49f755a94d65362692e783ef0e60035a`, clean checkout;
 branch `feature/trusted-text-inspection`. Selected modules are A, B, C, G, I.
