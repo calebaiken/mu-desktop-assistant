@@ -79,6 +79,11 @@ if (Test-Path -LiteralPath $smokeRoot -PathType Container) {
             if ($smoke.completed -isnot [bool]) { throw 'Invalid smoke completion.' }
             $label = if ($receiptName -eq 'chat-project-handoff-smoke.json') { 'Chat handoff' } else { 'Research' }
             $lines.Add($label + ' native control smoke completed: ' + $smoke.completed)
+            if ($receiptName -eq 'chat-project-handoff-smoke.json' -and $null -ne $smoke.elapsedMilliseconds) {
+                if ($smoke.elapsedMilliseconds -isnot [long] -and $smoke.elapsedMilliseconds -isnot [int]) { throw 'Invalid smoke duration.' }
+                if ($smoke.elapsedMilliseconds -lt 0 -or $smoke.elapsedMilliseconds -gt 60000) { throw 'Invalid smoke duration.' }
+                $lines.Add('Handoff smoke elapsed milliseconds: ' + $smoke.elapsedMilliseconds)
+            }
             foreach ($field in @('failedCheck', 'failureType')) {
                 $value = $smoke.$field
                 if ($null -ne $value) {

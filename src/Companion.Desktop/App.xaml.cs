@@ -366,6 +366,7 @@ public partial class App : System.Windows.Application
     private void OnUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
         e.Handled = true;
+        if (options?.Smoke == true) recordHandoffSmokeFailure?.Invoke(e.Exception.GetType().Name);
         if (options is { IsTestSession: false })
             MessageBox.Show("An unexpected error occurred. The companion will close; saved settings are preserved.", "Desktop Companion");
         _ = StopAsync(1);

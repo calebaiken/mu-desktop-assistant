@@ -111,8 +111,8 @@ public partial class App
             ResearchHandoffWindow? preview = null;
             using var cancelled = cancellationToken.Register(() => Dispatcher.BeginInvoke(new Action(() =>
             {
-                preview?.Close();
-                picker.Close();
+                if (preview is { IsVisible: true }) preview.Close();
+                if (picker.IsVisible) picker.Close();
             })));
             if (researchProjectsWindow.ShowDialog() != true || researchProjectsWindow.SelectedProjectId is not { } id) return false;
             cancellationToken.ThrowIfCancellationRequested();

@@ -25,7 +25,21 @@ the negative gate was skipped. Receipts: `windows-initial-{push,pr}-{jobs,annota
 The next repair establishes the smoke-only companion owner's HWND before creating
 its owned Chat, moves setup into failure reporting, and writes fixed-label progress
 receipts. Owner setup is a source-based failure hypothesis until rerun; the 15 s
-smoke threshold is unchanged. Final supported Windows gates/native smoke and
+smoke threshold is unchanged.
+
+Repair `40d4021` push [39306220091](https://github.com/calebaiken/mu-desktop-assistant/actions/runs/39306220091)
+and PR [39306227684](https://github.com/calebaiken/mu-desktop-assistant/actions/runs/39306227684)
+again passed all 524 executed C# tests (one platform NotExecuted) but failed positive
+smoke; negative was skipped. Incremental native evidence confirms the owner HWND,
+minimum Chat/preview bounds, real confirmation, zero worker/artifact handoff,
+dataset reuse, Cancel and stale destination refusal: 14 distinct markers. It stops
+before completion at the subsequent owner-close case without a caught failure type;
+this is **not** a complete native pass. Next diagnostics restrict queued cancellation
+to live original dialogs, record safe dispatcher failure type and numeric elapsed
+time, and mark owner-close entry/return. No gate, timeout or assertion is relaxed.
+Receipts: `windows-owner-push-{jobs,annotations}.json`.
+
+Final supported Windows gates/native smoke and
 independent acceptance remain pending. No Linux WPF execution
 or installed-model inference is claimed. New smoke drives the actual App handler
 through native Chat/picker/preview/Lab, with fixed public fixtures and zero-worker

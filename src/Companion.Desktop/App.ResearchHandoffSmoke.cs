@@ -16,13 +16,17 @@ public partial class App
 {
     // Runs only in the existing --smoke path. Real App routing and native windows;
     // public fixture text, unavailable runtime, and declared model ports (no inference claim).
+    private Action<string>? recordHandoffSmokeFailure;
+
     private async Task RunResearchHandoffSmokeAsync(string directory)
     {
+        var smokeWatch = Stopwatch.StartNew();
         var passed = new List<string>();
         string? failedCheck = null, failureType = null;
         var completed = false;
         void Receipt() => File.WriteAllText(Path.Combine(directory, "chat-project-handoff-smoke.json"),
-            JsonSerializer.Serialize(new { completed, failedCheck, failureType, passed }));
+            JsonSerializer.Serialize(new { completed, failedCheck, failureType, elapsedMilliseconds = smokeWatch.ElapsedMilliseconds, passed }));
+        recordHandoffSmokeFailure = type => { failureType = type; Receipt(); };
         Receipt(); // Progress survives a hard smoke timeout; fixed public labels only.
         void Check(bool condition, string name)
         {
@@ -81,7 +85,12 @@ public partial class App
             Check(mlLabWindow is null, "closed destination cannot receive late confirmation");
             await DriveAsync(b.Id, preview => preview.Close());
             Check(mlLabWindow is null && researchWorkspace.Current?.Project.Id == b.Id && !Directory.Exists(b.Directory), "dismissed transfer never borrows another project dataset");
-            await DriveAsync(b.Id, preview => chat.Close());
+            await DriveAsync(b.Id, preview =>
+            {
+                Check(true, "closing Chat from real preview started");
+                chat.Close();
+                Check(true, "closing Chat from real preview returned");
+            });
             Check(mlLabWindow is null && researchWorkspace.Current?.Service.Jobs.Count == 0, "closing Chat during real preview cancels without delivery");
             chatWindow = null;
             chat = new ChatWindow(_ => throw new InvalidOperationException(), new InMemoryConversationStore())
@@ -109,6 +118,7 @@ public partial class App
             if (researchWorkspace is not null) await researchWorkspace.DisposeAsync();
             researchWorkspace = null; researchProjects = null;
             Receipt();
+            recordHandoffSmokeFailure = null;
         }
 
         async Task DriveAsync(Guid id, Action<ResearchHandoffWindow> finish)
