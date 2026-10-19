@@ -75,13 +75,13 @@ arbitrary malicious code already executing as the same Windows user or a kernel 
 
 Run `scripts/verify.ps1` then `scripts/verify-negative.ps1` as required by AGENTS.md on
 Windows 11 x64. The ordinary composed `--smoke` now also instantiates the actual WPF
-inspection controls with the production Windows reader and an isolated public fixture:
+inspection controls/native HWND with the production Windows reader and an isolated public fixture:
 default deny → enable → metadata-only preview → approved literal result → no UI
 replay → disable/clear → released file lease. It bypasses the native file-picker
 dialog only to supply that fixture; it is not physical input/accessibility evidence.
 
 `TextInspectionTests` includes real FileStream decoding, limits, malformed text and
-Windows-gated real pipeline/audit/reparse tests. `IndependentTrustedActionTests`
+Windows-gated real pipeline/audit/reparse/ancestor-rename tests. `IndependentTrustedActionTests`
 owns separate replay/race/expiry/failure probes. The three Windows-only tests skip on
 Linux, and symbolic-link fixture creation additionally requires Developer Mode or
 the Windows symlink privilege. A skip is not a successful native check.

@@ -1,5 +1,6 @@
 using System.IO;
 using System.Text;
+using System.Windows.Interop;
 using Companion.Application.Diagnostics;
 using Companion.Application.Tools;
 using Companion.Infrastructure.Tools;
@@ -18,6 +19,7 @@ internal static class TextInspectionSmokeChecks
         var window = new TextInspectionWindow(workflow) { ShowActivated = false, ShowInTaskbar = false };
         try
         {
+            Require(new WindowInteropHelper(window).EnsureHandle() != IntPtr.Zero, "native inspection window");
             window.Measure(new System.Windows.Size(700, 600));
             window.Arrange(new System.Windows.Rect(0, 0, 700, 600));
             Require(!window.SelectFile.IsEnabled && !window.ApproveOnce.IsEnabled, "disabled by default");
