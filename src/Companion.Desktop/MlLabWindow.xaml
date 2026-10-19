@@ -16,6 +16,7 @@
         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
         <DockPanel>
             <Button x:Name="ChangeProjectButton" Content="Change project…" Click="ChangeProject_Click" DockPanel.Dock="Right" AutomationProperties.Name="Change research project"/>
+            <Button x:Name="LoadToolsButton" Content="Load Lab tools" Click="LoadTools_Click" DockPanel.Dock="Right" Visibility="Collapsed"/>
             <Button Content="Refresh saved work" Click="Refresh_Click" DockPanel.Dock="Right"/>
             <StackPanel><TextBlock Text="Machine Learning Lab" FontSize="23" FontWeight="SemiBold"/><TextBlock Text="Local datasets · Reproducible experiments · Explicit execution" Margin="0,4,0,8"/></StackPanel>
         </DockPanel>
@@ -126,6 +127,7 @@
                 <Grid Margin="14"><Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                   <ScrollViewer x:Name="AssistantScroll" VerticalScrollBarVisibility="Auto"><StackPanel>
                     <TextBlock Text="Describe an experiment. Mu uses the local language model to propose a supported action. Review the typed plan before running it. This Lab workspace and its artifacts are saved independently of temporary chats." TextWrapping="Wrap" Margin="0,0,0,8"/>
+                    <TextBlock x:Name="TransferredRequestLabel" TextWrapping="Wrap" Margin="0,0,0,8" AutomationProperties.LiveSetting="Polite"/>
                     <Label Content="Request" Target="{Binding ElementName=AssistantRequest}"/>
                     <TextBox x:Name="AssistantRequest" MaxLength="2000" Height="84" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" AutomationProperties.Name="Machine learning assistant request"/>
                     <WrapPanel Margin="0,8,0,4"><ComboBox x:Name="AssistantMode" Width="130" AutomationProperties.Name="Assistant explanation mode"/><Button x:Name="AnalyzeTaskButton" Content="Analyze task with LAYA" Click="AnalyzeTask_Click"/><Button x:Name="ProposeButton" Content="Propose a plan" Click="Propose_Click"/><Button x:Name="CancelPlanButton" Content="Stop planning" Click="CancelPlan_Click" IsEnabled="False"/></WrapPanel>

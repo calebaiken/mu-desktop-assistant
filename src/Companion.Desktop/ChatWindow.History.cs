@@ -20,13 +20,14 @@ public partial class ChatWindow
     internal bool IsTemporary { get; private set; } = true;
     internal ConversationSnapshot? CurrentConversation => conversation;
     private bool HasPendingSave => pendingCompletion is not null;
-    private bool CanSend => !stopping && activeTurn is null && !historyBusy && !HasPendingSave;
+    private bool CanSend => !stopping && researchTransfer is null && activeTurn is null && !historyBusy && !HasPendingSave;
 
     private void InitializeHistory(IConversationStore? savedStore)
     {
         savedConversations = savedStore;
         SavedModeButton.IsEnabled = savedStore is not null;
         UpdateHistoryPresentation();
+        UpdateResearchControls();
     }
 
     private async Task<IReadOnlyList<ChatMessage>> PrepareHistoryTurnAsync(string prompt, CancellationToken token)
@@ -310,6 +311,7 @@ public partial class ChatWindow
         RetryButton.IsEnabled = available;
         SendButton.IsEnabled = available && CanSend && !string.IsNullOrWhiteSpace(MessageInput.Text);
         UpdateSpeechControls();
+        UpdateResearchControls();
     }
 
     private void ShutdownHistory()

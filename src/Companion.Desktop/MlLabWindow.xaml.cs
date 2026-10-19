@@ -32,14 +32,18 @@ public partial class MlLabWindow : Window
     private bool closed;
     private bool busy;
     private Task? initialization;
+    private readonly Guid? projectId;
+    private readonly bool deferInitialization;
 
     public MlLabWindow(IMlLabService service, Func<CancellationToken, Task<IChatModel>>? modelFactory = null,
-        ILayaDecisionService? laya = null, ResearchProject? project = null)
+        ILayaDecisionService? laya = null, ResearchProject? project = null, bool deferInitialization = false)
     {
         ArgumentNullException.ThrowIfNull(service);
         this.service = service;
         this.modelFactory = modelFactory;
         this.laya = laya;
+        projectId = project?.Id;
+        this.deferInitialization = deferInitialization;
         InitializeComponent();
         ProjectLabel.Text = project is null ? $"Project: {service.ProjectDirectory}" : $"Project: {project.Name} · {(project.IsLegacy ? "legacy" : project.Id.ToString("N"))}\n{service.ProjectDirectory}";
         ChangeProjectButton.Visibility = project is null ? Visibility.Collapsed : Visibility.Visible;
@@ -59,6 +63,10 @@ public partial class MlLabWindow : Window
         if (modelFactory is null) ProposalText.Text = "Local conversational planning is unavailable. The dataset and experiment controls remain available.";
         service.JobChanged += OnJobChanged;
         foreach (var job in service.Jobs) UpdateJob(job);
+        LoadToolsButton.Visibility = deferInitialization ? Visibility.Visible : Visibility.Collapsed;
+        foreach (var input in new[] { AssistantRequest, DatasetPath, DatasetKey, StartRow, RowLimit, MemoryLimit, ThreadLimit })
+            input.TextChanged += (_, _) => InvalidateProposal();
+        AssistantMode.SelectionChanged += (_, _) => InvalidateProposal();
         Loaded += OnLoaded;
         Closed += OnClosed;
     }
@@ -70,12 +78,15 @@ public partial class MlLabWindow : Window
     internal IReadOnlyList<string> SelectedFeatures => features.Where(feature => feature.Use).Select(feature => feature.Name).ToArray();
 
     private async void OnLoaded(object sender, RoutedEventArgs e)
-        => await InitializeAsync();
+    { if (!deferInitialization) await InitializeAsync(); }
+
+    private async void LoadTools_Click(object sender, RoutedEventArgs e) => await InitializeAsync();
 
     internal Task InitializeAsync() => initialization ??= InitializeCoreAsync();
 
     private async Task InitializeCoreAsync()
     {
+        LoadToolsButton.Visibility = Visibility.Collapsed;
         await ExecuteActionAsync(new MlCapabilities());
         if (!closed) await ExecuteActionAsync(new MlList());
     }
@@ -83,12 +94,13 @@ public partial class MlLabWindow : Window
     private void OnClosed(object? sender, EventArgs e)
     {
         closed = true;
-        planning?.Cancel();
+        InvalidateProposal();
+        AssistantRequest.Clear();
         service.JobChanged -= OnJobChanged;
         PlotImage.Source = null;
     }
 
-    public void BeginShutdown() => planning?.Cancel();
+    public void BeginShutdown() => InvalidateProposal();
 
     private void OnJobChanged(MlJobUpdate update)
     {
@@ -129,6 +141,7 @@ public partial class MlLabWindow : Window
             limits.Validate();
         }
         catch (ArgumentException exception) { StatusLabel.Text = exception.Message; return null; }
+        InvalidateProposal();
         SetBusy(true);
         StatusLabel.Text = $"{action.Operation}: waiting for the local worker…";
         try

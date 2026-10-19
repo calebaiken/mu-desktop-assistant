@@ -38,7 +38,7 @@ public partial class App
 
     private void OpenMlLab()
     {
-        if (stopping || companion is null || options is null || options.IsTestSession) return;
+        if (stopping || companion is null || options is null || options.IsTestSession || selectingResearchProject) return;
         if (mlLabWindow is not null)
         { mlLabWindow.Show(); mlLabWindow.WindowState = WindowState.Normal; mlLabWindow.Activate(); return; }
         if (researchWorkspace?.Current is { } active)
@@ -92,9 +92,74 @@ public partial class App
         }
     }
 
-    private void ShowResearchLab(ResearchLabSelection selection)
+    private ResearchHandoffWindow? researchHandoffWindow;
+
+    private async Task<bool> TransferChatRequestAsync(ChatWindow source, string request, CancellationToken cancellationToken)
     {
-        if (stopping || options is null || companion is null) return;
+        if (stopping || options is null || !ReferenceEquals(chatWindow, source) || source.IsTemporary || selectingResearchProject)
+            return false;
+        ResearchRequestHandoff.ValidateRequest(request);
+        if (researchWorkspace?.IsBusy == true || mlLabWindow is { CanAcceptResearchRequest: false })
+            throw new MlException("project_busy", "Wait for Lab work or planning to finish before transferring a request.");
+        selectingResearchProject = true;
+        try
+        {
+            researchProjects ??= new JsonResearchProjectStore(options.DataDirectory);
+            researchWorkspace ??= new(researchProjects, project => CreateMlLabService(project.Directory));
+            var picker = new ResearchProjectsWindow(researchProjects) { Owner = source };
+            researchProjectsWindow = picker;
+            ResearchHandoffWindow? preview = null;
+            void CancelDialogs()
+            {
+                // On Chat.Closing, unwind the modal before WPF tears down its owner.
+                // References belong only to this transfer; late cancellation cannot close a later dialog.
+                if (preview is { IsVisible: true }) preview.DialogResult = false;
+                if (picker.IsVisible) picker.DialogResult = false;
+            }
+            using var cancelled = cancellationToken.Register(() =>
+            {
+                if (Dispatcher.CheckAccess()) CancelDialogs();
+                else if (!Dispatcher.HasShutdownStarted) Dispatcher.BeginInvoke(new Action(CancelDialogs));
+            });
+            cancellationToken.ThrowIfCancellationRequested();
+            if (picker.ShowDialog() != true || picker.SelectedProjectId is not { } id) return false;
+            cancellationToken.ThrowIfCancellationRequested();
+            var selection = await researchWorkspace.OpenAsync(id, cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+            if (stopping || !ReferenceEquals(chatWindow, source)) return false;
+            // The existing picker explicitly changes the active project. Old views
+            // are retired even if the subsequent request preview is cancelled.
+            if (mlLabWindow is { } previous && !previous.IsBoundTo(selection)) previous.Close();
+            var intendedView = mlLabWindow;
+            if (intendedView is { CanAcceptResearchRequest: false }) return false;
+            using var handoff = researchWorkspace.PrepareHandoff(id, request, source.IsTemporary);
+            preview = new(handoff) { Owner = source };
+            researchHandoffWindow = preview;
+            cancellationToken.ThrowIfCancellationRequested();
+            if (preview.ShowDialog() != true) return false;
+            cancellationToken.ThrowIfCancellationRequested();
+            if (stopping || !ReferenceEquals(chatWindow, source) || !ReferenceEquals(mlLabWindow, intendedView)) return false;
+            var view = intendedView ?? CreateResearchLab(selection, deferInitialization: true);
+            try { researchWorkspace.AcceptHandoff(handoff, exact => view.AcceptResearchRequest(id, exact), cancellationToken); }
+            catch { if (intendedView is null) view.Close(); throw; }
+            view.Show();
+            view.WindowState = WindowState.Normal;
+            view.Activate();
+            return true;
+        }
+        finally
+        {
+            researchHandoffWindow = null;
+            researchProjectsWindow = null;
+            selectingResearchProject = false;
+        }
+    }
+
+    private void ShowResearchLab(ResearchLabSelection selection) => CreateResearchLab(selection).Show();
+
+    private MlLabWindow CreateResearchLab(ResearchLabSelection selection, bool deferInitialization = false)
+    {
+        if (stopping || options is null || companion is null) throw new OperationCanceledException();
         layaService ??= CreateLayaService();
         if (mlPlannerHost is null && options.LocalModelDirectory is { } modelDirectory)
         {
@@ -102,10 +167,10 @@ public partial class App
             catch (Exception error) when (error is IOException or UnauthorizedAccessException or ArgumentException) { }
         }
         Func<CancellationToken, Task<IChatModel>>? planner = mlPlannerHost is null ? null : token => mlPlannerHost.GetModelAsync(token);
-        mlLabWindow = new MlLabWindow(selection.Service, planner, layaService, selection.Project) { Owner = companion };
+        mlLabWindow = new MlLabWindow(selection.Service, planner, layaService, selection.Project, deferInitialization) { Owner = companion };
         var window = mlLabWindow;
         window.Closed += (_, _) => { if (ReferenceEquals(mlLabWindow, window)) mlLabWindow = null; };
         window.ChangeProjectRequested += (_, _) => _ = SelectResearchProjectAsync();
-        window.Show();
+        return window;
     }
 }

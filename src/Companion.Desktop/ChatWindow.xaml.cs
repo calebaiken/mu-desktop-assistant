@@ -38,6 +38,7 @@ public partial class ChatWindow : Window
             catch (Win32Exception) { StatusLabel.Text = "The display changed. You can move this chat window using its title bar."; }
             MessageInput.Focus();
         };
+        Closing += (_, _) => BeginShutdown();
         Closed += (_, _) => BeginShutdown();
     }
 
@@ -193,6 +194,8 @@ public partial class ChatWindow : Window
         SendButton.IsEnabled = false;
         StopButton.IsEnabled = false;
         activeTurn?.Cancel();
+        researchTransfer?.Cancel();
+        ResearchHandoff = null;
         SetGenerating(false);
         history.Clear();
         transcript.Clear();
@@ -280,6 +283,7 @@ public partial class ChatWindow : Window
     {
         if (SendButton is not null)
             SendButton.IsEnabled = CanSend && !string.IsNullOrWhiteSpace(MessageInput.Text);
+        UpdateResearchControls();
     }
 
     private void NewConversation_Click(object sender, RoutedEventArgs e)

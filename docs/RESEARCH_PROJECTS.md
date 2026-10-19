@@ -1,3 +1,7 @@
+> The subsequent [explicit Chat-to-Research handoff](CHAT_PROJECT_HANDOFF.md) adds
+> a separately confirmed Saved Chat draft transfer. Project selection itself still
+> transfers no chat and grants no worker execution authority.
+
 # Local research projects — first Module B increment
 
 Normal navigation: **More / Chat / tray → ML Lab → create or select a research

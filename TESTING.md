@@ -1,5 +1,105 @@
 # Testing
 
+## Verified Chat-to-Research handoff — 2026-10-19
+
+Reviewed executable checkpoint: **a33401fe7e595bf4fb1148a32aba3b913530df4b**,
+stacked on PR #3 final `7ce7f63`. [Draft PR #4](https://github.com/calebaiken/mu-desktop-assistant/pull/4)
+targets `feature/research-projects`; earlier PRs/main remain unmerged.
+
+| Actually executed | Result | Evidence |
+|---|---|---|
+| Windows push [39307770822](https://github.com/calebaiken/mu-desktop-assistant/actions/runs/39307770822) and PR [39307779749](https://github.com/calebaiken/mu-desktop-assistant/actions/runs/39307779749) | both mandatory positive and negative verification scripts successful in each job | `windows-closing-{push,pr}-jobs.json` |
+| Each Windows TRX-derived receipt | 525 total; 524 executed/passed; zero failed; one NotExecuted (Linux-only unsupported-platform assertion) | `windows-closing-{push,pr}-annotations.json` |
+| Named native process/file cases | all four Passed: real owned project worker routing; consent/file identity/redacted audit; oversized-file refusal; leaf/ancestor link refusal | same annotations |
+| Real App handoff native smoke | completed True; 28 distinct checkpoints; 1,357 ms push / 1,305 ms PR; prior 21 project checkpoints also completed | same annotations; fixed public fixture receipts |
+| Linux strict build / architecture | zero warnings/errors / 11 of 11 | `build-closing-modal.log`, `architecture.log` |
+| Linux handoff/project/text selection | 103 passed, four Windows-only skips, 107 total | `handoff-portable-final.trx` |
+| Independent handoff | 32 of 32 passed | `independent/independent-handoff.trx` |
+| Actual pinned scientific worker and project isolation/export | 49 of 49 passed | `python-relevant.log` |
+
+Artifacts are ignored under `artifacts/qa/chat-project-handoff/`. Windows commands
+actually invoked by the unchanged workflow:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-negative.ps1
+```
+
+The real App handler is driven through native Chat, existing picker, exact preview
+and Confirm/Cancel, then deferred Lab Loaded. Assertions cover Temporary refusal,
+no transfer workers/artifacts/model startup, exact request/project/dataset capture,
+closed destination/Chat, duplicate submission, no dataset before model loading,
+exact typed JSON/limits, fresh proposals invalidated by each path/key/start/rows/
+memory/thread/request edit and mode change, noncooperative model cancellation,
+closed-Lab late callbacks, and explicit Run's first ML admission/missing-runtime
+failure. Dataset/project/admission/replay/corrupt state/shutdown are also exercised
+through independent Application/real-filesystem cases. Final independent QA is **96/100 = 9.6/10 PASS**, zero confirmed unresolved critical
+defects: [criterion-level report](docs/qa/CHAT_PROJECT_HANDOFF_REVIEW_WINDOWS.md).
+The independent reviewer separately fetched both Windows jobs/annotations, ran
+32 handoff cases/11 architecture checks and production Python project isolation
+(1/1, 11.932 s). Historical incomplete reviews/failures below are retained.
+
+These fixtures do not qualify pretrained inference or an installed scientific-runtime
+successful Run through the handoff UI. Physical keyboard/screen-reader use, full
+process-kill/low-memory stress, coexistence and CPU/memory acceptance remain unrun.
+Smoke elapsed time is a test observation, not a full performance qualification.
+
+
+## Earlier Chat-to-Research checkpoints — 2026-10-19
+
+Base `7ce7f639c999c79631e786a7365578773e1da530`, branch
+`feature/chat-project-handoff`. Artifacts: ignored `artifacts/qa/chat-project-handoff/`.
+
+| Actually executed | Result | Receipt |
+|---|---|---|
+| Linux SDK 10.0.401 strict Release Windows-targeted build | zero warnings/errors | `build.log`, `build-smoke.log` |
+| Architecture | 11/11 pass | `architecture.log` |
+| Handoff/project/text regression selection | 107 total: 103 pass, 4 Windows-only skips | `handoff-portable-final.trx`, `portable-final.log` |
+| Independent handoff suite | 32/32 pass | `independent/independent-handoff.trx` |
+| Initial broader planner selection | 96 total: 93 pass, 1 skip, 2 Windows-path-on-Linux fixture failures | `handoff-portable.trx` |
+| Broad Python discovery | 49 total, 21 errors (`SystemRoot` Windows-only protocol prerequisites absent) | `python-project-data.log` |
+| Initial relevant Python invocation | 43 passed, one import error (44 total; author module needs worker import path) | `python-relevant-initial.log` |
+| Corrected relevant Python (author, data, engine, pipeline, production project isolation/export) | 49/49 passed with existing worker import path | `python-relevant.log` |
+| Independent initial QA | 83/100 = 8.3 FAIL/INCOMPLETE pending native evidence | `docs/qa/CHAT_PROJECT_HANDOFF_REVIEW_INITIAL.md` |
+
+Initial Windows source `6954729` runs [39305498979](https://github.com/calebaiken/mu-desktop-assistant/actions/runs/39305498979)
+and [39305528774](https://github.com/calebaiken/mu-desktop-assistant/actions/runs/39305528774)
+failed the positive gate after **524 passed / zero failed / one NotExecuted** (525 total).
+The prior 21 native project checkpoints passed; no handoff receipt was produced;
+the negative gate was skipped. Receipts: `windows-initial-{push,pr}-{jobs,annotations}.json`.
+The next repair establishes the smoke-only companion owner's HWND before creating
+its owned Chat, moves setup into failure reporting, and writes fixed-label progress
+receipts. Owner setup is a source-based failure hypothesis until rerun; the 15 s
+smoke threshold is unchanged.
+
+Repair `40d4021` push [39306220091](https://github.com/calebaiken/mu-desktop-assistant/actions/runs/39306220091)
+and PR [39306227684](https://github.com/calebaiken/mu-desktop-assistant/actions/runs/39306227684)
+again passed all 524 executed C# tests (one platform NotExecuted) but failed positive
+smoke; negative was skipped. Incremental native evidence confirms the owner HWND,
+minimum Chat/preview bounds, real confirmation, zero worker/artifact handoff,
+dataset reuse, Cancel and stale destination refusal: 14 distinct markers. It stops
+before completion at the subsequent owner-close case without a caught failure type;
+this is **not** a complete native pass. Next diagnostics restrict queued cancellation
+to live original dialogs, record safe dispatcher failure type and numeric elapsed
+time, and mark owner-close entry/return. No gate, timeout or assertion is relaxed.
+Receipts: `windows-owner-push-{jobs,annotations}.json`.
+
+Source `737d420` push [39307018772](https://github.com/calebaiken/mu-desktop-assistant/actions/runs/39307018772)
+again passed 524 C# tests with one platform NotExecuted, but positive smoke failed
+and negative was skipped. Sixteen native handoff markers show Chat.Close both
+started and returned at 1,373 ms; the modal transfer did not then complete. This
+rules out accumulated smoke duration at that checkpoint. The next lifecycle fix
+cancels at Chat.Closing before owner teardown, synchronously unwinds the original
+active modal on the UI thread, and checks cancellation before opening either dialog.
+The watchdog remains active until transfer completion. Receipts:
+`windows-cancel-push-{jobs,annotations}.json`. Final supported Windows gates/native
+smoke and independent acceptance remain pending. No Linux WPF execution
+or installed-model inference is claimed. New smoke drives the actual App handler
+through native Chat/picker/preview/Lab, with fixed public fixtures and zero-worker
+assertions. Existing gates remain unchanged; diagnostics read only bounded fixed
+checkpoint labels and TRX method outcomes, never request contents/paths.
+
+
 ## Research projects — final development evidence, 2026-10-19
 
 Reviewed executable source **`c8da7e5664faec3f8d5430bec0ab018aa8512f42`**;

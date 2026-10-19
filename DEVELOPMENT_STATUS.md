@@ -1,6 +1,51 @@
 # Development status
 
-## Current increment — explicit research projects (2026-10-19)
+## Current increment — explicit Chat-to-Research handoff (2026-10-19)
+
+[Draft stacked PR #4](https://github.com/calebaiken/mu-desktop-assistant/pull/4),
+branch `feature/chat-project-handoff`, starts at PR #3's final documented head
+`7ce7f639c999c79631e786a7365578773e1da530` (reviewed executable `c8da7e5`).
+Remote fetch confirmed main `7fe3305`, PR #1 `8c0e119`, PR #2 `376c320` and PR #3
+`7ce7f63`, all earlier PRs open/unmerged. No history was rewritten.
+
+Implemented bounded workflow: Saved Chat draft → explicit project picker → exact request/
+identity preview → Confirm → same project Ask Mu → explicit dataset → Propose →
+Run reviewed plan. Temporary mode refuses transfer. The transfer has no model,
+worker, inspection or experiment side effects. New Lab views defer metadata startup.
+Single-use tickets share workspace admission/retirement locking; proposal edits and
+late callbacks fail closed. See [usage/contracts](docs/CHAT_PROJECT_HANDOFF.md).
+
+Verified executable checkpoint: **`a33401fe7e595bf4fb1148a32aba3b913530df4b`**.
+Both Windows push [39307770822](https://github.com/calebaiken/mu-desktop-assistant/actions/runs/39307770822)
+and PR [39307779749](https://github.com/calebaiken/mu-desktop-assistant/actions/runs/39307779749)
+passed `verify.ps1` and `verify-negative.ps1`. Each reports 525 total C# cases:
+524 executed/passed, zero failed and one expected unsupported-platform NotExecuted.
+Four named native file/project process cases passed. All 21 prior project and 28
+new native handoff checkpoints completed; handoff smoke took 1,357 ms push / 1,305 ms PR.
+
+Linux: strict Release build zero warnings/errors, architecture 11/11; selected
+handoff/project/text cases 103 passed + four Windows-only skips (107 total);
+independent handoff 32/32; relevant production Python/data/pipeline/project suites
+49/49. Earlier Linux fixture/import failures and Windows native failures are
+retained in [Testing](TESTING.md) and the initial independent QA report (8.3 FAIL).
+The owner-close defect was reproduced natively and fixed by cancelling at Closing
+and unwinding the modal before ownership teardown; no deadline/assertion was weakened.
+Independent final QA [review](docs/qa/CHAT_PROJECT_HANDOFF_REVIEW_WINDOWS.md):
+**96/100 = 9.6/10 PASS** for this bounded increment, strictly above 8.5, with zero
+confirmed unresolved critical defects. The initial 8.3 failed/incomplete review
+and subsequent native failure addenda remain unchanged as historical evidence.
+
+Physical keyboard/screen-reader use, qualified pretrained inference after handoff,
+installed ML-runtime successful Run through this UI, model coexistence, CPU/memory
+acceptance and broader process-kill/low-memory stress remain unverified. Current
+native planning uses declared fixtures; its missing-runtime Run is an explicit
+failure test, not scientific computation or inference qualification.
+
+Next: design a separate Module C
+explicitly approved, editable/deletable/disableable project SQLite memory increment.
+No memory, new scientific algorithm, hosted model or agent loop is implemented here.
+
+## Prior increment — explicit research projects (2026-10-19)
 
 [Draft stacked PR #3](https://github.com/calebaiken/mu-desktop-assistant/pull/3), branch
 `feature/research-projects`, is based on PR #2's

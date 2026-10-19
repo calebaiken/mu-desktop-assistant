@@ -1,5 +1,24 @@
 # Changelog
 
+## Unreleased — Explicit Chat-to-Research handoff (2026-10-19, bounded increment)
+
+- Added Saved Chat draft selection, existing project picker, exact request/identity
+  preview and Confirm/Cancel transfer into that project's Ask Mu panel. Temporary
+  Chat explains and refuses transfer; no hidden history or clipboard is included.
+- Transfer does not load models or execute workers. Fresh handoff Lab views defer
+  capabilities/registry loading until explicit Load Lab tools or later user actions.
+- Bound single-use transient transfers to the current project lease/admission revision;
+  cancellation, retirement, closed views and stale callbacks fail closed.
+- Required explicit Lab dataset capture before planning, enforced proposal dataset
+  equality, and invalidated reviewed plans on request/dataset/range/limit edits.
+- Added independent admission/privacy/planner tests and real-App native workflow
+  smoke. On `a33401f`, both mandatory Windows gates pass with 524 executed C#
+  cases, one expected platform skip and all 28 handoff native checkpoints complete.
+  Independent QA passes this bounded increment at 9.6/10 with zero confirmed
+  unresolved critical defects. Earlier failed native checkpoints and the initial
+  incomplete review are retained;
+  installed-model, physical accessibility and resource qualification remain separate.
+
 ## Unreleased — Explicit research projects (2026-10-19, bounded increment)
 
 - Added a project picker to existing ML Lab navigation and Change project control:

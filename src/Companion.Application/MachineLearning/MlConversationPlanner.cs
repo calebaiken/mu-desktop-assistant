@@ -18,8 +18,8 @@ public sealed class MlConversationPlanner(IChatModel model)
         var context = JsonSerializer.Serialize(new { dataset, columns }, MlActionCodec.Json);
         if (context.Length > 5000) throw new ArgumentException("Select fewer features before asking Mu for a plan.");
         var instruction = "You propose exactly one local ML action. Return ONLY JSON: {\"action\":\"train\",\"parameters\":{...},\"reason\":\"brief reason\"}. " +
-            (dataset is null ? "No dataset is selected; a file action requires an explicit local path from the user. " : "File actions use ONLY the current captured selection. To change files, the user must choose the file in the Lab first. ") +
-            "Actions: inspect or browse parameters {selection:\"current\"} for the selected dataset, or {path,key,start,rowLimit} for another file; " +
+            (dataset is null ? "No dataset is selected; file actions are unavailable. Ask the user to choose a file in the Lab. " : "File actions use ONLY the current captured selection. To change files, the user must choose the file in the Lab first. ") +
+            "Actions: inspect or browse parameters {selection:\"current\"} for the selected dataset, and never include a path from the request; " +
             "train parameters {dataset:\"current\",task,algorithm,features,target,scaling,testFraction,seed,split,name}. All training fields are siblings, outside dataset. " +
             "list parameters {}; predict parameters {modelId,dataset}; export or describe parameters {experimentId}; compare parameters {experimentIds}. " +
             "Tasks regression/classification/clustering/reduction/anomaly. Algorithms linear/ridge/logistic/decision_tree/random_forest/extra_trees/gradient_boosting/svr/svc/knn/kmeans/gaussian_mixture/dbscan/pca/isolation_forest/local_outlier_factor. " +
@@ -63,6 +63,13 @@ public sealed class MlConversationPlanner(IChatModel model)
             var parameters = MlProposalSchema.ResolveSelection(operation, root.GetProperty("parameters"), dataset);
             var action = MlActionCodec.Parse(operation, parameters);
             MlValidation.Validate(action, new(MaxRows: 100000));
+            var actionDataset = action switch
+            {
+                MlInspect a => a.Dataset, MlBrowse a => a.Dataset, MlTrain a => a.Dataset,
+                MlPredict a => a.Dataset, _ => null
+            };
+            if (actionDataset is not null && (dataset is null || actionDataset != dataset))
+                throw new ArgumentException("Choose the dataset in the Lab before proposing a file action.");
             var reason = root.GetProperty("reason").GetString();
             if (string.IsNullOrWhiteSpace(reason) || reason.Length > 2000) throw new JsonException();
             return new(action, reason, JsonSerializer.Serialize(new { action = action.Operation, parameters = MlActionCodec.Parameters(action) },

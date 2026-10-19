@@ -64,6 +64,9 @@
                      PreviewKeyDown="MessageInput_PreviewKeyDown" TextChanged="MessageInput_TextChanged"
                      AutomationProperties.AutomationId="ChatMessage"/>
             <TextBlock Text="Enter to send · Shift+Enter for a new line · Up to 2,000 characters" TextWrapping="Wrap" Margin="0,6,0,0"/>
+            <Button x:Name="ResearchHandoffButton" Content="Send to _Research Lab…" Click="ResearchHandoff_Click" IsEnabled="False"
+                    HorizontalAlignment="Left" MinHeight="32" Padding="8,0" Margin="0,6,0,0" AutomationProperties.Name="Send draft to Research Lab"/>
+            <TextBlock x:Name="ResearchHandoffHelp" TextWrapping="Wrap" FontSize="12" Margin="0,4,0,0"/>
             <Expander x:Name="SpeechOptions" Header="Voice options" Margin="0,8,0,0" Expanded="SpeechOptions_Expanded"
                       ToolTip="Choose a local neural voice or an installed Windows voice. Preview a short sample before reading a reply."
                       AutomationProperties.HelpText="Local neural voices are listed when installed. Windows voices remain available where supported. Neural speed spans 0.75 to 1.25 times normal. Voice and speed apply to this chat session.">

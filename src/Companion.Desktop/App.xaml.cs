@@ -97,6 +97,7 @@ public partial class App : System.Windows.Application
                 content.Arrange(new Rect(0, 0, companion.Width, companion.Height));
                 await TextInspectionSmokeChecks.RunAsync(runtime.Log, options.DataDirectory);
                 await ResearchProjectSmokeChecks.RunAsync(options.DataDirectory);
+                await RunResearchHandoffSmokeAsync(options.DataDirectory);
                 await StopAsync(content.DesiredSize.Width > 0 && content.DesiredSize.Height > 0 ? 0 : 1);
                 return;
             }
@@ -291,6 +292,7 @@ public partial class App : System.Windows.Application
             : host.GetModelAsync(token), new SqliteConversationStore(options.DataDirectory), speech) { Owner = companion };
         var window = chatWindow;
         window.MlLabRequested += (_, _) => OpenMlLab();
+        window.ResearchHandoff = (request, token) => TransferChatRequestAsync(window, request, token);
         window.ReplyCompleted += reply =>
         {
             if (!stopping && !window.IsActive && companion.IsVisible)
@@ -364,6 +366,7 @@ public partial class App : System.Windows.Application
     private void OnUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
         e.Handled = true;
+        if (options?.Smoke == true) recordHandoffSmokeFailure?.Invoke(e.Exception.GetType().Name);
         if (options is { IsTestSession: false })
             MessageBox.Show("An unexpected error occurred. The companion will close; saved settings are preserved.", "Desktop Companion");
         _ = StopAsync(1);
@@ -377,6 +380,7 @@ public partial class App : System.Windows.Application
         settingsWindow?.BeginShutdown();
         chatWindow?.BeginShutdown();
         researchProjectsWindow?.Close();
+        researchHandoffWindow?.Close();
         var inspector = textInspectionWindow;
         inspector?.Close();
         if (inspector is not null)

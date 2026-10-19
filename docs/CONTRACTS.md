@@ -1,5 +1,18 @@
 # Application contracts
 
+## Implemented Chat-to-Research transfer increment
+
+`ResearchRequestHandoff` is bounded process-local request data, not action authority.
+`ResearchLabWorkspace.PrepareHandoff(projectId, request, temporary)` captures its
+current idle lease/admission revision. `AcceptHandoff(ticket, deliver, token)` consumes
+once before validating cancellation and destination under the existing lock; its
+trusted synchronous UI-only callback cannot reenter job/project admission. Disposal
+clears request references. Later work or project retirement requires a new review.
+Desktop additionally binds source and destination window lifecycles. The existing
+planner must resolve file actions to the explicitly captured dataset; editable Lab
+inputs cancel/invalidate proposal revisions before reviewed Run. See the full
+[handoff contract](CHAT_PROJECT_HANDOFF.md). No persistence format changes.
+
 ## Implemented research-project increment
 
 `IResearchProjectStore` explicitly creates, lists and resolves a project by ID.

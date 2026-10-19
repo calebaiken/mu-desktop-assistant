@@ -11,7 +11,8 @@ public sealed class ResearchLabWorkspace(IResearchProjectStore projects, Func<Re
     private Lease? current;
     private Task? opening, disposal, cleanup;
     private int active;
-    private bool switching, disposed, poisoned;
+    private long admissionRevision;
+    private bool switching, disposed, poisoned, delivering;
     public bool IsBusy { get { lock (sync) return switching || active != 0; } }
     // Reopening the active project's view is allowed while its jobs run. This
     // grants no project switch and exposes no new service/factory admission.
@@ -19,6 +20,42 @@ public sealed class ResearchLabWorkspace(IResearchProjectStore projects, Func<Re
     {
         get { lock (sync) return !disposed && !poisoned && !switching && current is { } selected ? new(selected.Project, selected) : null; }
     }
+
+    /// <summary>Capture an idle, explicitly selected project. No worker or model is called.</summary>
+    public ResearchRequestHandoff PrepareHandoff(Guid projectId, string request, bool temporary = false)
+    {
+        if (temporary) throw new MlException("temporary_chat", "Research handoff is unavailable in Temporary Chat because the Lab can persist project artifacts.");
+        ResearchRequestHandoff.ValidateRequest(request);
+        lock (sync)
+        {
+            RequireAvailable();
+            if (switching || active != 0) throw Busy();
+            if (current is not { } selected || selected.Project.Id != projectId) throw StaleHandoff();
+            return new(selected.Project, selected, admissionRevision, request);
+        }
+    }
+
+    /// <summary>Deliver once under the retirement/admission lock; never execute an ML action.</summary>
+    public void AcceptHandoff(ResearchRequestHandoff handoff, Action<string> deliver, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(handoff);
+        ArgumentNullException.ThrowIfNull(deliver);
+        lock (sync)
+        {
+            // Consume even a refused attempt. A fresh review is needed after any failure.
+            var request = handoff.Consume();
+            cancellationToken.ThrowIfCancellationRequested();
+            RequireAvailable();
+            if (switching || active != 0) throw Busy();
+            if (!ReferenceEquals(current, handoff.Lease) || admissionRevision != handoff.Revision) throw StaleHandoff();
+            cancellationToken.ThrowIfCancellationRequested();
+            delivering = true;
+            try { deliver(request); } // Trusted synchronous UI population only. No work or callbacks retained.
+            finally { delivering = false; }
+        }
+    }
+
+    private static MlException StaleHandoff() => new("stale_handoff", "The research destination or its work changed. Select the project and review a new transfer.");
 
     public Task<ResearchLabSelection> OpenAsync(Guid id, CancellationToken cancellationToken = default)
     {
@@ -83,6 +120,7 @@ public sealed class ResearchLabWorkspace(IResearchProjectStore projects, Func<Re
             RequireAvailable();
             if (switching || !ReferenceEquals(current, lease)) throw new MlException("stale_project", "This Lab view is no longer active. Open the selected project again.");
             token.ThrowIfCancellationRequested();
+            admissionRevision++;
             active++; // Before calling the service: Jobs can still be empty at admission.
             try { return ObserveAsync(lease.Inner.ExecuteAsync(action, limits, token)); }
             catch { active--; throw; }
@@ -98,6 +136,7 @@ public sealed class ResearchLabWorkspace(IResearchProjectStore projects, Func<Re
     private void RequireAvailable()
     {
         ObjectDisposedException.ThrowIf(disposed, this);
+        if (delivering) throw Busy();
         if (poisoned) throw Unavailable();
     }
     private static MlException Busy() => new("project_busy", "Wait for Lab work to finish or cancel its jobs before changing projects.");

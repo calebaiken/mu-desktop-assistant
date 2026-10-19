@@ -69,14 +69,21 @@ $smokeRoot = Join-Path $workspaceRoot 'artifacts/smoke'
 $found = $false
 if (Test-Path -LiteralPath $smokeRoot -PathType Container) {
     foreach ($directory in (Get-ChildItem -LiteralPath $smokeRoot -Directory | Select-Object -First 20)) {
-        $receipt = Join-Path $directory.FullName 'research-project-smoke.json'
+        foreach ($receiptName in @('research-project-smoke.json', 'chat-project-handoff-smoke.json')) {
+        $receipt = Join-Path $directory.FullName $receiptName
         if (-not (Test-Path -LiteralPath $receipt -PathType Leaf)) { continue }
         $found = $true
         try {
             if ((Get-Item -LiteralPath $receipt).Length -gt 8KB) { throw 'Oversized smoke receipt.' }
             $smoke = Get-Content -LiteralPath $receipt -Raw | ConvertFrom-Json
             if ($smoke.completed -isnot [bool]) { throw 'Invalid smoke completion.' }
-            $lines.Add('Research native control smoke completed: ' + $smoke.completed)
+            $label = if ($receiptName -eq 'chat-project-handoff-smoke.json') { 'Chat handoff' } else { 'Research' }
+            $lines.Add($label + ' native control smoke completed: ' + $smoke.completed)
+            if ($receiptName -eq 'chat-project-handoff-smoke.json' -and $null -ne $smoke.elapsedMilliseconds) {
+                if ($smoke.elapsedMilliseconds -isnot [long] -and $smoke.elapsedMilliseconds -isnot [int]) { throw 'Invalid smoke duration.' }
+                if ($smoke.elapsedMilliseconds -lt 0 -or $smoke.elapsedMilliseconds -gt 60000) { throw 'Invalid smoke duration.' }
+                $lines.Add('Handoff smoke elapsed milliseconds: ' + $smoke.elapsedMilliseconds)
+            }
             foreach ($field in @('failedCheck', 'failureType')) {
                 $value = $smoke.$field
                 if ($null -ne $value) {
@@ -92,6 +99,7 @@ if (Test-Path -LiteralPath $smokeRoot -PathType Container) {
             }
         }
         catch { $lines.Add('Native smoke receipt invalid; no passing result inferred.') }
+        }
     }
 }
 if (-not $found) { $lines.Add('Native research smoke receipt missing; no native result inferred.') }
