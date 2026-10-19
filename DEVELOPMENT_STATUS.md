@@ -2,7 +2,8 @@
 
 ## Current increment — explicit Chat-to-Research handoff (2026-10-19)
 
-Branch `feature/chat-project-handoff` starts at PR #3's final documented head
+[Draft stacked PR #4](https://github.com/calebaiken/mu-desktop-assistant/pull/4),
+branch `feature/chat-project-handoff`, starts at PR #3's final documented head
 `7ce7f639c999c79631e786a7365578773e1da530` (reviewed executable `c8da7e5`).
 Remote fetch confirmed main `7fe3305`, PR #1 `8c0e119`, PR #2 `376c320` and PR #3
 `7ce7f63`, all earlier PRs open/unmerged. No history was rewritten.
@@ -18,9 +19,15 @@ Local evidence: strict Linux Release build has zero warnings/errors; architectur
 11/11; selected C# suite 103 passed, four Windows-only skips, 107 total. Independent
 handoff suite 32/32 passed. Initial broader planner selection retained two failures
 from Windows-path fixtures on Linux (93 passed/one skip/96 total). Broad Python
-worker discovery retained 21 Windows `SystemRoot` errors; relevant portable worker
-and project suites are being verified separately. Supported Windows mandatory
-positive/negative gates, real App native smoke and independent final QA are pending.
+worker discovery retained 21 Windows `SystemRoot` errors. Relevant portable worker
+and project suites passed 49/49 after setting their existing worker import path;
+the initial one-import-error run is retained. Independent initial review was
+83/100 = 8.3 FAIL/INCOMPLETE pending native evidence; its report is preserved.
+The initial Windows positive gates at `6954729` failed after 524 passing C# tests
+(one expected platform NotExecuted, no failed tests); earlier 21 project-native
+checks passed, no handoff receipt existed, negative gates were skipped. A native
+owner-HWND/setup reporting repair is being rechecked without relaxing the 15 s
+smoke deadline. Final Windows gates and independent QA are pending.
 This candidate is not yet independently accepted. Historical receipts below remain.
 
 Next: complete this bounded handoff qualification, then design a separate Module C

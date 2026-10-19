@@ -124,3 +124,33 @@ separate requirements; absent evidence is not a pass.
 
 Final Verdict: retain this initial incomplete review and re-review the exact
 source checkpoint after genuine Windows/native evidence and documentation exist.
+
+## Addendum — actual Windows failure on `6954729`
+
+Both first Windows runs of source
+`69547291c696d1a0422adc47bb0f7c2dc6e10d1e` failed the required positive gate:
+[push 39305498979](https://github.com/calebaiken/mu-desktop-assistant/actions/runs/39305498979)
+and [PR 39305528774](https://github.com/calebaiken/mu-desktop-assistant/actions/runs/39305528774).
+Bounded annotations from the push job `118241365050` report 525 total tests,
+524 executed/passed, zero failures and one expected unsupported-platform
+`NotExecuted` case. The four specifically named native process/file tests Passed;
+the prior research-project smoke completed all 21 checkpoints. No handoff receipt
+was emitted. The positive job failed after the C# suite, and the dependent negative
+gate did not run. This is a failed overall verification, not a passing native
+handoff result. The PR run independently produced the same classification.
+
+The reviewer inspected the actual annotation file
+`artifacts/qa/chat-project-handoff/windows-initial-push-annotations.json` and the
+source. A likely harness prerequisite is that ordinary `--smoke` only measures
+the companion's content, while the new harness sets `ChatWindow.Owner` to that
+companion before creating its native HWND. WPF requires the owner to have a native
+source. This happens before the harness's original `try/finally`, which explains
+why a constructor/owner failure could leave no receipt. This remains a source-based
+hypothesis at this addendum, not a confirmed attribution from native execution.
+
+The implementation agent is repairing the harness to create the actual owner HWND,
+wrap setup in receipt-producing exception handling, and publish bounded fixed-label
+progress at entry/each checkpoint so an externally killed smoke remains diagnosable.
+No request/path/error payloads, 15-second threshold changes or assertion weakening
+are authorized by this review. A fresh exact-source Windows run is required.
+The original **83/100 = 8.3 FAIL / INCOMPLETE** verdict remains unchanged.

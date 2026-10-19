@@ -4,6 +4,7 @@ using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Interop;
 using System.Windows.Threading;
 using Companion.Application.Conversation;
 using Companion.Application.MachineLearning;
@@ -20,24 +21,31 @@ public partial class App
         var passed = new List<string>();
         string? failedCheck = null, failureType = null;
         var completed = false;
+        void Receipt() => File.WriteAllText(Path.Combine(directory, "chat-project-handoff-smoke.json"),
+            JsonSerializer.Serialize(new { completed, failedCheck, failureType, passed }));
+        Receipt(); // Progress survives a hard smoke timeout; fixed public labels only.
         void Check(bool condition, string name)
         {
-            if (!condition) { failedCheck = name; throw new InvalidOperationException("Research handoff smoke checkpoint failed."); }
+            if (!condition) { failedCheck = name; Receipt(); throw new InvalidOperationException("Research handoff smoke checkpoint failed."); }
             if (!passed.Contains(name)) passed.Add(name);
+            Receipt();
         }
         var profile = Path.Combine(directory, "public-chat-handoff-smoke");
-        researchProjects = new JsonResearchProjectStore(profile);
-        var a = await researchProjects.CreateAsync("Public handoff A");
-        var b = await researchProjects.CreateAsync("Public handoff B");
-        researchWorkspace = new(researchProjects, project => new LocalMlLabService(
-            Path.Combine(profile, "missing-runtime", "python.exe"), Path.Combine(profile, "missing-runtime", "worker.py"), project.Directory));
-        var chat = new ChatWindow(_ => throw new InvalidOperationException("Chat model must not start during transfer."), new InMemoryConversationStore())
-            { Owner = companion, ShowActivated = false, ShowInTaskbar = false, Opacity = 0 };
-        chatWindow = chat;
-        chat.ResearchHandoff = (request, token) => TransferChatRequestAsync(chat, request, token);
-        const string exact = "  Inspect the explicitly selected public dataset.\r\nDo not train.  ";
+        ChatWindow? chat = null;
+        ResearchProject? a = null, b = null;
         try
         {
+            Check(companion is not null && new WindowInteropHelper(companion).EnsureHandle() != IntPtr.Zero, "native companion owner HWND");
+            researchProjects = new JsonResearchProjectStore(profile);
+            a = await researchProjects.CreateAsync("Public handoff A");
+            b = await researchProjects.CreateAsync("Public handoff B");
+            researchWorkspace = new(researchProjects, project => new LocalMlLabService(
+                Path.Combine(profile, "missing-runtime", "python.exe"), Path.Combine(profile, "missing-runtime", "worker.py"), project.Directory));
+            chat = new ChatWindow(_ => throw new InvalidOperationException("Chat model must not start during transfer."), new InMemoryConversationStore())
+                { Owner = companion, ShowActivated = false, ShowInTaskbar = false, Opacity = 0 };
+            chatWindow = chat;
+            chat.ResearchHandoff = (request, token) => TransferChatRequestAsync(chat, request, token);
+            const string exact = "  Inspect the explicitly selected public dataset.\r\nDo not train.  ";
             chat.Show();
             chat.MessageInput.Text = exact;
             await chat.SendToResearchAsync();
@@ -93,14 +101,14 @@ public partial class App
             await CheckProposalLifecycleAsync(profile, a, Check);
             completed = true;
         }
-        catch (Exception error) { failureType = error.GetType().Name; throw; }
+        catch (Exception error) { failureType = error.GetType().Name; Receipt(); throw; }
         finally
         {
-            chat.Close(); chatWindow = null;
+            chat?.Close(); chatWindow = null;
             mlLabWindow?.Close(); mlLabWindow = null;
-            await researchWorkspace.DisposeAsync(); researchWorkspace = null; researchProjects = null;
-            await File.WriteAllTextAsync(Path.Combine(directory, "chat-project-handoff-smoke.json"),
-                JsonSerializer.Serialize(new { completed, failedCheck, failureType, passed }));
+            if (researchWorkspace is not null) await researchWorkspace.DisposeAsync();
+            researchWorkspace = null; researchProjects = null;
+            Receipt();
         }
 
         async Task DriveAsync(Guid id, Action<ResearchHandoffWindow> finish)
@@ -117,7 +125,7 @@ public partial class App
                     if (stage == 0 && researchProjectsWindow is { IsLoaded: true } picker && picker.ProjectsList.Items.Count >= 2)
                     {
                         stage++;
-                        picker.ProjectsList.SelectedIndex = id == a.Id ? 0 : 1;
+                        picker.ProjectsList.SelectedIndex = id == a?.Id ? 0 : 1;
                         // Catalog display order can change. Select by trusted identity preview.
                         if (!picker.ProjectTarget.Text.Contains(id.ToString("N"), StringComparison.Ordinal))
                             picker.ProjectsList.SelectedIndex = picker.ProjectsList.SelectedIndex == 0 ? 1 : 0;
@@ -130,7 +138,7 @@ public partial class App
                 catch (Exception error) { failure = error; timer.Stop(); researchProjectsWindow?.Close(); researchHandoffWindow?.Close(); }
             };
             timer.Start();
-            try { await chat.SendToResearchAsync(); }
+            try { await chat!.SendToResearchAsync(); }
             finally { timer.Stop(); }
             if (failure is not null) throw failure;
             Check(stage == 2, "explicit picker and preview reached");

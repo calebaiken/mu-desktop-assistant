@@ -9,7 +9,7 @@ public partial class ChatWindow
     internal Func<string, CancellationToken, Task<bool>>? ResearchHandoff { get; set; }
     private void UpdateResearchControls()
     {
-        if (ResearchHandoffButton is null) return;
+        if (ResearchHandoffButton is null || ResearchHandoffHelp is null || MessageInput is null) return;
         ResearchHandoffButton.IsEnabled = !IsTemporary && CanSend && !string.IsNullOrWhiteSpace(MessageInput.Text);
         ResearchHandoffHelp.Text = IsTemporary
             ? "Research handoff is disabled in Temporary Chat: the ML Lab can persist project artifacts."

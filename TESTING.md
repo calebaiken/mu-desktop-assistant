@@ -13,9 +13,20 @@ Base `7ce7f639c999c79631e786a7365578773e1da530`, branch
 | Independent handoff suite | 32/32 pass | `independent/independent-handoff.trx` |
 | Initial broader planner selection | 96 total: 93 pass, 1 skip, 2 Windows-path-on-Linux fixture failures | `handoff-portable.trx` |
 | Broad Python discovery | 49 total, 21 errors (`SystemRoot` Windows-only protocol prerequisites absent) | `python-project-data.log` |
+| Initial relevant Python invocation | 43 passed, one import error (44 total; author module needs worker import path) | `python-relevant-initial.log` |
+| Corrected relevant Python (author, data, engine, pipeline, production project isolation/export) | 49/49 passed with existing worker import path | `python-relevant.log` |
+| Independent initial QA | 83/100 = 8.3 FAIL/INCOMPLETE pending native evidence | `docs/qa/CHAT_PROJECT_HANDOFF_REVIEW_INITIAL.md` |
 
-Supported Windows `verify.ps1`/`verify-negative.ps1`, new real-App native smoke and
-final independent acceptance are pending at this checkpoint. No Linux WPF execution
+Initial Windows source `6954729` runs [39305498979](https://github.com/calebaiken/mu-desktop-assistant/actions/runs/39305498979)
+and [39305528774](https://github.com/calebaiken/mu-desktop-assistant/actions/runs/39305528774)
+failed the positive gate after **524 passed / zero failed / one NotExecuted** (525 total).
+The prior 21 native project checkpoints passed; no handoff receipt was produced;
+the negative gate was skipped. Receipts: `windows-initial-{push,pr}-{jobs,annotations}.json`.
+The next repair establishes the smoke-only companion owner's HWND before creating
+its owned Chat, moves setup into failure reporting, and writes fixed-label progress
+receipts. Owner setup is a source-based failure hypothesis until rerun; the 15 s
+smoke threshold is unchanged. Final supported Windows gates/native smoke and
+independent acceptance remain pending. No Linux WPF execution
 or installed-model inference is claimed. New smoke drives the actual App handler
 through native Chat/picker/preview/Lab, with fixed public fixtures and zero-worker
 assertions. Existing gates remain unchanged; diagnostics read only bounded fixed
