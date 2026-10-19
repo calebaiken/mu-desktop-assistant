@@ -2,57 +2,59 @@
 
 ## Current increment — explicit research projects (2026-10-19)
 
-Branch `feature/research-projects` is stacked on approved-text-inspection commit
-`376c3206a38fa86b1639e5f72c6a67cc57153cb4` (draft PR #2), with main still at `7fe3305`.
+[Draft stacked PR #3](https://github.com/calebaiken/mu-desktop-assistant/pull/3), branch
+`feature/research-projects`, is based on PR #2's
+`376c3206a38fa86b1639e5f72c6a67cc57153cb4`; main remains `7fe3305`.
+Reviewed executable code: **`c8da7e5664faec3f8d5430bec0ab018aa8512f42`**.
 This is a bounded Module B project-selection increment with I's admission/recovery
-tests. It adds explicit named local projects, stable generated identities, isolated
-existing Lab services/artifacts, legacy default-project access without relocation,
-and fresh views/proposals on project changes. Active/queued work blocks switching;
-uncertain cleanup blocks a new service. No Chat content transfer or new computation
-is implemented. See [workflow and safety boundary](docs/RESEARCH_PROJECTS.md).
+verification, not completion of all selected modules.
 
-Current Linux checks: strict cross-build zero warnings/errors, architecture 11/11,
-project tests 50 passed/1 native skip of 51, prior-A regression 40 passed/3 native
-skips of 43. Independent QA reproduces 39 portable passes/1 native skip of its 40
-cases. Production Python-worker isolation passes actual training/listing/cross-project
-denial/export and unchanged-source checks, and all 48 existing portable ML tests
-pass (49 Python tests total). Native Windows CI and the independent phase verdict
-remain pending for this candidate. The independent reviewer froze
-[50 criteria](docs/qa/RESEARCH_PROJECTS_PROTOCOL.md) before review. Historical A
-scores and receipts below remain intact; its pass does not approve this new phase.
-The initial independent [Linux checkpoint](docs/qa/RESEARCH_PROJECTS_REVIEW_INITIAL.md)
-scores 86/100 = 8.6/10 but explicitly **FAIL / incomplete phase exit** because
-supported-platform gates and native behavior have not executed for this candidate.
-No confirmed unresolved critical defect was found; the evidence requirement still
-blocks phase advancement despite clearing the numeric threshold.
+Workflow: ML Lab → explicitly create/select a project → review identity/storage →
+choose/inspect a dataset → use existing configuration or Propose/Run reviewed plan.
+Change project opens a fresh isolated view after work settles and cleanup is
+confirmed. Closing/reopening the active project retains its jobs/cancel controls.
+Legacy default-project artifacts stay selectable in place. No Chat content transfer,
+memory, model profile or new scientific algorithm is introduced. See
+[workflow, storage and safety boundaries](docs/RESEARCH_PROJECTS.md).
 
-Subsequent review found a real regression in `9ed4f51`: a running job survived view
-closure but the busy-project guard prevented reopening its controls. The repaired
-entry point resumes the workspace's current borrowed selection even during work;
-project switching remains blocked. A new independent admission test and actual
-native close/reopen/Cancel-button fixture cover it. Current portable selection is
-51 passed/1 native skip of 52; its real process routing check still requires Windows.
-The reviewer also repaired a nonportable expected path separator in its Windows
-fixture without weakening path assertions.
+Actual verification:
 
-The initial candidate's Windows push run 39298675100 failed its positive step and
-skipped negative verification. Detailed logs/TRX remain destination-blocked, so its
-precise failure is not inferred from the aggregate exit1 annotation. This failure
-and the initial review remain preserved. Additive bounded CI summaries now expose
-TRX counts/method names and fixed public-smoke labels without DataRow/error/private
-content; the positive/negative scripts and acceptance thresholds are unchanged.
-Repaired-candidate Windows evidence and final independent re-review remain pending.
-The subsequent `72206a0` native diagnostic resolves the failure: all 492 executed
-tests pass (493 total; one unsupported-platform skip), including real research
-worker routing and all three A file/lease/link methods; the overall gate fails at
-the project picker's minimum-layout smoke checkpoint. The next repair shows the
-transparent native picker at minimum size, awaits layout and shares initialization
-Tasks before checking controls/planning. The same minimum dimensions/15s threshold
-remain required; this failed receipt and review addendum stay preserved.
+- Both exact-code Windows runs
+  [39301163143](https://github.com/calebaiken/mu-desktop-assistant/actions/runs/39301163143)
+  and [39301178509](https://github.com/calebaiken/mu-desktop-assistant/actions/runs/39301178509)
+  succeeded, each with both required positive/negative scripts.
+- Bounded TRX-derived annotations report **493 total, 492 passed, 0 failed,
+  1 expected unsupported-platform skip**. Real research-worker routing and all
+  three A file/lease/link methods explicitly Passed. **21 native UI checkpoints**
+  pass, including actual minimum layout and reopened-job cancellation.
+- Linux: strict cross-build zero warnings/errors; architecture 11/11; project cases
+  **51 passed / 1 native skip of 52**; independent subset **40 passed / 1 native skip
+  of 41**; prior-A regression 40 passed / 3 native skips of 43.
+- **49 Python tests passed**: 48 existing ML cases plus a real production-worker
+  subprocess case proving train/list/describe/export isolation, cross-project
+  denial and unchanged source. The latter was independently reproduced.
+- Independent [final review](docs/qa/RESEARCH_PROJECTS_REVIEW_WINDOWS.md):
+  **96/100 = 9.6/10 PASS** for this bounded development slice, zero confirmed
+  unresolved critical defects, against the independently frozen 50 criteria.
 
-Next objective after verification: explicit Chat-to-project handoff reusing Lab's
-captured selection and reviewed Run, then approved SQLite project memory and
-separate model/resource qualification. D/E/F/H and PR #1 remain outside this change.
+Historical failures stay preserved in
+[the initial review/addenda](docs/qa/RESEARCH_PROJECTS_REVIEW_INITIAL.md) and Testing:
+8.6/10 was explicitly an incomplete phase exit; review then found and repaired the
+active-job reopen regression. Initial Windows `9ed4f51` failed without detailed
+attribution; `72206a0` had 492 passing tests but failed minimum-layout smoke. The
+repair measures a shown transparent native picker, shares initialization Tasks and
+separates startup metadata jobs from proposal admission; no assertion, 15s gate,
+resource threshold or required verification command was relaxed. Additive bounded
+CI summaries/annotations publish method/checkpoint outcomes without private content.
+
+Remaining qualification: physical keyboard/accessibility, broader redirect/volume/
+hostile-swap and forced-crash/low-memory matrices, native blocked-retirement latency,
+existing resource/model and release gates. Last selection is session-only; projects
+persist but restart deliberately returns to explicit selection. The trusted profile
+boundary is not protection against arbitrary same-user filesystem modification.
+Next: approved Chat-to-selected-project handoff reusing captured datasets/reviewed
+Run, then approved SQLite project memory and separately qualified model profiles.
+PR #1 stays separate; D/E/F/H remain outside scope.
 
 ## Prior increment — approved text inspection (2026-10-19)
 

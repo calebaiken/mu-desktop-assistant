@@ -1,6 +1,43 @@
 # Testing
 
-## Research projects — 2026-10-19 candidate
+## Research projects — final development evidence, 2026-10-19
+
+Reviewed executable source **`c8da7e5664faec3f8d5430bec0ab018aa8512f42`**;
+[stacked draft PR #3](https://github.com/calebaiken/mu-desktop-assistant/pull/3),
+base `376c320`. Independent [final review](docs/qa/RESEARCH_PROJECTS_REVIEW_WINDOWS.md):
+**96/100 = 9.6/10 PASS**, zero confirmed unresolved critical defects in this bounded
+B development slice. Physical/resource/model/release qualification remains separate.
+
+| Executed check | Actual result | Receipt under `artifacts/qa/research-projects/` |
+|---|---|---|
+| Windows push 39301163143 / PR 39301178509 | Both jobs successful; each positive and negative verification step successful | `windows-final-code-{push,pr}-jobs.json`; independent `windows-final-{push,pr}-job.json` |
+| Actual Windows TRX-derived annotations | 493 total; 492 executed/passed; zero failed; one NotExecuted (unsupported-platform assertion) | `windows-final-code-push-annotations.json`, `layout-annotations-pr.json`; independent final annotations |
+| Named native integration methods | Real project worker routing plus all three A file/lease/link cases Passed | Same annotations; exact method identities, not inferred counters |
+| Actual WPF project control smoke | Completed True; all 21 checkpoints passed, including minimum-size control bounds and closing/reopening/cancelling the original job | Same annotations; JSON/proposal and active-job service fixtures explicitly identified in the guide |
+| Final Release cross-build, Linux SDK10.0.401 | Zero warnings/errors, exit0 | `build-layout-final.log` |
+| New Linux project cases | 51 passed, zero failed, one Windows-only skip, 52 total | `research-projects-layout-fix.trx`, `tests-layout-fix.log` |
+| Independent Linux project cases | 40 passed, zero failed, one Windows-only skip, 41 total | `independent/layout-independent.trx`, `.log` |
+| Architecture | 11/11, root and independent execution | `architecture.log`, `independent/architecture-repaired.log` |
+| Prior-A Linux regression | 40 passed, three native skips, 43 total | `trusted-action-regression.trx` |
+| Production Python ML | 6+16+7+19 existing cases plus one real two-project subprocess case =49 passed | `ml-{author,data,pipeline,engine}.log`, `python-projects-final.log`; independent production worker log |
+
+Detailed blob logs/TRX still cannot be downloaded under the cloud destination policy.
+The counts, selected native method outcomes and 21 UI checkpoint outcomes above are
+actual bounded observations published by the tested, additive CI reporter and fetched
+through supported check annotations. Required gate status is separately confirmed
+from run/job metadata. No DataRow values, error messages, stack/stdout, private paths
+or dataset contents are published. The reporter does not override gate conclusions.
+Native worker routing uses a real owned stdlib fixture; scientific isolation uses the
+actual Python worker and installed pinned Linux stack. Neither qualifies physical
+input/accessibility, model inference/coexistence or broader crash/resource behavior.
+
+### Earlier research-project development receipts (preserved)
+
+The following records describe their earlier checkpoints; pending/failure statements
+here are historical. The final evidence above supersedes their qualification status
+without changing or deleting any original measurement or failed review.
+
+
 
 Base `376c3206a38fa86b1639e5f72c6a67cc57153cb4`; branch `feature/research-projects`.
 The [project guide](docs/RESEARCH_PROJECTS.md) documents the observable workflow and

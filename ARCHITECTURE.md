@@ -9,7 +9,7 @@ picker, then the existing Lab with that identity. One service is admitted at a t
 active/queued requests block retirement, old façades reject execution, and failed
 cleanup poisons further admission. Normal view closure retains the App-owned service.
 Existing `default-project` artifacts stay in place. Neither chat nor numerical
-workers nor dependency/layer graphs change; native/independent candidate checks are
+workers nor dependency/layer graphs change; actual native/independent checks are
 tracked separately in Testing.
 
 The 2026-10-19 [text inspection increment](docs/TRUSTED_TEXT_INSPECTION.md) introduces

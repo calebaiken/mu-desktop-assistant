@@ -1,9 +1,9 @@
 # Implementation roadmap
 
 **Research-project increment (2026-10-19):** explicit creation/selection, stable
-identity, isolated existing Lab artifacts and serialized project admission are in
-candidate verification. It is stacked on the first A slice, with no PR #1 merge or
-scientific algorithm duplication. After native and independent gates, add an explicit
+identity, isolated existing Lab artifacts and serialized project admission pass the
+native development gates and independent 9.6/10 review on `c8da7e5`. This is stacked
+on the first A slice, with no PR #1 merge or scientific algorithm duplication. Add an explicit
 Chat-to-project request handoff reusing the Lab's captured dataset/reviewed Run, then
 approved SQLite memory. Existing model/resource and physical release gates remain.
 

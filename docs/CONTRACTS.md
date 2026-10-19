@@ -1,6 +1,6 @@
 # Application contracts
 
-## Implemented research-project candidate
+## Implemented research-project increment
 
 `IResearchProjectStore` explicitly creates, lists and resolves a project by ID.
 `ResearchProject` is immutable metadata: generated ID, literal name, derived directory,

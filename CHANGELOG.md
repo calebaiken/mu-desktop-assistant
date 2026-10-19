@@ -12,7 +12,9 @@
 - Preserved reopening/cancelling an active project's jobs after closing its view;
   added bounded CI evidence summaries while keeping both required gates unchanged.
 - Added real filesystem/session, production Python two-project and native control
-  diagnostics. Candidate Windows/independent qualification is pending; no scientific
+  diagnostics. Both required Windows gates pass on `c8da7e5`: 492 passing tests,
+  one expected platform skip, 21 passing native project checkpoints. Independent QA
+  passes at 9.6/10; earlier failed checkpoints remain preserved. No scientific
   algorithms, dependencies, memory or model-profile capabilities are added.
 
 ## Unreleased — Approved read-only text inspection (2026-10-19, bounded increment)

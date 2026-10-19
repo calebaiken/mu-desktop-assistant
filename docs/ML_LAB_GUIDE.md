@@ -1,6 +1,6 @@
 # Mu Machine Learning Lab
 
-The research-project candidate now opens an explicit local project picker before
+The research-project increment opens an explicit local project picker before
 the Lab. Create/select a project and review its ID/storage; **Change project…**
 starts a fresh view after queued/running jobs settle and old-service cleanup is
 confirmed. Original default-project artifacts stay selectable in place. Dataset

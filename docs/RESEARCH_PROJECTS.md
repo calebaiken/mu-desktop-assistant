@@ -82,6 +82,13 @@ main-Chat bridge is introduced. PR #1 remains independent.
 
 ## Verification and remaining scope
 
+Code `c8da7e5664faec3f8d5430bec0ab018aa8512f42` passes both required Windows gates
+in two runs. Actual annotations report 492 passing tests/zero failures/one expected
+platform skip, all four named native integration cases Passed, and 21 passed native
+project checkpoints. Independent [development QA](qa/RESEARCH_PROJECTS_REVIEW_WINDOWS.md)
+passes at 96/100=9.6/10 with zero confirmed unresolved critical defects in this slice.
+Earlier incomplete/failed checkpoints are preserved. This is not release qualification.
+
 Author/independent tests use actual catalog files, backups, corrupt and linked
 paths, active-admission barriers, stale façades, cancellation, failed/late cleanup
 and missing production runtime. A Windows-only test uses a real owned stdlib worker
