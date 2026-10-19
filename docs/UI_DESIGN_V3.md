@@ -109,7 +109,7 @@ peer's live-region event. Native UI Automation names/patterns are verified separ
 from real screen-reader announcements, which must not be inferred from attributes.
 
 The body scrolls at the existing 540×460-DIP minimum; footer Refresh/Cancel/Open
-remain reachable outside it. At 1000 DIPs the identity review moves beside the
+remain reachable outside it. At 800 DIPs the identity review moves beside the
 catalog. Long names wrap and the exact path remains selectable/scrollable. No
 navigation sidebar or fake activity counters were added.
 

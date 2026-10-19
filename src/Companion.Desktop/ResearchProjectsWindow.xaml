@@ -29,11 +29,10 @@
                 </ComboBox>
             </StackPanel>
         </Grid>
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Focusable="False" Padding="0,0,8,4">
+        <ScrollViewer x:Name="ProjectBodyScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Focusable="False" Padding="0,0,8,4">
             <StackPanel>
-                <TextBlock Text="Choose where your research lives." FontSize="16" FontWeight="SemiBold"/>
                 <TextBlock Text="Datasets are chosen in the Lab. Inspections, experiments and exports stay local to the project. Opening a project transfers no chat and runs no analysis."
-                           TextWrapping="Wrap" Foreground="{DynamicResource Mu.SecondaryText}" Margin="0,6,0,20"/>
+                           TextWrapping="Wrap" Foreground="{DynamicResource Mu.SecondaryText}" Margin="0,0,0,16"/>
                 <Grid x:Name="ProjectLayout">
                     <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                     <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="0"/></Grid.ColumnDefinitions>
@@ -44,7 +43,7 @@
                         </DockPanel>
                         <TextBlock x:Name="BusyProjectsLabel" Text="Loading projects…" Margin="0,0,0,8" AutomationProperties.LiveSetting="Polite"/>
                         <ListBox x:Name="ProjectsList" SelectionChanged="Project_Changed" PreviewKeyDown="Projects_KeyDown"
-                                 MinHeight="112" MaxHeight="300" Background="{DynamicResource Mu.Canvas}" Foreground="{DynamicResource Mu.Text}"
+                                 MinHeight="112" MaxHeight="160" Background="{DynamicResource Mu.Canvas}" Foreground="{DynamicResource Mu.Text}"
                                  BorderBrush="{DynamicResource Mu.ControlBorder}" BorderThickness="1" Padding="2"
                                  ItemContainerStyle="{StaticResource Mu.ProjectItem}" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                                  FocusVisualStyle="{StaticResource Mu.FocusVisual}" AutomationProperties.Name="Local research projects">
@@ -59,18 +58,18 @@
                             </StackPanel>
                         </Border>
                     </StackPanel>
-                    <Border x:Name="SelectionPanel" Grid.Row="1" Background="{DynamicResource Mu.Surface}" BorderBrush="{DynamicResource Mu.QuietBorder}" BorderThickness="1" CornerRadius="10" Padding="16" Margin="0,16,0,0">
+                    <Border x:Name="SelectionPanel" Grid.Row="1" Background="{DynamicResource Mu.Surface}" BorderBrush="{DynamicResource Mu.QuietBorder}" BorderThickness="1" CornerRadius="10" Padding="12" Margin="0,16,0,0">
                         <StackPanel>
                             <TextBlock Text="DESTINATION REVIEW" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource Mu.Accent}"/>
                             <TextBlock x:Name="SelectionHeading" Text="No project selected" FontSize="18" FontWeight="SemiBold" Margin="0,8,0,6" TextWrapping="Wrap"/>
                             <TextBlock x:Name="SelectionHint" Text="Select a project to review its identity and exact storage location." Foreground="{DynamicResource Mu.SecondaryText}" TextWrapping="Wrap"/>
-                            <TextBox x:Name="ProjectTarget" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" MinHeight="0" MaxHeight="148" Visibility="Collapsed"
+                            <TextBox x:Name="ProjectTarget" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" MinHeight="0" MaxHeight="96" Visibility="Collapsed"
                                      Style="{StaticResource Mu.TextBox}" FontFamily="{DynamicResource Mu.TechnicalFont}" FontSize="12" Margin="0,8,0,0"
                                      AutomationProperties.Name="Selected research project identity and storage"/>
                         </StackPanel>
                     </Border>
                 </Grid>
-                <Border Height="1" Background="{DynamicResource Mu.QuietBorder}" Margin="0,20,0,16"/>
+                <Border Height="1" Background="{DynamicResource Mu.QuietBorder}" Margin="0,12,0,12"/>
                 <Label Content="_New project name" Target="{Binding ElementName=ProjectName}" Foreground="{DynamicResource Mu.Text}" Padding="0,0,0,8" FontWeight="SemiBold"/>
                 <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                     <TextBox x:Name="ProjectName" MaxLength="80" Style="{StaticResource Mu.TextBox}" TextChanged="Name_Changed" PreviewKeyDown="Name_KeyDown"

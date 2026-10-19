@@ -119,13 +119,16 @@ public partial class ResearchProjectsWindow : Window
         {
             SelectionHeading.Text = row.Project.Name;
             SelectionHint.Text = row.Project.IsLegacy ? "Existing artifacts stay in their original location." : "Review the exact local destination before opening.";
+            SelectionHint.Visibility = row.Project.IsLegacy ? Visibility.Visible : Visibility.Collapsed;
             ProjectTarget.Text = $"Identity: {row.Identity}\nStorage: {row.Project.Directory}";
             ProjectTarget.Visibility = Visibility.Visible;
+            if (!busy) SetStatus("Review the selected destination, then open it.");
         }
         else
         {
             SelectionHeading.Text = "No project selected";
             SelectionHint.Text = "Select a project to review its identity and exact storage location.";
+            SelectionHint.Visibility = Visibility.Visible;
             ProjectTarget.Clear();
             ProjectTarget.Visibility = Visibility.Collapsed;
         }
@@ -260,7 +263,7 @@ public partial class ResearchProjectsWindow : Window
     private void Layout_Changed(object sender, SizeChangedEventArgs e)
     {
         if (SelectionPanel is null) return;
-        var wide = ActualWidth >= 1000;
+        var wide = ActualWidth >= 800;
         ProjectLayout.ColumnDefinitions[1].Width = wide ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
         Grid.SetColumn(SelectionPanel, wide ? 1 : 0);
         Grid.SetRow(SelectionPanel, wide ? 0 : 1);

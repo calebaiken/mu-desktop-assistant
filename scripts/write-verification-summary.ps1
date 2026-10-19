@@ -114,7 +114,7 @@ foreach ($captureMode in @('baseline', 'candidate')) {
             if ($capture.source -notmatch '^[a-f0-9]{40}$' -or $capture.mode -ne $captureMode -or @($capture.images).Count -gt 16) { throw 'Invalid capture manifest.' }
             $lines.Add("Native client captures generated: $captureMode; source: $($capture.source); images: $(@($capture.images).Count). Image inspection is separate.")
             foreach ($picture in $capture.images) {
-                if ($picture.name -notmatch '^(baseline|candidate)-[0-9]{3,4}x[0-9]{3,4}-(selected(-archive)?|empty|error|high-contrast)\.png$') { throw 'Invalid fixed capture name.' }
+                if ($picture.name -notmatch '^(baseline|candidate)-[0-9]{3,4}x[0-9]{3,4}-(selected(-(archive|review))?|empty|error|high-contrast)\.png$') { throw 'Invalid fixed capture name.' }
                 foreach ($field in @('windowWidthDip','windowHeightDip','PixelWidth','PixelHeight','DpiScaleX','DpiScaleY')) {
                     $number = $picture.$field
                     if ($number -isnot [double] -and $number -isnot [long] -and $number -isnot [int]) { throw 'Invalid capture dimensions.' }

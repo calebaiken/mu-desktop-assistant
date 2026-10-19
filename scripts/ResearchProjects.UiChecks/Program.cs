@@ -71,6 +71,14 @@ internal static class Program
                     theme.SelectedIndex = 0;
                     await SettleAsync(view);
                 }
+                if (width == 540)
+                {
+                    var target = (TextBox)view.FindName("ProjectTarget");
+                    target.Focus();
+                    target.BringIntoView();
+                    await SettleAsync(view);
+                    Save(view, $"{mode}-{width}x{height}-selected-review.png");
+                }
                 if (width == 800)
                 {
                     var process = Process.GetCurrentProcess();
@@ -145,6 +153,7 @@ internal static class Program
             using var output = File.Create(Path.Combine(directory, name));
             encoder.Save(output);
             images.Add(new { name, windowWidthDip = window.ActualWidth, windowHeightDip = window.ActualHeight,
+                window.Left, window.Top, workAreaWidthDip = SystemParameters.WorkArea.Width, workAreaHeightDip = SystemParameters.WorkArea.Height,
                 bitmap.PixelWidth, bitmap.PixelHeight, dpi.DpiScaleX, dpi.DpiScaleY, highContrast = SystemParameters.HighContrast });
         }
     }

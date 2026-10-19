@@ -369,13 +369,27 @@ internal static class IndependentChecks
     private static void SelectRow(ListBox list, int index)
     {
         list.UpdateLayout();
-        // WPF container peers are ListBoxItemWrapperAutomationPeer objects.
-        // The real SelectionItem provider belongs to the owner's item peers.
-        var peer = (UIElementAutomationPeer.CreatePeerForElement(list) as ListBoxAutomationPeer)?
-            .GetChildren()?.OfType<ListBoxItemAutomationPeer>().ElementAtOrDefault(index)
-            ?? throw new InvalidOperationException("Native list item automation peer unavailable.");
-        ((ISelectionItemProvider)(peer.GetPattern(PatternInterface.SelectionItem)
-            ?? throw new InvalidOperationException("Native selection pattern unavailable."))).Select();
+        if (index < 0 || index >= list.Items.Count) throw new ArgumentOutOfRangeException(nameof(index));
+        // ItemContainer queries WPF's current ItemCollection and resets the peer's
+        // cached children. GetChildren can retain retired items across a reload.
+        var peer = UIElementAutomationPeer.CreatePeerForElement(list) as ListBoxAutomationPeer
+            ?? throw new InvalidOperationException("Native list automation peer unavailable.");
+        var container = peer.GetPattern(PatternInterface.ItemContainer) as IItemContainerProvider
+            ?? throw new InvalidOperationException("Native item container pattern unavailable.");
+        IRawElementProviderSimple? item = null;
+        for (var i = 0; i <= index; i++)
+            item = container.FindItemByProperty(item!, 0, null!)
+                ?? throw new InvalidOperationException("Current native item provider unavailable.");
+        if (item!.GetPatternProvider(VirtualizedItemPatternIdentifiers.Pattern.Id) is IVirtualizedItemProvider virtualized)
+        {
+            virtualized.Realize();
+            list.UpdateLayout();
+        }
+        var selection = item.GetPatternProvider(SelectionItemPatternIdentifiers.Pattern.Id) as ISelectionItemProvider
+            ?? throw new InvalidOperationException("Native selection pattern unavailable.");
+        selection.Select();
+        if (!ReferenceEquals(list.SelectedItem, list.Items[index]))
+            throw new InvalidOperationException("Native selection did not identify the current catalog item.");
     }
 
     private static async Task NativeKeyboardAsync(Window window, Action<bool, string> check)
