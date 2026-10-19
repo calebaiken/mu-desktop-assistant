@@ -40,6 +40,14 @@ internal static class NativeClientCapture
             var info = new BitmapInfo { Size = (uint)Marshal.SizeOf<BitmapInfo>(), Width = width, Height = -height, Planes = 1, BitCount = 32 };
             if (GetDIBits(destination, bitmap, 0, (uint)height, pixels, ref info, 0) != height)
                 throw new Win32Exception(Marshal.GetLastWin32Error());
+            // The chosen views have an empty 8-DIP margin. Reject unavailable/black
+            // desktop captures instead of treating them as native visual evidence.
+            if (window.Background is SolidColorBrush { Color.A: 255 } background)
+            {
+                var offset = (8 * width + 8) * 4;
+                if (pixels[offset] != background.Color.B || pixels[offset + 1] != background.Color.G || pixels[offset + 2] != background.Color.R)
+                    throw new InvalidOperationException("Native client pixels did not match the actual window background.");
+            }
             var dpi = VisualTreeHelper.GetDpi(window);
             return BitmapSource.Create(width, height, dpi.PixelsPerInchX, dpi.PixelsPerInchY, PixelFormats.Bgr32, null, pixels, stride);
         }

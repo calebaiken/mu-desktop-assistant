@@ -23,11 +23,13 @@ internal static class Program
         var app = new System.Windows.Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
         app.Startup += async (_, _) =>
         {
+            var stage = "capture";
             try
             {
                 await CaptureAsync(directory, args[1], args[2]);
                 if (args[1] == "candidate")
                 {
+                    stage = "independent checks";
                     var checks = await IndependentChecks.RunAsync(directory);
                     Console.WriteLine($"PASS {checks.Count} independent native project UI checks");
                 }
@@ -36,7 +38,7 @@ internal static class Program
             catch (Exception error)
             {
                 // Only public fixtures are used; diagnostics still omit exception messages and paths.
-                File.WriteAllText(Path.Combine(directory, "failure.json"), JsonSerializer.Serialize(new { type = error.GetType().Name }));
+                File.WriteAllText(Path.Combine(directory, "failure.json"), JsonSerializer.Serialize(new { stage, type = error.GetType().Name }));
                 Console.Error.WriteLine("FAIL native project UI checks: " + error.GetType().Name);
                 app.Shutdown(1);
             }
@@ -99,11 +101,6 @@ internal static class Program
             using var contrast = new WindowsContrastScope();
             await Task.Delay(250); // Allow Windows' setting-change broadcast to reach the dispatcher.
             var observed = SystemParameters.HighContrast;
-            File.WriteAllText(Path.Combine(directory, "high-contrast-observation.json"), JsonSerializer.Serialize(new
-            {
-                requested = true, nativeEnabled = contrast.Enabled, wpfEnabled = observed,
-                nativeError = contrast.NativeError, scope = "Disposable CI desktop; no physical monitor or screen reader qualification"
-            }));
             if (contrast.Enabled && observed)
             {
                 var highContrast = new ResearchProjectsWindow(store) { Width = 800, Height = 600, ShowInTaskbar = false };
@@ -119,6 +116,17 @@ internal static class Program
                 }
                 finally { highContrast.Close(); }
             }
+            contrast.Dispose();
+            await Task.Delay(250);
+            if (contrast.Restored == true && SystemParameters.HighContrast != contrast.OriginalEnabled)
+                throw new InvalidOperationException("WPF did not observe restored OS contrast state.");
+            File.WriteAllText(Path.Combine(directory, "high-contrast-observation.json"), JsonSerializer.Serialize(new
+            {
+                requested = true, nativeEnabled = contrast.Enabled, wpfEnabled = observed,
+                nativeError = contrast.NativeError, originalEnabled = contrast.OriginalEnabled,
+                restored = contrast.Restored, restoredWpfEnabled = SystemParameters.HighContrast,
+                scope = "Disposable CI desktop; no physical monitor or screen reader qualification"
+            }));
             // An unavailable SPI setting is recorded as unverified, never a passing contrast check.
         }
         File.WriteAllText(Path.Combine(directory, "captures.json"), JsonSerializer.Serialize(new

@@ -369,10 +369,11 @@ internal static class IndependentChecks
     private static void SelectRow(ListBox list, int index)
     {
         list.UpdateLayout();
-        var row = (ListBoxItem?)list.ItemContainerGenerator.ContainerFromIndex(index)
-            ?? throw new InvalidOperationException("Native list container unavailable.");
-        var peer = UIElementAutomationPeer.CreatePeerForElement(row)
-            ?? throw new InvalidOperationException("Native selection peer unavailable.");
+        // WPF container peers are ListBoxItemWrapperAutomationPeer objects.
+        // The real SelectionItem provider belongs to the owner's item peers.
+        var peer = (UIElementAutomationPeer.CreatePeerForElement(list) as ListBoxAutomationPeer)?
+            .GetChildren()?.OfType<ListBoxItemAutomationPeer>().ElementAtOrDefault(index)
+            ?? throw new InvalidOperationException("Native list item automation peer unavailable.");
         ((ISelectionItemProvider)(peer.GetPattern(PatternInterface.SelectionItem)
             ?? throw new InvalidOperationException("Native selection pattern unavailable."))).Select();
     }

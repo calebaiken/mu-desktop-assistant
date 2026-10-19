@@ -7,14 +7,18 @@ internal sealed class WindowsContrastScope : IDisposable
 {
     private HighContrast original;
     private bool changed;
+    private bool originalRead;
     internal bool Enabled { get; }
     internal int NativeError { get; }
+    internal bool OriginalEnabled => originalRead && (original.Flags & 1) != 0;
+    internal bool? Restored { get; private set; }
 
     internal WindowsContrastScope()
     {
         original.Size = (uint)Marshal.SizeOf<HighContrast>();
         if (!SystemParametersInfo(0x0042, original.Size, ref original, 0))
         { NativeError = Marshal.GetLastWin32Error(); return; }
+        originalRead = true;
         if ((original.Flags & 1) != 0) { Enabled = true; return; }
         var requested = original;
         requested.Flags |= 1;
@@ -28,13 +32,19 @@ internal sealed class WindowsContrastScope : IDisposable
 
     public void Dispose()
     {
-        if (!changed) return;
-        var restored = original;
-        // The scheme string is OS-owned; restoring flags does not dereference its pointer.
-        restored.DefaultScheme = IntPtr.Zero;
-        if (!SystemParametersInfo(0x0043, restored.Size, ref restored, 2))
-            throw new InvalidOperationException("The disposable test desktop contrast state could not be restored.");
-        changed = false;
+        if (Restored.HasValue || !originalRead) return;
+        if (changed)
+        {
+            var restored = original;
+            // The scheme string is OS-owned; restoring flags does not dereference its pointer.
+            restored.DefaultScheme = IntPtr.Zero;
+            if (!SystemParametersInfo(0x0043, restored.Size, ref restored, 2))
+                throw new InvalidOperationException("The disposable test desktop contrast state could not be restored.");
+            changed = false;
+        }
+        var observed = new HighContrast { Size = original.Size };
+        Restored = SystemParametersInfo(0x0042, observed.Size, ref observed, 0) && (observed.Flags & 1) == (original.Flags & 1);
+        if (Restored != true) throw new InvalidOperationException("Test desktop contrast restoration was not confirmed.");
     }
 
     [StructLayout(LayoutKind.Sequential)]

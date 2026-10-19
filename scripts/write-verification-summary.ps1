@@ -154,6 +154,16 @@ foreach ($captureMode in @('baseline', 'candidate')) {
         }
         catch { $lines.Add('OS contrast observation invalid; no contrast result inferred.') }
     }
+    $failurePath = Join-Path $captureRoot 'failure.json'
+    if (Test-Path -LiteralPath $failurePath -PathType Leaf) {
+        try {
+            if ((Get-Item -LiteralPath $failurePath).Length -gt 1KB) { throw 'Oversized harness failure.' }
+            $failure = Get-Content -LiteralPath $failurePath -Raw | ConvertFrom-Json
+            if ($failure.stage -notin @('capture','independent checks') -or $failure.type -notmatch '^[A-Za-z0-9]{1,80}$') { throw 'Invalid harness failure.' }
+            $shortNotices.Add('Native harness failed at ' + $failure.stage + '; type: ' + $failure.type)
+        }
+        catch { $lines.Add('Harness failure detail unavailable; no passing result inferred.') }
+    }
 }
 $performanceRoot = Join-Path $workspaceRoot 'artifacts/qa'
 if (Test-Path -LiteralPath $performanceRoot -PathType Container) {
