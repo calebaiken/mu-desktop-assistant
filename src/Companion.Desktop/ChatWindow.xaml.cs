@@ -193,6 +193,8 @@ public partial class ChatWindow : Window
         SendButton.IsEnabled = false;
         StopButton.IsEnabled = false;
         activeTurn?.Cancel();
+        researchTransfer?.Cancel();
+        ResearchHandoff = null;
         SetGenerating(false);
         history.Clear();
         transcript.Clear();
@@ -280,6 +282,7 @@ public partial class ChatWindow : Window
     {
         if (SendButton is not null)
             SendButton.IsEnabled = CanSend && !string.IsNullOrWhiteSpace(MessageInput.Text);
+        UpdateResearchControls();
     }
 
     private void NewConversation_Click(object sender, RoutedEventArgs e)

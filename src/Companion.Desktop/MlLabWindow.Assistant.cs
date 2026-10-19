@@ -9,11 +9,42 @@ public partial class MlLabWindow
     private LayaAdvice? taskAdvice;
     private string? advisedPrompt;
 
+    private long proposalRevision;
+    internal bool CanAcceptResearchRequest => !closed && !busy && planning is null;
+    internal bool IsBoundTo(ResearchLabSelection selection) => projectId == selection.Project.Id && ReferenceEquals(service, selection.Service);
+
+    internal void AcceptResearchRequest(Guid destination, string request)
+    {
+        if (projectId != destination || !CanAcceptResearchRequest)
+            throw new MlException("stale_handoff", "The Lab destination changed. Review a new transfer.");
+        ResearchRequestHandoff.ValidateRequest(request);
+        InvalidateProposal();
+        AssistantRequest.Text = request;
+        TransferredRequestLabel.Text = "Transferred Chat draft · Exact request below. No model or ML action ran during transfer.";
+        LabTabs.SelectedItem = AssistantTab;
+        ProposalText.Text = modelFactory is null
+            ? "Local conversational planning is unavailable. Configure the local model, or use the explicit dataset controls. No ML action ran."
+            : "Choose a dataset in this project's Data tab if none is selected, then select Propose a plan. No ML action has run.";
+        StatusLabel.Text = "Request transferred to this project. Generated plans and completed computations appear separately.";
+        AssistantRequest.Focus();
+    }
+
+    private void InvalidateProposal()
+    {
+        proposalRevision++;
+        planning?.Cancel();
+        var hadProposal = proposedAction is not null;
+        proposedAction = null; proposedLimits = null;
+        RunProposalButton.IsEnabled = false;
+        taskAdvice = null; advisedPrompt = null;
+        if (hadProposal) ProposalText.Text = "The request, dataset or limits changed. Propose a new plan before running.";
+    }
+
     private async void AnalyzeTask_Click(object sender, RoutedEventArgs e) => await AnalyzeTaskAsync();
 
     internal async Task AnalyzeTaskAsync()
     {
-        if (closed || planning is not null || laya is null) return;
+        if (closed || busy || planning is not null || laya is null) return;
         taskAdvice = null; advisedPrompt = null;
         proposedAction = null; proposedLimits = null; RunProposalButton.IsEnabled = false;
         AnalyzeTaskButton.IsEnabled = ProposeButton.IsEnabled = false;
@@ -23,12 +54,13 @@ public partial class MlLabWindow
         ProposalText.Text = "Task analysis is advisory. Propose a plan to produce a new action for review.";
         using var cancellation = new CancellationTokenSource(TimeSpan.FromMinutes(2));
         planning = cancellation;
+        var revision = proposalRevision;
         try
         {
             var prompt = AssistantRequest.Text;
             var advice = await laya.AdviseAsync(prompt, cancellation.Token);
             cancellation.Token.ThrowIfCancellationRequested();
-            if (closed) return;
+            if (closed || revision != proposalRevision) return;
             taskAdvice = advice; advisedPrompt = prompt;
             var scores = string.Join("\n", advice.Probabilities.OrderByDescending(item => item.Value)
                 .Select(item => $"{item.Key}: {item.Value:P1}"));
@@ -57,7 +89,7 @@ public partial class MlLabWindow
 
     internal async Task ProposeAsync()
     {
-        if (closed || planning is not null || modelFactory is null) return;
+        if (closed || busy || planning is not null || modelFactory is null) return;
         proposedAction = null;
         proposedLimits = null;
         RunProposalButton.IsEnabled = false;
@@ -67,18 +99,23 @@ public partial class MlLabWindow
         ProposalText.Text = "Preparing a typed proposal with the local model. No ML action has run.";
         using var cancellation = new CancellationTokenSource(TimeSpan.FromMinutes(3));
         planning = cancellation;
+        var revision = proposalRevision;
         try
         {
-            MlDatasetSelection? dataset = string.IsNullOrWhiteSpace(DatasetPath.Text) ? null : ReadDataset();
+            // Only Lab controls can capture a dataset. Conversation text supplies no path authority.
+            var dataset = ReadDataset();
             var limits = ReadLimits();
+            MlValidation.Validate(new MlInspect(dataset), limits);
             var prompt = AssistantRequest.Text;
             var mode = AssistantMode.SelectedItem as string ?? "Learn";
             var columns = inspectedSelection == dataset ? features.Select(feature => feature.Name).ToArray() : [];
             var model = await modelFactory(cancellation.Token);
+            cancellation.Token.ThrowIfCancellationRequested();
+            if (closed || revision != proposalRevision) return;
             var hint = advisedPrompt == prompt && taskAdvice is { CanSuggest: true } ? taskAdvice : null;
             var proposal = await new MlConversationPlanner(model).PlanAsync(prompt, dataset, columns, mode, cancellation.Token, hint);
             cancellation.Token.ThrowIfCancellationRequested();
-            if (closed) return;
+            if (closed || revision != proposalRevision) return;
             // A model proposal cannot expand the user's captured resource budget.
             MlValidation.Validate(proposal.Action, limits);
             proposedAction = proposal.Action;
@@ -106,7 +143,7 @@ public partial class MlLabWindow
 
     private async void RunProposal_Click(object sender, RoutedEventArgs e)
     {
-        if (proposedAction is not { } action || proposedLimits is not { } limits || planning is not null || busy) return;
+        if (closed || proposedAction is not { } action || proposedLimits is not { } limits || planning is not null || busy) return;
         // Consume a proposal once. Repeat execution needs a newly reviewed proposal.
         proposedAction = null;
         proposedLimits = null;

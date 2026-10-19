@@ -1,5 +1,27 @@
 # Testing
 
+## Chat-to-Research handoff candidate — 2026-10-19
+
+Base `7ce7f639c999c79631e786a7365578773e1da530`, branch
+`feature/chat-project-handoff`. Artifacts: ignored `artifacts/qa/chat-project-handoff/`.
+
+| Actually executed | Result | Receipt |
+|---|---|---|
+| Linux SDK 10.0.401 strict Release Windows-targeted build | zero warnings/errors | `build.log`, `build-smoke.log` |
+| Architecture | 11/11 pass | `architecture.log` |
+| Handoff/project/text regression selection | 107 total: 103 pass, 4 Windows-only skips | `handoff-portable-final.trx`, `portable-final.log` |
+| Independent handoff suite | 32/32 pass | `independent/independent-handoff.trx` |
+| Initial broader planner selection | 96 total: 93 pass, 1 skip, 2 Windows-path-on-Linux fixture failures | `handoff-portable.trx` |
+| Broad Python discovery | 49 total, 21 errors (`SystemRoot` Windows-only protocol prerequisites absent) | `python-project-data.log` |
+
+Supported Windows `verify.ps1`/`verify-negative.ps1`, new real-App native smoke and
+final independent acceptance are pending at this checkpoint. No Linux WPF execution
+or installed-model inference is claimed. New smoke drives the actual App handler
+through native Chat/picker/preview/Lab, with fixed public fixtures and zero-worker
+assertions. Existing gates remain unchanged; diagnostics read only bounded fixed
+checkpoint labels and TRX method outcomes, never request contents/paths.
+
+
 ## Research projects — final development evidence, 2026-10-19
 
 Reviewed executable source **`c8da7e5664faec3f8d5430bec0ab018aa8512f42`**;

@@ -1,5 +1,13 @@
 # Security and privacy design
 
+[Explicit Chat handoff](docs/CHAT_PROJECT_HANDOFF.md) transfers only the exact bounded
+Saved Chat draft after project/identity preview and confirmation. Temporary mode
+refuses transfer. Process-local single-use tickets capture a workspace lease and
+admission revision; no execution authority, logging or request persistence is added.
+Transfers start no model/worker. Dataset selection remains explicit in the intended
+Lab; model file actions must equal that selection. Edits cancel/invalidate proposals,
+including late output; only the existing reviewed Run admits a proposed action.
+
 Research projects add a bounded, local-only metadata catalog with explicit creation,
 generated IDs, literal names and no caller-supplied storage paths. Project switches
 serialize against job admission and retire the old façade before confirming worker
@@ -7,7 +15,8 @@ cleanup; uncertainty blocks another project service. Catalog corruption/unknown
 versions are not overwritten or silently recovered; atomic writes retain a backup.
 Existing local path checks reject UNC/linked ancestors within the trusted user-profile
 boundary. They do not establish atomic exclusion of arbitrary same-user filesystem
-swaps. No Chat/temporary content is transferred, and project selection grants no
+swaps. Project selection alone transfers no Chat content, Temporary Chat cannot hand off,
+and project selection grants no
 ML proposal execution authority. See [threat boundaries and recovery](docs/RESEARCH_PROJECTS.md).
 
 Living threat model, not a security certification. Phase 1 adds explicit local preference
