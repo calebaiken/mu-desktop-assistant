@@ -38,6 +38,7 @@ public partial class ChatWindow : Window
             catch (Win32Exception) { StatusLabel.Text = "The display changed. You can move this chat window using its title bar."; }
             MessageInput.Focus();
         };
+        Closing += (_, _) => BeginShutdown();
         Closed += (_, _) => BeginShutdown();
     }
 

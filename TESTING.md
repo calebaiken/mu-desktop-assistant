@@ -39,8 +39,16 @@ to live original dialogs, record safe dispatcher failure type and numeric elapse
 time, and mark owner-close entry/return. No gate, timeout or assertion is relaxed.
 Receipts: `windows-owner-push-{jobs,annotations}.json`.
 
-Final supported Windows gates/native smoke and
-independent acceptance remain pending. No Linux WPF execution
+Source `737d420` push [39307018772](https://github.com/calebaiken/mu-desktop-assistant/actions/runs/39307018772)
+again passed 524 C# tests with one platform NotExecuted, but positive smoke failed
+and negative was skipped. Sixteen native handoff markers show Chat.Close both
+started and returned at 1,373 ms; the modal transfer did not then complete. This
+rules out accumulated smoke duration at that checkpoint. The next lifecycle fix
+cancels at Chat.Closing before owner teardown, synchronously unwinds the original
+active modal on the UI thread, and checks cancellation before opening either dialog.
+The watchdog remains active until transfer completion. Receipts:
+`windows-cancel-push-{jobs,annotations}.json`. Final supported Windows gates/native
+smoke and independent acceptance remain pending. No Linux WPF execution
 or installed-model inference is claimed. New smoke drives the actual App handler
 through native Chat/picker/preview/Lab, with fixed public fixtures and zero-worker
 assertions. Existing gates remain unchanged; diagnostics read only bounded fixed

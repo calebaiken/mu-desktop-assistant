@@ -109,12 +109,20 @@ public partial class App
             var picker = new ResearchProjectsWindow(researchProjects) { Owner = source };
             researchProjectsWindow = picker;
             ResearchHandoffWindow? preview = null;
-            using var cancelled = cancellationToken.Register(() => Dispatcher.BeginInvoke(new Action(() =>
+            void CancelDialogs()
             {
-                if (preview is { IsVisible: true }) preview.Close();
-                if (picker.IsVisible) picker.Close();
-            })));
-            if (researchProjectsWindow.ShowDialog() != true || researchProjectsWindow.SelectedProjectId is not { } id) return false;
+                // On Chat.Closing, unwind the modal before WPF tears down its owner.
+                // References belong only to this transfer; late cancellation cannot close a later dialog.
+                if (preview is { IsVisible: true }) preview.DialogResult = false;
+                if (picker.IsVisible) picker.DialogResult = false;
+            }
+            using var cancelled = cancellationToken.Register(() =>
+            {
+                if (Dispatcher.CheckAccess()) CancelDialogs();
+                else if (!Dispatcher.HasShutdownStarted) Dispatcher.BeginInvoke(new Action(CancelDialogs));
+            });
+            cancellationToken.ThrowIfCancellationRequested();
+            if (picker.ShowDialog() != true || picker.SelectedProjectId is not { } id) return false;
             cancellationToken.ThrowIfCancellationRequested();
             var selection = await researchWorkspace.OpenAsync(id, cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
@@ -127,6 +135,7 @@ public partial class App
             using var handoff = researchWorkspace.PrepareHandoff(id, request, source.IsTemporary);
             preview = new(handoff) { Owner = source };
             researchHandoffWindow = preview;
+            cancellationToken.ThrowIfCancellationRequested();
             if (preview.ShowDialog() != true) return false;
             cancellationToken.ThrowIfCancellationRequested();
             if (stopping || !ReferenceEquals(chatWindow, source) || !ReferenceEquals(mlLabWindow, intendedView)) return false;

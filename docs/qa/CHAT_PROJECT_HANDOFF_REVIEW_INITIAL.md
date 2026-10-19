@@ -154,3 +154,65 @@ progress at entry/each checkpoint so an externally killed smoke remains diagnosa
 No request/path/error payloads, 15-second threshold changes or assertion weakening
 are authorized by this review. A fresh exact-source Windows run is required.
 The original **83/100 = 8.3 FAIL / INCOMPLETE** verdict remains unchanged.
+
+## Addendum — native progress and failure on `40d4021`
+
+The next source checkpoint,
+`40d4021691144321c8667021c2f406fb98b6545b`, creates the companion's actual HWND
+before assigning it as Chat's owner, guards partial XAML initialization, and wraps
+the complete smoke setup in bounded fixed-label receipt handling. It preserves
+the original 15-second gate and production assertions.
+
+Actual Windows push
+[39306220091](https://github.com/calebaiken/mu-desktop-assistant/actions/runs/39306220091),
+job `118243878059`, again reports 524 passed / 0 failed / 1 expected NotExecuted of
+525 C# tests, the four named native tests Passed, and all 21 prior project smoke
+checkpoints. The handoff receipt now records **14 successful distinct native
+checkpoints**, including native owner creation, Temporary refusal, real minimum
+Chat/preview bounds, exact preview/confirmation, zero worker/artifact transfer,
+same-project dataset retention, Cancel, closed destination, and dismissed transfer
+without cross-project selection. This verifies those observed boundaries on this
+checkpoint; it does not qualify the unfinished later lifecycle tests.
+
+The receipt reports `completed: false`, no `failedCheck` and no `failureType`.
+The required positive gate still failed and the negative gate was skipped. The
+next source operation closes Chat while its real transfer preview is modal.
+Current evidence cannot distinguish a close/dispatcher failure from accumulated
+smoke duration reaching the 15-second process limit. No attribution or passing
+handoff verdict is inferred. The actual bounded annotation is retained locally at
+`artifacts/qa/chat-project-handoff/windows-owner-push-annotations.json`.
+
+The reviewer requested precise fixed start/end markers and bounded numeric elapsed
+time, plus private-data-safe dispatcher failure type, before further changes. A
+production cancellation callback must operate only on its captured live dialogs;
+a callback already queued after close must not act on a later view. The next
+implementation adds those narrow diagnostics/guards and requires another actual
+Windows run. The independent verdict remains **FAIL / INCOMPLETE**, regardless of
+the successful earlier native checkpoints and C# suite.
+
+## Addendum — owner-close stall localized on `737d420`
+
+Source `737d420a00e854d026e5489d247ccfc4958c9032` adds captured-visible-dialog
+cancellation guards, fixed before/after close markers, private-data-safe dispatcher
+failure type, and a bounded numeric smoke duration. Windows push
+[39307018772](https://github.com/calebaiken/mu-desktop-assistant/actions/runs/39307018772),
+job `118246618650`, still fails the positive gate after 524 passed / zero failed /
+one expected NotExecuted of 525 C# tests and the prior 21 native project checkpoints.
+The negative gate remains unrun.
+
+The independent reviewer fetched this job's bounded check annotations directly.
+The handoff has **16 distinct passed markers**, including both `closing Chat from
+real preview started` and `closing Chat from real preview returned`. The last
+receipt has elapsed time **1373 ms**, `completed: false` and no recorded failure
+type/checkpoint. This rules out treating accumulated handoff runtime as established
+cause: the observed stall follows a returned `Chat.Close()` while awaiting the real
+preview's modal workflow. The native owner-close behavior is an actual unresolved
+lifecycle blocker for this checkpoint, even though earlier transfer boundaries pass.
+
+The next narrow repair must cancel/unwind the captured modal before owner teardown,
+avoid acting on a closed/replaced dialog, check cancellation before opening a modal,
+and retain the local watchdog until the awaited transfer actually returns. The
+reviewer specifically recommends Chat `Closing` cancellation (with idempotent
+`Closed` fallback) and synchronous UI cancellation when already on the dispatcher.
+Neither the three-second local watchdog nor 15-second process gate may be relaxed.
+A fresh supported Windows result is required; this addendum grants no passing score.

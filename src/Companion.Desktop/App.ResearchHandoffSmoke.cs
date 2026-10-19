@@ -143,7 +143,7 @@ public partial class App
                         picker.OpenProject.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                     }
                     else if (stage == 1 && researchHandoffWindow is { IsLoaded: true } preview)
-                    { stage++; finish(preview); timer.Stop(); }
+                    { stage++; finish(preview); }
                 }
                 catch (Exception error) { failure = error; timer.Stop(); researchProjectsWindow?.Close(); researchHandoffWindow?.Close(); }
             };
