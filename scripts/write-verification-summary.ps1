@@ -44,6 +44,21 @@ if ((Test-Path -LiteralPath $reportPath -PathType Leaf) -and (Get-Item -LiteralP
             foreach ($name in ($names | Select-Object -First 50)) { $lines.Add('- ' + $name) }
             if ($names.Count -gt 50) { $lines.Add('[method list truncated at 50]') }
         }
+        foreach ($native in @(
+            'Companion.Tests.IndependentResearchProjectTests.RealWindowsOwnedWorkerRoutesRequestsOnlyToSelectedProjectAndReloadsItsOwnMarker',
+            'Companion.Tests.TextInspectionTests.WindowsRealPipelineRequiresConsentLocksIdentityAndRedactsPersistentAudit',
+            'Companion.Tests.TextInspectionTests.WindowsOversizedFileIsRefusedBeforeConsentAndLeaseIsReleased',
+            'Companion.Tests.TextInspectionTests.WindowsLeafAndAncestorLinksAreRefusedWithoutReadingTarget'
+        )) {
+            $results = @($report.SelectNodes('//*[local-name()="UnitTestResult"]') | Where-Object { $methods[$_.GetAttribute('testId')] -eq $native })
+            if ($results.Count -eq 0) { $lines.Add('Native case missing: ' + $native); continue }
+            $outcomes = @($results | ForEach-Object {
+                $value = $_.GetAttribute('outcome')
+                if ($value -notmatch '^[A-Za-z]{1,24}$') { throw 'Invalid native outcome.' }
+                $value
+            } | Sort-Object -Unique)
+            $lines.Add('Native case: ' + $native + ' => ' + ($outcomes -join ', '))
+        }
     }
     catch { $lines.Add('TRX details unavailable or invalid; no passing result inferred.') }
     finally { if ($null -ne $reader) { $reader.Dispose() } }
@@ -82,3 +97,10 @@ if (Test-Path -LiteralPath $smokeRoot -PathType Container) {
 if (-not $found) { $lines.Add('Native research smoke receipt missing; no native result inferred.') }
 if (($lines -join "`n").Length -gt 32KB) { throw 'Verification summary exceeds its 32 KiB character limit.' }
 $lines | Out-File -LiteralPath $SummaryPath -Encoding utf8 -Append
+if ($env:GITHUB_ACTIONS -eq 'true') {
+    # A single bounded annotation is also readable through GitHub's normal checks
+    # API when job summaries/log downloads are unavailable. Escape workflow-command
+    # delimiters; the same content policy above applies, without extra data.
+    $annotation = ($lines -join "`n").Replace('%', '%25').Replace("`r", '%0D').Replace("`n", '%0A')
+    Write-Output ('::notice title=Bounded verification evidence::' + $annotation)
+}
