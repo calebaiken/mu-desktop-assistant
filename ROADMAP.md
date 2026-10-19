@@ -7,7 +7,8 @@ implemented with each feature and adversarially tested again in Phase 11.
 
 **2026-10-19 priority: modules A, B, C, G, I.** The first candidate implements only
 A's selected plain-text read with I's adversarial policy/lifecycle tests and an actual
-WPF panel. Native Windows and independent qualification remain pending. Follow with
+WPF panel. Required Windows CI gates pass on `a999ae4`; independent review and the
+remaining physical/resource qualification are recorded in docs/qa and Testing. Follow with
 PR #1 review/integration and explicit project identity/Chat→Lab approval reuse (B),
 approved project SQLite memory (C), then independently qualified model profiles and
 workload admission (G/I). See [the audited dependency sequence](docs/AGENTIC_EVOLUTION_AUDIT.md).

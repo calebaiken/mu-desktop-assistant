@@ -4,6 +4,11 @@ Selected modules: **A, B, C, G, I**. First increment: A's approved, read-only
 plain-text inspection, with I's reliability/security checks. This is a development
 candidate; native Windows qualification and the independent phase exit remain gates.
 
+The audit below records the starting state. Subsequent implementation and Windows
+CI at `a999ae4` are recorded in [Testing](../TESTING.md) and docs/qa; the first bounded
+workflow is now wired and passes both required remote verification gates. Remaining
+physical/resource and detailed conditional-path qualification are still separate.
+
 ## Source and PR inspection
 
 - Repository: `https://github.com/calebaiken/mu-desktop-assistant`; Git's default

@@ -2,14 +2,17 @@
 
 A Windows-first personal AI companion built in C#/.NET 10 and WPF.
 
-**Approved text inspection candidate (2026-10-19).** More → Inspect text file opens
+**Approved text inspection (2026-10-19, bounded increment).** More → Inspect text file opens
 a separate read-only panel: enable, select one `.txt`/`.md`, review its exact target,
 then approve one bounded read. Text is literal and never automatically enters Chat
-or memory. Native Windows qualification is still pending; see
+or memory. Both required Windows CI gates pass on source `a999ae4`; physical picker/
+accessibility and full resource qualification remain open. See
 [usage and limits](docs/TRUSTED_TEXT_INSPECTION.md), [current testing](TESTING.md)
 and the [source/PR audit and selected-module sequence](docs/AGENTIC_EVOLUTION_AUDIT.md).
 The machine-specific installation/QA receipts below are historical; a new checkout
 does not contain their ignored runtime, model or binary artifacts.
+The separate [independent review](docs/qa/TRUSTED_TEXT_INSPECTION_REVIEW_WINDOWS.md)
+passes this bounded development slice at 9.4/10; this is not release approval.
 
 | | |
 |---|---|

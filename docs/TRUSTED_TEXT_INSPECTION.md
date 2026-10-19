@@ -1,9 +1,10 @@
 # Approved read-only text inspection
 
-Development candidate, 2026-10-19. The source is wired end to end; Windows native/UI
-qualification and the independent phase verdict are recorded separately in Testing
-and docs/qa. This guide describes the intended controls without claiming an unrun
-Windows check passed.
+Bounded increment, 2026-10-19. Required Windows CI gates pass on source `a999ae4`,
+including the production reader and native inspection-window/control smoke. Detailed
+conditional symlink outcomes, physical interaction/accessibility and host resource
+qualification remain separate. Testing and docs/qa record the actual evidence and
+independent verdict; this does not certify a release or the larger selected modules.
 
 ## Use
 

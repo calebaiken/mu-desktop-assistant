@@ -16,9 +16,12 @@ is independent of all chat stores and memory; diagnostic events omit target and 
 Cancelled/late callbacks cannot repopulate a cleared/closed panel. Noncooperative I/O
 poisons the App-owned executor, retains cleanup ownership and can fail shutdown; a
 managed timeout is not proof a blocked kernel operation exited. See
-[the precise budgets/threat boundary](docs/TRUSTED_TEXT_INSPECTION.md). Native Windows
-file identity/reparse and actual picker/accessibility checks still require execution;
-no new OS sandbox or security certification is claimed.
+[the precise budgets/threat boundary](docs/TRUSTED_TEXT_INSPECTION.md). Exact-source
+Windows CI passes both required gates with the production reader/native window smoke
+and regular-file/ancestor sharing assertions. The detailed conditional symlink-case
+outcome is unavailable through the artifact-download policy; physical interaction
+and the broader hostile path-swap matrix remain unqualified. No new OS sandbox or
+security certification is claimed.
 
 The optional 2026-09-30 neural output backend uses pinned Kokoro ONNX assets and a
 separate hash-locked CPU runtime. Explicit setup downloads assets; speech itself

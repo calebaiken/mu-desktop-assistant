@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased — Approved read-only text inspection candidate (2026-10-19)
+## Unreleased — Approved read-only text inspection (2026-10-19, bounded increment)
 
 - Added More → Inspect text file: explicitly enable, select one `.txt`/`.md`, review
   the exact target/limits and approve one read. Results are literal and separate
@@ -10,7 +10,9 @@
   decoding, cancellation/deadline handling and redacted audit events.
 - Added real-stream and adversarial race/replay/stale/audit tests, Windows-only
   file/reparse integration checks, and the actual inspection controls to the normal
-  composed WPF smoke. Available Linux checks pass; Windows qualification remains open.
+  composed WPF smoke. New Linux checks pass with three explicit Windows skips; both
+  exact-source Windows workflows pass the positive/negative gates, including native
+  HWND and ancestor-rename checks. Physical/resource qualification remains open.
 - Recorded the current main/PR #1 audit and follow-ups for selected modules A/B/C/G/I.
   Corrected public-repository/source-state/verification wording without altering
   historical QA receipts, resource budgets, dependencies or PR #1's implementation.
