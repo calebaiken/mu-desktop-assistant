@@ -37,9 +37,9 @@ jobs:
       - name: Adversarial architecture controls
         shell: powershell
         run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-negative.ps1
-      - name: Capture unchanged Research Projects baseline
+      - name: Verify native Research Projects UI
         shell: powershell
-        run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-projects-ui.ps1 -Mode baseline -SourceCommit 6e4ba5d5f0edd5af23eabf3493e41c07dd6b592e
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-projects-ui.ps1 -Mode candidate
       - name: Preserve native Research Projects evidence
         if: always()
         uses: actions/upload-artifact@v7

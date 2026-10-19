@@ -62,6 +62,10 @@ internal static class ResearchProjectSmokeChecks
             foreach (var (control, label) in new (FrameworkElement, string)[]
             { (picker.OpenProject, "open button"), (picker.CreateProject, "create button"), (picker.ProjectName, "name input"), (picker.ProjectsList, "project list") })
             {
+                // The narrow picker deliberately scrolls its body, while Open/Cancel
+                // stay outside it. Verify each body control is actually reachable.
+                control.BringIntoView();
+                await picker.Dispatcher.InvokeAsync(picker.UpdateLayout, DispatcherPriority.ApplicationIdle);
                 var rectangle = new Rect(control.TranslatePoint(new Point(), picker), control.RenderSize);
                 check(rectangle.Width > 0 && rectangle.Height > 0 && rectangle.Left >= 0 && rectangle.Top >= 0 &&
                     rectangle.Right <= picker.ActualWidth && rectangle.Bottom <= picker.ActualHeight, "minimum layout " + label + " within window");

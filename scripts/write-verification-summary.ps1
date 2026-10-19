@@ -103,6 +103,45 @@ if (Test-Path -LiteralPath $smokeRoot -PathType Container) {
     }
 }
 if (-not $found) { $lines.Add('Native research smoke receipt missing; no native result inferred.') }
+foreach ($captureMode in @('baseline', 'candidate')) {
+    $captureRoot = Join-Path $workspaceRoot "artifacts/ui-v3/$captureMode"
+    $capturePath = Join-Path $captureRoot 'captures.json'
+    if (Test-Path -LiteralPath $capturePath -PathType Leaf) {
+        try {
+            if ((Get-Item -LiteralPath $capturePath).Length -gt 16KB) { throw 'Oversized capture manifest.' }
+            $capture = Get-Content -LiteralPath $capturePath -Raw | ConvertFrom-Json
+            if ($capture.source -notmatch '^[a-f0-9]{40}$' -or $capture.mode -ne $captureMode -or @($capture.images).Count -gt 16) { throw 'Invalid capture manifest.' }
+            $lines.Add("Native client captures generated: $captureMode; source: $($capture.source); images: $(@($capture.images).Count). Image inspection is separate.")
+            foreach ($picture in $capture.images) {
+                if ($picture.name -notmatch '^(baseline|candidate)-[0-9]{3,4}x[0-9]{3,4}-(selected(-archive)?|empty|error)\.png$') { throw 'Invalid fixed capture name.' }
+                foreach ($field in @('windowWidthDip','windowHeightDip','PixelWidth','PixelHeight','DpiScaleX','DpiScaleY')) {
+                    $number = $picture.$field
+                    if ($number -isnot [double] -and $number -isnot [long] -and $number -isnot [int]) { throw 'Invalid capture dimensions.' }
+                    if ($number -le 0 -or $number -gt 8192) { throw 'Invalid capture dimensions.' }
+                }
+                $lines.Add("- $($picture.name): window $($picture.windowWidthDip)x$($picture.windowHeightDip) DIP; client $($picture.PixelWidth)x$($picture.PixelHeight) pixels; scale $($picture.DpiScaleX)x$($picture.DpiScaleY)")
+            }
+        }
+        catch { $lines.Add('Native capture manifest unavailable or invalid; no visual result inferred.') }
+    }
+    $checksPath = Join-Path $captureRoot 'independent-native-checks.json'
+    if (Test-Path -LiteralPath $checksPath -PathType Leaf) {
+        try {
+            if ((Get-Item -LiteralPath $checksPath).Length -gt 32KB) { throw 'Oversized native UI receipt.' }
+            $checks = Get-Content -LiteralPath $checksPath -Raw | ConvertFrom-Json
+            if ($checks.completed -isnot [bool] -or @($checks.passed).Count -gt 200) { throw 'Invalid native UI result.' }
+            $lines.Add('Independent native UI completed: ' + $checks.completed + '; passed checkpoints: ' + @($checks.passed).Count)
+            foreach ($field in @('stage','failedCheck','failureType')) {
+                $value = $checks.$field
+                if ($null -ne $value) {
+                    if ($value -isnot [string] -or $value.Length -gt 120 -or $value -notmatch '^[A-Za-z0-9 .-]+$') { throw 'Invalid fixed UI checkpoint.' }
+                    $lines.Add("UI ${field}: $value")
+                }
+            }
+        }
+        catch { $lines.Add('Independent native UI receipt invalid; no passing result inferred.') }
+    }
+}
 if (($lines -join "`n").Length -gt 32KB) { throw 'Verification summary exceeds its 32 KiB character limit.' }
 $lines | Out-File -LiteralPath $SummaryPath -Encoding utf8 -Append
 if ($env:GITHUB_ACTIONS -eq 'true') {

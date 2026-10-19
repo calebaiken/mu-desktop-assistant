@@ -60,6 +60,15 @@ internal static class Program
                 list.SelectedIndex = 0;
                 await SettleAsync(view);
                 Save(view, $"{mode}-{width}x{height}-selected.png");
+                if (mode == "candidate")
+                {
+                    var theme = (ComboBox)view.FindName("ThemeModeSelector");
+                    theme.SelectedIndex = 1;
+                    await SettleAsync(view);
+                    Save(view, $"{mode}-{width}x{height}-selected-archive.png");
+                    theme.SelectedIndex = 0;
+                    await SettleAsync(view);
+                }
                 if (width == 800)
                 {
                     var process = Process.GetCurrentProcess();

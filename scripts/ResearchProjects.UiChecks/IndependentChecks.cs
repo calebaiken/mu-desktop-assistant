@@ -13,6 +13,7 @@ using System.Windows.Media;
 using System.Windows.Threading;
 using Companion.Application.MachineLearning;
 using Companion.Desktop;
+using ResearchProjectLimits = Companion.Application.MachineLearning.ResearchProjects;
 
 namespace ResearchProjects.UiChecks;
 
@@ -42,10 +43,14 @@ internal static class IndependentChecks
             await DuplicateAndLateCreateAsync(Check);
             stage = "retry and stale selection";
             await RetryClearsStaleSelectionAsync(Check);
+            stage = "legacy and capacity";
+            await LegacyCapacityAsync(Check);
             stage = "identity and accessibility";
             await IdentityAndAccessibilityAsync(Check);
             stage = "modal actions";
             await ExplicitModalActionsAsync(Check);
+            stage = "late and changed open";
+            await LateAndChangedOpenAsync(Check);
             completed = true;
             return passed;
         }
@@ -55,6 +60,36 @@ internal static class IndependentChecks
             Directory.CreateDirectory(outputDirectory);
             await File.WriteAllTextAsync(Path.Combine(outputDirectory, "independent-native-checks.json"),
                 JsonSerializer.Serialize(new { completed, stage, failedCheck, failureType, passed }));
+        }
+    }
+
+    private static async Task LegacyCapacityAsync(Action<bool, string> check)
+    {
+        var legacy = Project(0, "Legacy kept in place") with { IsLegacy = true };
+        foreach (var namedCount in new[] { ResearchProjectLimits.MaximumProjects - 1, ResearchProjectLimits.MaximumProjects })
+        {
+            var rows = Enumerable.Range(1, namedCount).Select(i => Project(100 + i, "Project " + i)).Prepend(legacy).ToArray();
+            var store = new FixtureStore { Rows = rows };
+            var window = NewWindow(store);
+            try
+            {
+                window.Show();
+                await ReadyAsync(window, store);
+                var name = Find<TextBox>(window, "ProjectName");
+                if (name.IsEnabled) SetValue(name, "Capacity candidate");
+                else name.Text = "Capacity candidate"; // Deliberate disabled-state fixture injection checks the independent capacity guard.
+                await TurnAsync();
+                check(Find<ListBox>(window, "ProjectsList").Items.Count == namedCount + 1,
+                    "legacy is visible beside named catalog count " + namedCount);
+                check(Find<Button>(window, "CreateProject").IsEnabled == (namedCount < ResearchProjectLimits.MaximumProjects),
+                    "legacy does not consume named catalog capacity " + namedCount);
+                SelectRow(Find<ListBox>(window, "ProjectsList"), 0);
+                await TurnAsync();
+                check(Find<TextBox>(window, "ProjectTarget").Text.Contains(legacy.Directory, StringComparison.Ordinal)
+                    && SelectedId(window) is null && store.OpenCalls == 0,
+                    "legacy exact path is reviewed without activation " + namedCount);
+            }
+            finally { window.Close(); }
         }
     }
 
@@ -110,13 +145,13 @@ internal static class IndependentChecks
         {
             window.Show();
             await WaitAsync(() => store.ListCalls == 1, "deferred catalog began");
+            var pendingInitialization = Initialization(window);
             check(!Find<Button>(window, "OpenProject").IsEnabled, "pending catalog denies Open");
             check(!Find<Button>(window, "CreateProject").IsEnabled, "pending catalog denies Create");
             window.Close();
             check(store.LastListToken.IsCancellationRequested, "closing cancels catalog lifetime");
             gate.SetResult([Project(1, "Late catalog")]); // Intentionally noncooperative fixture.
-            await TurnAsync();
-            await TurnAsync();
+            await pendingInitialization.WaitAsync(Deadline);
             check(Find<ListBox>(window, "ProjectsList").Items.Count == 0, "late catalog cannot repopulate closed picker");
             check(SelectedId(window) is null && store.OpenCalls == 0, "late catalog cannot activate destination");
         }
@@ -186,9 +221,49 @@ internal static class IndependentChecks
                 "status declares relevant live region");
             SetValue(Find<TextBox>(window, "ProjectName"), "Keyboard creation candidate");
             await TurnAsync();
+            await ThemeContrastAsync(window, check);
             await NativeKeyboardAsync(window, check);
         }
         finally { window.Close(); }
+    }
+
+    private static async Task ThemeContrastAsync(Window window, Action<bool, string> check)
+    {
+        var selector = Find<ComboBox>(window, "ThemeModeSelector");
+        foreach (var mode in new[] { 0, 1 })
+        {
+            selector.SelectedIndex = mode;
+            await TurnAsync();
+            foreach (var name in new[] { "ProjectName", "ProjectTarget", "ProjectsList", "CreateProject", "OpenProject" })
+            {
+                var control = Find<Control>(window, name);
+                check(control.Foreground is SolidColorBrush && control.Background is SolidColorBrush,
+                    "rendered opaque brush roles " + mode + " " + name);
+                var foreground = ((SolidColorBrush)control.Foreground).Color;
+                var background = ((SolidColorBrush)control.Background).Color;
+                check(foreground.A == 255 && background.A == 255 && Contrast(foreground, background) >= 4.5,
+                    "rendered text contrast at least 4.5 " + mode + " " + name);
+                if (control is TextBox or ListBox)
+                    check(control.BorderBrush is SolidColorBrush stroke && stroke.Color.A == 255
+                        && Contrast(stroke.Color, background) >= 3,
+                        "essential control boundary contrast at least 3 " + mode + " " + name);
+            }
+        }
+        selector.SelectedIndex = 0;
+        await TurnAsync();
+    }
+
+    private static double Contrast(Color first, Color second)
+    {
+        static double Linear(byte channel)
+        {
+            var value = channel / 255d;
+            return value <= 0.04045 ? value / 12.92 : Math.Pow((value + 0.055) / 1.055, 2.4);
+        }
+        static double Luminance(Color color) => 0.2126 * Linear(color.R) + 0.7152 * Linear(color.G) + 0.0722 * Linear(color.B);
+        var a = Luminance(first);
+        var b = Luminance(second);
+        return (Math.Max(a, b) + 0.05) / (Math.Min(a, b) + 0.05);
     }
 
     private static async Task ExplicitModalActionsAsync(Action<bool, string> check)
@@ -215,6 +290,18 @@ internal static class IndependentChecks
             await WaitAsync(() => !window.IsVisible, "explicit modal Cancel completed");
         });
         check(cancelled != true && cancelledId is null, "UIA Cancel leaves no accepted destination");
+        var (escaped, escapedId) = await ModalAsync(store, async window =>
+        {
+            await ReadyAsync(window, store);
+            var handle = new WindowInteropHelper(window).Handle;
+            window.Activate();
+            _ = SetForegroundWindow(handle);
+            await TurnAsync();
+            check(GetForegroundWindow() == handle, "modal picker owns injected Escape foreground");
+            SendKey(0x1B);
+            await WaitAsync(() => !window.IsVisible, "native Escape completed");
+        });
+        check(escaped != true && escapedId is null, "native Escape leaves no accepted destination");
     }
 
     private static async Task<(bool? Result, Guid? Id)> ModalAsync(FixtureStore store, Func<ResearchProjectsWindow, Task> actions)
@@ -232,6 +319,51 @@ internal static class IndependentChecks
         await finished.Task.WaitAsync(Deadline);
         if (failure is not null) System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(failure).Throw();
         return (result, SelectedId(window));
+    }
+
+    private static async Task LateAndChangedOpenAsync(Action<bool, string> check)
+    {
+        var project = Project(9, "Reviewed snapshot");
+        var gate = new TaskCompletionSource<ResearchProject>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var deferred = new FixtureStore { Rows = [project], Open = (_, _) => gate.Task };
+        var (cancelled, cancelledId) = await ModalAsync(deferred, async window =>
+        {
+            await ReadyAsync(window, deferred);
+            SelectRow(Find<ListBox>(window, "ProjectsList"), 0);
+            // Directly invoke the production async boundary to retain its completion
+            // task. Separate modal tests above exercise the real UIA Open action.
+            var pendingOpen = (Task)window.GetType().GetMethod("OpenReviewedProjectAsync",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.Invoke(window, null)!;
+            check(deferred.OpenCalls == 1 && !Find<Button>(window, "OpenProject").IsEnabled,
+                "pending destination revalidation denies duplicate Open");
+            Invoke(Find<Button>(window, "CancelProjectsButton"));
+            await WaitAsync(() => !window.IsVisible, "cancelled pending destination");
+            gate.SetResult(project); // Intentionally ignores the cancelled lifetime.
+            await pendingOpen.WaitAsync(Deadline);
+            check(SelectedId(window) is null, "completed late Open cannot accept closed destination");
+        });
+        check(cancelled != true && cancelledId is null, "late Open preserves cancelled modal result");
+
+        var changed = new FixtureStore
+        {
+            Rows = [project],
+            Open = (_, _) => Task.FromResult(project with { Name = "Changed after review" })
+        };
+        var (stale, staleId) = await ModalAsync(changed, async window =>
+        {
+            await ReadyAsync(window, changed);
+            SelectRow(Find<ListBox>(window, "ProjectsList"), 0);
+            Invoke(Find<Button>(window, "OpenProject"));
+            await WaitAsync(() => changed.OpenCalls == 1 && Find<Button>(window, "RetryProjectsButton").IsEnabled,
+                "changed destination revalidation returned");
+            check(window.IsVisible && SelectedId(window) is null && !Find<Button>(window, "OpenProject").IsEnabled,
+                "changed reviewed snapshot refuses modal activation");
+            check(Find<TextBox>(window, "ProjectTarget").Text.Length == 0,
+                "changed destination clears obsolete preview");
+            Invoke(Find<Button>(window, "CancelProjectsButton"));
+            await WaitAsync(() => !window.IsVisible, "stale destination dismissed");
+        });
+        check(stale != true && staleId is null, "stale Open leaves no accepted identity");
     }
 
     private static void SelectRow(ListBox list, int index)
@@ -252,6 +384,18 @@ internal static class IndependentChecks
         _ = SetForegroundWindow(handle);
         await TurnAsync();
         check(GetForegroundWindow() == handle, "shown picker owns injected keyboard foreground");
+        var theme = Find<ComboBox>(window, "ThemeModeSelector");
+        Keyboard.Focus(theme);
+        keybd_event(0x12, 0, 0, UIntPtr.Zero); // Alt+Down exercises the native ComboBox route.
+        SendKey(0x28);
+        keybd_event(0x12, 0, 0x0002, UIntPtr.Zero);
+        await WaitAsync(() => theme.IsDropDownOpen, "native theme dropdown opened");
+        SendKey(0x23); // End.
+        SendKey(0x0D); // Enter consumes only the local theme choice.
+        await WaitAsync(() => !theme.IsDropDownOpen && theme.SelectedIndex == 1, "native theme choice applied");
+        check(window.IsVisible && SelectedId(window) is null, "theme keyboard Enter cannot activate project");
+        theme.SelectedIndex = 0;
+        await TurnAsync();
         var name = Find<TextBox>(window, "ProjectName");
         Keyboard.Focus(name);
         await TurnAsync();
@@ -286,7 +430,7 @@ internal static class IndependentChecks
 
     private static async Task ReadyAsync(Window window, FixtureStore store)
     {
-        await WaitAsync(() => store.ListCalls >= 1 && Find<TextBox>(window, "ProjectName").IsEnabled, "catalog ready");
+        await WaitAsync(() => store.ListCalls >= 1 && Find<Button>(window, "RetryProjectsButton").IsEnabled, "catalog ready");
         await TurnAsync();
         window.UpdateLayout();
     }
@@ -297,6 +441,10 @@ internal static class IndependentChecks
     private static Guid? SelectedId(Window window) => (Guid?)window.GetType()
         .GetProperty("SelectedProjectId", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
         .GetValue(window);
+
+    private static Task Initialization(Window window) => (Task)window.GetType()
+        .GetMethod("InitializeAsync", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
+        .Invoke(window, null)!;
 
     private static void SetValue(TextBox text, string value)
     {
@@ -346,6 +494,7 @@ internal static class IndependentChecks
         internal IReadOnlyList<ResearchProject> Rows { get; set; } = [];
         internal Func<CancellationToken, Task<IReadOnlyList<ResearchProject>>>? List { get; init; }
         internal Func<string, CancellationToken, Task<ResearchProject>>? Create { get; init; }
+        internal Func<Guid, CancellationToken, Task<ResearchProject>>? Open { get; init; }
         internal int ListCalls { get; private set; }
         internal int CreateCalls { get; private set; }
         internal int OpenCalls { get; private set; }
@@ -356,6 +505,6 @@ internal static class IndependentChecks
         public Task<ResearchProject> CreateAsync(string name, CancellationToken cancellationToken = default)
         { CreateCalls++; LastCreateToken = cancellationToken; return Create?.Invoke(name, cancellationToken) ?? Task.FromException<ResearchProject>(new MlException("fixture_create", "Fixture creation unavailable.")); }
         public Task<ResearchProject> OpenAsync(Guid id, CancellationToken cancellationToken = default)
-        { OpenCalls++; return Task.FromResult(Rows.Single(project => project.Id == id)); }
+        { OpenCalls++; return Open?.Invoke(id, cancellationToken) ?? Task.FromResult(Rows.Single(project => project.Id == id)); }
     }
 }
