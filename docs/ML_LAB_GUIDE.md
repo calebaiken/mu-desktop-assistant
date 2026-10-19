@@ -1,5 +1,13 @@
 # Mu Machine Learning Lab
 
+The research-project candidate now opens an explicit local project picker before
+the Lab. Create/select a project and review its ID/storage; **Change project…**
+starts a fresh view after queued/running jobs settle and old-service cleanup is
+confirmed. Original default-project artifacts stay selectable in place. Dataset
+controls and reviewed execution below are unchanged; no Chat content is transferred.
+See [project limits, compatibility and recovery](RESEARCH_PROJECTS.md) and
+[actual verification status](../TESTING.md).
+
 The Lab is a native Windows workspace for local dataset inspection, bounded CPU
 experiments, saved models and prediction. Open **Machine Learning Lab** from Mu's
 More menu, tray menu or Chat. It is separate from conversation storage: using the

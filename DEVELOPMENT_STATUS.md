@@ -1,6 +1,36 @@
 # Development status
 
-## Current increment — approved text inspection (2026-10-19)
+## Current increment — explicit research projects (2026-10-19)
+
+Branch `feature/research-projects` is stacked on approved-text-inspection commit
+`376c3206a38fa86b1639e5f72c6a67cc57153cb4` (draft PR #2), with main still at `7fe3305`.
+This is a bounded Module B project-selection increment with I's admission/recovery
+tests. It adds explicit named local projects, stable generated identities, isolated
+existing Lab services/artifacts, legacy default-project access without relocation,
+and fresh views/proposals on project changes. Active/queued work blocks switching;
+uncertain cleanup blocks a new service. No Chat content transfer or new computation
+is implemented. See [workflow and safety boundary](docs/RESEARCH_PROJECTS.md).
+
+Current Linux checks: strict cross-build zero warnings/errors, architecture 11/11,
+project tests 50 passed/1 native skip of 51, prior-A regression 40 passed/3 native
+skips of 43. Independent QA reproduces 39 portable passes/1 native skip of its 40
+cases. Production Python-worker isolation passes actual training/listing/cross-project
+denial/export and unchanged-source checks, and all 48 existing portable ML tests
+pass (49 Python tests total). Native Windows CI and the independent phase verdict
+remain pending for this candidate. The independent reviewer froze
+[50 criteria](docs/qa/RESEARCH_PROJECTS_PROTOCOL.md) before review. Historical A
+scores and receipts below remain intact; its pass does not approve this new phase.
+The initial independent [Linux checkpoint](docs/qa/RESEARCH_PROJECTS_REVIEW_INITIAL.md)
+scores 86/100 = 8.6/10 but explicitly **FAIL / incomplete phase exit** because
+supported-platform gates and native behavior have not executed for this candidate.
+No confirmed unresolved critical defect was found; the evidence requirement still
+blocks phase advancement despite clearing the numeric threshold.
+
+Next objective after verification: explicit Chat-to-project handoff reusing Lab's
+captured selection and reviewed Run, then approved SQLite project memory and
+separate model/resource qualification. D/E/F/H and PR #1 remain outside this change.
+
+## Prior increment — approved text inspection (2026-10-19)
 
 Source base: `main` at `7fe3305b49f755a94d65362692e783ef0e60035a`, clean checkout;
 branch `feature/trusted-text-inspection`. Selected modules are A, B, C, G, I.

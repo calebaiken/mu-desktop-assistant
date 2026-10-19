@@ -1,5 +1,46 @@
 # Testing
 
+## Research projects — 2026-10-19 candidate
+
+Base `376c3206a38fa86b1639e5f72c6a67cc57153cb4`; branch `feature/research-projects`.
+The [project guide](docs/RESEARCH_PROJECTS.md) documents the observable workflow and
+the independently [frozen criteria](docs/qa/RESEARCH_PROJECTS_PROTOCOL.md) cover only
+this bounded increment. Candidate verification is in progress, not yet a phase exit.
+The [initial independent review](docs/qa/RESEARCH_PROJECTS_REVIEW_INITIAL.md) is
+**8.6/10, FAIL / incomplete phase exit** for missing actual native evidence;
+the numerical threshold alone does not establish phase approval.
+
+Receipts under `artifacts/qa/research-projects/`:
+
+- `build-candidate.log`: serialized Release cross-build, SDK10.0.401/Linux,
+  `EnableWindowsTargeting=true`, zero warnings/errors. A prior overlapping developer/
+  reviewer build failed because intermediate DLLs were being regenerated; its
+  `build-native-smoke.log` is retained and final builds are serialized.
+- `python-projects-first.log`: initial test fixture incorrectly expected exit1 for
+  a declared worker error; main's protocol exits0 with `ok:false`. Corrected the
+  assertion without changing the worker or adopting PR #1's transport changes.
+- `python-projects-final.log`: real production-worker subprocess test passes actual
+  train/list/describe/export isolation, cross-project retrieval denial and unchanged
+  source data. No mocked model computation is substituted for that check.
+- `research-projects-author.trx`, `tests-author.log`: 51 new project cases,
+  **50 passed / 0 failed / 1 Windows-only process skip** on Linux. Independent
+  reproduction is 39 passed / 1 native skip of its 40 cases; receipt
+  `independent/checkpoint-independent.trx`. Name/surrogate fixture corrections and
+  earlier discovery/build overlap receipts remain retained there.
+- `architecture.log`: 11/11; `trusted-action-regression.trx`: 40 passed / 3 explicit
+  native skips of 43 prior-A cases. Existing worker suites (`ml-author.log`,
+  `ml-data.log`, `ml-pipeline.log`, `ml-engine.log`) pass 6+16+7+19=48 tests;
+  with the new production-worker case, 49 actual Python tests pass.
+
+The ordinary Windows `--smoke` path now also creates project picker/Lab HWNDs and
+exercises real catalog/session controls, exact identity/storage preview, proposal
+without execution, fresh view state, stale-project denial and production missing-
+runtime recovery. Its model JSON is an explicit fixture, not installed-model
+inference qualification. A Windows-only real owned-worker routing test reports an
+honest skip when its native/interpreter prerequisites are missing. Native execution,
+physical interaction/accessibility and detailed conditional outcomes must be reported
+from actual evidence; existing Linux failures/history below remain unchanged.
+
 ## Approved text inspection — 2026-10-19
 
 The new panel, contracts and native adapter are described in

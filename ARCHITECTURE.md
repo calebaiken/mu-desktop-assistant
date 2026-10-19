@@ -1,5 +1,17 @@
 # Architecture
 
+The [research project increment](docs/RESEARCH_PROJECTS.md) adds Application-owned
+project contracts and `ResearchLabWorkspace`, an admission/switch controller returning
+borrowed project-bound Lab services. Infrastructure implements a bounded versioned
+atomic JSON metadata catalog using the existing writer; directories derive only
+from the managed profile and generated IDs. Desktop opens an explicit project
+picker, then the existing Lab with that identity. One service is admitted at a time;
+active/queued requests block retirement, old façades reject execution, and failed
+cleanup poisons further admission. Normal view closure retains the App-owned service.
+Existing `default-project` artifacts stay in place. Neither chat nor numerical
+workers nor dependency/layer graphs change; native/independent candidate checks are
+tracked separately in Testing.
+
 The 2026-10-19 [text inspection increment](docs/TRUSTED_TEXT_INSPECTION.md) introduces
 the first implemented tool/permission ports and a separate native inspection panel.
 Application owns the typed descriptor/proposal, sealed preview, opaque single-use

@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased — Explicit research projects (2026-10-19, bounded increment)
+
+- Added a project picker to existing ML Lab navigation and Change project control:
+  explicitly create/select a local project and review its stable ID/storage.
+  Existing default-project work remains selectable in its original location.
+- Isolated existing Lab views/history/artifacts by generated project identity, with
+  bounded versioned atomic metadata and retained catalog backup. No chat is copied.
+- Serialized project switches with job admission; active/queued work blocks switching,
+  retired views cannot execute, and uncertain cleanup prevents a new service.
+- Added real filesystem/session, production Python two-project and native control
+  diagnostics. Candidate Windows/independent qualification is pending; no scientific
+  algorithms, dependencies, memory or model-profile capabilities are added.
+
 ## Unreleased — Approved read-only text inspection (2026-10-19, bounded increment)
 
 - Added More → Inspect text file: explicitly enable, select one `.txt`/`.md`, review

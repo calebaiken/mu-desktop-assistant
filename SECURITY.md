@@ -1,5 +1,15 @@
 # Security and privacy design
 
+Research projects add a bounded, local-only metadata catalog with explicit creation,
+generated IDs, literal names and no caller-supplied storage paths. Project switches
+serialize against job admission and retire the old façade before confirming worker
+cleanup; uncertainty blocks another project service. Catalog corruption/unknown
+versions are not overwritten or silently recovered; atomic writes retain a backup.
+Existing local path checks reject UNC/linked ancestors within the trusted user-profile
+boundary. They do not establish atomic exclusion of arbitrary same-user filesystem
+swaps. No Chat/temporary content is transferred, and project selection grants no
+ML proposal execution authority. See [threat boundaries and recovery](docs/RESEARCH_PROJECTS.md).
+
 Living threat model, not a security certification. Phase 1 adds explicit local preference
 storage, content-free diagnostics and same-user activation IPC. Phase 3 adds an owned
 local model process, bounded loopback chat client and optional saved conversations.

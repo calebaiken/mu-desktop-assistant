@@ -1,5 +1,24 @@
 # Application contracts
 
+## Implemented research-project candidate
+
+`IResearchProjectStore` explicitly creates, lists and resolves a project by ID.
+`ResearchProject` is immutable metadata: generated ID, literal name, derived directory,
+UTC creation time and a legacy indicator. A record supplied by a caller is never
+accepted as a directory override. The reserved empty GUID identifies existing
+default-project work; no automatic migration or project selection is performed.
+
+`ResearchLabWorkspace.OpenAsync(id)` returns `ResearchLabSelection(Project, Service)`.
+The service is a borrowed, project-bound façade: views may execute/cancel/observe,
+but disposal is explicitly rejected because App owns the workspace. Admission is
+counted synchronously before calling the inner Lab; queued/running jobs and another
+transition block switching. Old façades cannot admit work after retirement. The
+old inner service must finish disposal before factory admission for a new project;
+six-second timeout or failure poisons the workspace and retains cleanup ownership.
+`DisposeAsync` is shared/idempotent and awaits transitions and owned cleanup; App
+applies its bounded shutdown deadline and reports uncertainty. No success claim is
+made for stalled native I/O/process cleanup. See [storage/limits/recovery](RESEARCH_PROJECTS.md).
+
 ## Implemented local chat increment
 
 `IChatModel.StreamAsync` accepts an immutable snapshot of role/content messages and

@@ -9,6 +9,12 @@ CI at `a999ae4` are recorded in [Testing](../TESTING.md) and docs/qa; the first 
 workflow is now wired and passes both required remote verification gates. Remaining
 physical/resource and detailed conditional-path qualification are still separate.
 
+The follow-up `feature/research-projects` candidate adds explicit project creation/
+selection and serialized existing-Lab ownership on top of the first slice; see
+[its bounded workflow and verification scope](RESEARCH_PROJECTS.md). The inventory
+below deliberately retains the original main audit rather than claiming Chat
+handoff, memory or model-profile follow-ups have been implemented.
+
 ## Source and PR inspection
 
 - Repository: `https://github.com/calebaiken/mu-desktop-assistant`; Git's default

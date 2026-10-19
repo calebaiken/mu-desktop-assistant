@@ -34,14 +34,15 @@ public partial class MlLabWindow : Window
     private bool initialized;
 
     public MlLabWindow(IMlLabService service, Func<CancellationToken, Task<IChatModel>>? modelFactory = null,
-        ILayaDecisionService? laya = null)
+        ILayaDecisionService? laya = null, ResearchProject? project = null)
     {
         ArgumentNullException.ThrowIfNull(service);
         this.service = service;
         this.modelFactory = modelFactory;
         this.laya = laya;
         InitializeComponent();
-        ProjectLabel.Text = $"Project: {service.ProjectDirectory}";
+        ProjectLabel.Text = project is null ? $"Project: {service.ProjectDirectory}" : $"Project: {project.Name} · {(project.IsLegacy ? "legacy" : project.Id.ToString("N"))}\n{service.ProjectDirectory}";
+        ChangeProjectButton.Visibility = project is null ? Visibility.Collapsed : Visibility.Visible;
         FeaturesGrid.ItemsSource = features;
         JobsGrid.ItemsSource = jobs;
         TaskSelector.ItemsSource = new[] { "regression", "classification", "clustering", "reduction", "anomaly" };
@@ -63,6 +64,8 @@ public partial class MlLabWindow : Window
     }
 
     internal bool IsBusy => busy;
+    public event EventHandler? ChangeProjectRequested;
+    private void ChangeProject_Click(object sender, RoutedEventArgs e) => ChangeProjectRequested?.Invoke(this, EventArgs.Empty);
     internal string CurrentStatus => StatusLabel.Text;
     internal IReadOnlyList<string> SelectedFeatures => features.Where(feature => feature.Use).Select(feature => feature.Name).ToArray();
 
