@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased — Approved read-only text inspection candidate (2026-10-19)
+
+- Added More → Inspect text file: explicitly enable, select one `.txt`/`.md`, review
+  the exact target/limits and approve one read. Results are literal and separate
+  from Chat, ML Lab and memory; no general shell or filesystem capability is added.
+- Added default-deny typed tool/permission ports, monotonic expiring single-use
+  grants, retained Windows path/identity leases, strict 64 KiB / 32,768-character
+  decoding, cancellation/deadline handling and redacted audit events.
+- Added real-stream and adversarial race/replay/stale/audit tests, Windows-only
+  file/reparse integration checks, and the actual inspection controls to the normal
+  composed WPF smoke. Available Linux checks pass; Windows qualification remains open.
+- Recorded the current main/PR #1 audit and follow-ups for selected modules A/B/C/G/I.
+  Corrected public-repository/source-state/verification wording without altering
+  historical QA receipts, resource budgets, dependencies or PR #1's implementation.
+
 ## Unreleased — Optional local neural voices (2026-09-30)
 
 - Added pretrained Kokoro English voices Heart, Bella, Michael and George to

@@ -114,6 +114,7 @@
             </MenuItem>
             <MenuItem Header="_Chat" InputGestureText="Ctrl+Shift+C" Click="Chat_Click" />
             <MenuItem Header="Machine _Learning Lab" Click="MlLab_Click" />
+            <MenuItem Header="_Inspect text file…" Click="InspectText_Click" />
             <MenuItem Header="_Settings" Click="Settings_Click" />
             <MenuItem Header="_Hide" Click="Hide_Click" />
             <MenuItem Header="_Next display" InputGestureText="Ctrl+Shift+M" Click="NextMonitor_Click" />

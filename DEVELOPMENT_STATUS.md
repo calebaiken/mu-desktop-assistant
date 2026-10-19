@@ -1,5 +1,45 @@
 # Development status
 
+## Current candidate — approved text inspection (2026-10-19)
+
+Source base: `main` at `7fe3305b49f755a94d65362692e783ef0e60035a`, clean checkout;
+branch `feature/trusted-text-inspection`. Selected modules are A, B, C, G, I.
+The [source and open-PR audit](docs/AGENTIC_EVOLUTION_AUDIT.md) records actual
+capabilities, inconsistencies and dependencies. PR #1 remains separate and unmerged.
+
+Implemented source workflow: More → Inspect text file → enable for window → select
+one `.txt`/`.md` → exact metadata/limits preview → approve once → literal bounded
+read → clear/disable. No model, Chat, memory or remote access is added. Typed ports,
+single-use monotonic-expiry grants, Windows handle leases and fail-closed audit
+form the first A slice, rather than an autonomous planner or larger module scaffold.
+See [usage/security boundaries](docs/TRUSTED_TEXT_INSPECTION.md).
+
+Current available evidence: Release cross-build 0 warnings/errors; architecture
+11/11; selected new tests 40 passed, 0 failed, 3 Windows-only skipped (43 total),
+independently reproduced. The pre-change Linux full gate reports 344 passed,
+23 Windows-dependent failures, 31 skipped (398 total). The full candidate run before
+the final additional Unicode path case had 383 passed, the identical 23 failing
+test names and 34 skipped (440 total); all 48 portable ML tests pass. Native WPF and Windows
+positive/negative gates are not certified by those Linux runs. Detailed current
+receipts and independent review are tracked in Testing and docs/qa; the strict
+score >8.5/zero-critical phase gate remains in force.
+
+Initial independent QA failed at 6.9/10 during implementation; its report is preserved
+at `docs/qa/TRUSTED_TEXT_INSPECTION_REVIEW_INITIAL.md`. Subsequent repairs cover
+expired lease cleanup, noncooperative callbacks, terminal-audit revocation, late
+cleanup ownership, repeated disposal and full Unicode Format checks. No independent
+passing phase verdict or Windows delivery is claimed at this checkpoint.
+The subsequent independent [Linux checkpoint](docs/qa/TRUSTED_TEXT_INSPECTION_REVIEW_LINUX.md)
+scores **8.2/10, FAIL / incomplete phase exit**: available tests pass, but native
+Windows behavior remains unexecuted. The missing evidence cannot receive passing credit.
+
+Remaining: actual Windows file/reparse/UI/full-gate qualification, native input/
+accessibility and unchanged resource qualification. Then prioritize explicit project
+identity and the existing reviewed ML proposal bridge (B), approved SQLite project
+memory (C), and separately qualified model profiles/admission (G/I). D/E/F/H are
+outside this increment. Historical model, neural playback, physical and release gaps
+below remain unresolved. Machine-specific receipts below describe earlier candidates.
+
 The 2026-09-30 optional neural-output increment adds Heart, Bella, Michael and
 George through the existing Chat voice selector, plus explicit Preview. Its pinned
 Kokoro CPU runtime/model are installed locally. With that runtime provisioned the
@@ -55,9 +95,10 @@ Python coverage spans 48 distinct tests across retained runs; author tests cover
 scores this bounded increment **89/100 (8.9/10), PASS**, with no identified critical
 defect in the reviewed scope. Full ML Phase 1 and release gates remain open.
 
-This is a saved working-tree checkpoint based on `22f3dae`; ML changes and the
-separate preserved voice-input WIP remain uncommitted. The retained receipts and
-source manifest identify the tested tree; they do not describe a clean release checkout.
+That historical verification used a working-tree checkpoint based on `22f3dae`,
+including ML changes and separate preserved voice-input WIP then uncommitted. Those
+files are now committed in the inspected `7fe3305` source; the old receipts still
+identify their original tested tree and are not current-candidate or release evidence.
 
 The preceding 2026-09-30 identity/advice checkpoint is recorded in
 `artifacts/qa/identity-laya-review/verified-source-manifest.json`: nonignored source,

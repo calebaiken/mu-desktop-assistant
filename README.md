@@ -2,6 +2,15 @@
 
 A Windows-first personal AI companion built in C#/.NET 10 and WPF.
 
+**Approved text inspection candidate (2026-10-19).** More → Inspect text file opens
+a separate read-only panel: enable, select one `.txt`/`.md`, review its exact target,
+then approve one bounded read. Text is literal and never automatically enters Chat
+or memory. Native Windows qualification is still pending; see
+[usage and limits](docs/TRUSTED_TEXT_INSPECTION.md), [current testing](TESTING.md)
+and the [source/PR audit and selected-module sequence](docs/AGENTIC_EVOLUTION_AUDIT.md).
+The machine-specific installation/QA receipts below are historical; a new checkout
+does not contain their ignored runtime, model or binary artifacts.
+
 | | |
 |---|---|
 | Solution | `Companion.slnx` — four production projects, two test projects |
@@ -207,7 +216,7 @@ for retention and recovery. Verification uses isolated fixtures instead of real 
 
 ## Repository
 
-Remote: `https://github.com/calebaiken/mu-desktop-assistant` (private).
+Remote: `https://github.com/calebaiken/mu-desktop-assistant` (public, checked 2026-10-19).
 Default branch `main`. No installer or published release exists.
 
 Copyright (c) 2026 Caleb Aiken. Released under the [MIT License](LICENSE).

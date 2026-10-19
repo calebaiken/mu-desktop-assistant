@@ -3,8 +3,22 @@
 Living threat model, not a security certification. Phase 1 adds explicit local preference
 storage, content-free diagnostics and same-user activation IPC. Phase 3 adds an owned
 local model process, bounded loopback chat client and optional saved conversations.
-There is no cloud inference, arbitrary shell/tool execution or recording. Future controls below must
+There is no cloud inference, arbitrary shell execution or recording. Future controls below must
 pass negative tests before their feature is enabled.
+
+The 2026-10-19 text inspection candidate adds one user-enabled, read-only `.txt`/`.md`
+capability. A metadata-only exact preview precedes fresh, process-local, single-use
+approval; monotonic expiry, revocation, no queue and retained validated Windows
+handles bind the read to the selected file. Reparse points, devices, remote/alternate
+streams and ambiguous paths deny; strict byte/character/encoding limits precede
+literal display. Prompt/file text cannot issue grants or call the executor. The panel
+is independent of all chat stores and memory; diagnostic events omit target and text.
+Cancelled/late callbacks cannot repopulate a cleared/closed panel. Noncooperative I/O
+poisons the App-owned executor, retains cleanup ownership and can fail shutdown; a
+managed timeout is not proof a blocked kernel operation exited. See
+[the precise budgets/threat boundary](docs/TRUSTED_TEXT_INSPECTION.md). Native Windows
+file identity/reparse and actual picker/accessibility checks still require execution;
+no new OS sandbox or security certification is claimed.
 
 The optional 2026-09-30 neural output backend uses pinned Kokoro ONNX assets and a
 separate hash-locked CPU runtime. Explicit setup downloads assets; speech itself
@@ -246,7 +260,8 @@ backups, OS dumps or provider retention. Crash reporting is local and opt-in to 
 
 ## Reporting
 
-No public security contact or remote project exists yet. Report a suspected problem to
+The source repository is public on GitHub (checked 2026-10-19), but no dedicated
+public security contact is documented yet. Report a suspected problem to
 the project owner through an existing private channel, omitting live credentials and
 personal documents. A public disclosure policy/contact is required before distribution.
 Do not publish exploit logs or secrets in an issue. This document must evolve with each

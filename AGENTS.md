@@ -25,8 +25,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-negative.ps1
 ```
 
 Requires .NET SDK **10.0.401** (`global.json` pins the version exactly and sets
-`rollForward: latestPatch`, `allowPrerelease: false`). Anything else fails the
-SDK-pin check, not just the build.
+`rollForward: latestPatch`, `allowPrerelease: false`). The architecture check compares
+these configuration values exactly; SDK resolution allows same-band patch roll-forward.
 
 ## Architecture checks are exact-match, not advisory
 
@@ -47,8 +47,9 @@ a reasonable-looking addition usually breaks CI rather than being tolerated.
   build through.
 - **`src/Companion.Desktop/app.manifest`** must stay `asInvoker` with
   `uiAccess="false"` and `dpiAwareness` `PerMonitorV2`.
-- **`NuGet.Config`** must keep exactly two sources with a `<clear />`, the first
-  being `https://api.nuget.org/v3/index.json`. Adding a feed breaks the check.
+- **`NuGet.Config`** must keep exactly two child elements in `packageSources`:
+  `<clear />` and one source, `https://api.nuget.org/v3/index.json`. Adding a feed
+  breaks the check.
 - **`.gitignore`** must keep these nine literal lines: `.env`, `.env.*`, `*.db`,
   `*.db-*`, `*.log`, `*.dmp`, `*.pfx`, `*.key`, `secrets/`.
 

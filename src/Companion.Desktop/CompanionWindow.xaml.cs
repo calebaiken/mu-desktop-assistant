@@ -17,6 +17,7 @@ public partial class CompanionWindow : Window
     public event EventHandler? SettingsRequested;
     public event EventHandler? ChatRequested;
     public event EventHandler? MlLabRequested;
+    public event EventHandler? TextInspectionRequested;
     public event EventHandler? HideRequested;
     public event EventHandler? PlacementChanged;
     public event EventHandler? SleepChanged;
@@ -345,6 +346,7 @@ public partial class CompanionWindow : Window
     private void Settings_Click(object sender, RoutedEventArgs e) => SettingsRequested?.Invoke(this, EventArgs.Empty);
     private void Chat_Click(object sender, RoutedEventArgs e) => ChatRequested?.Invoke(this, EventArgs.Empty);
     private void MlLab_Click(object sender, RoutedEventArgs e) => MlLabRequested?.Invoke(this, EventArgs.Empty);
+    private void InspectText_Click(object sender, RoutedEventArgs e) => TextInspectionRequested?.Invoke(this, EventArgs.Empty);
     private void Hide_Click(object sender, RoutedEventArgs e) => HideRequested?.Invoke(this, EventArgs.Empty);
     private void Sleep_Click(object sender, RoutedEventArgs e) => ToggleSleep();
     private void Exit_Click(object sender, RoutedEventArgs e) => Close();
