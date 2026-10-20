@@ -1,5 +1,22 @@
 # Changelog
 
+## Unreleased — Native Research Projects UI v3 (2026-10-19, bounded increment)
+
+- Added opt-in WPF Instrument/Archive resources with Windows high-contrast roles,
+  canonical v3 colors, accessible control boundaries, fallback fonts and visible focus.
+- Reworked the existing picker with project rows, exact destination review,
+  Refresh/Cancel, creation validation/count bounds and scrollable narrow layout.
+  Explicit Open revalidates reviewed metadata; closing cancels transient work.
+- Preserved Muon, scientific/approval flows, local storage and resource budgets.
+  No packages, fonts or branding assets added.
+- Added independent native UIA/injected-keyboard checks and capture tooling.
+  At cc163d6 both Windows runs pass the required gates, 112 independent native UI
+  checks and unchanged companion CPU/memory budgets. Earlier UI/capture failures
+  and initial 6.5/10 incomplete QA are retained. Final native screenshots and
+  detailed receipts were independently inspected, including the repaired disabled
+  surface. Physical accessibility, animated idle and matched current live
+  competitors remain unqualified; independent review records the acceptance limits.
+
 ## Unreleased — Explicit Chat-to-Research handoff (2026-10-19, bounded increment)
 
 - Added Saved Chat draft selection, existing project picker, exact request/identity

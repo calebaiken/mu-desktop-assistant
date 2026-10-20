@@ -1,0 +1,15 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <SolidColorBrush x:Key="Mu.Canvas" Color="#F5F0E6"/>
+    <SolidColorBrush x:Key="Mu.Surface" Color="#FFFCF6"/>
+    <SolidColorBrush x:Key="Mu.Raised" Color="#ECE4D7"/>
+    <SolidColorBrush x:Key="Mu.Text" Color="#211B1E"/>
+    <SolidColorBrush x:Key="Mu.SecondaryText" Color="#5F5759"/>
+    <SolidColorBrush x:Key="Mu.Primary" Color="#7D2037"/>
+    <SolidColorBrush x:Key="Mu.PrimaryHover" Color="#671D30"/>
+    <SolidColorBrush x:Key="Mu.OnPrimary" Color="#FFFCF6"/>
+    <SolidColorBrush x:Key="Mu.Accent" Color="#75531C"/>
+    <SolidColorBrush x:Key="Mu.Focus" Color="#7D2037"/>
+    <SolidColorBrush x:Key="Mu.QuietBorder" Color="#D9CFBF"/>
+    <SolidColorBrush x:Key="Mu.ControlBorder" Color="#5F5759"/>
+    <SolidColorBrush x:Key="Mu.Error" Color="#9A2939"/>
+</ResourceDictionary>

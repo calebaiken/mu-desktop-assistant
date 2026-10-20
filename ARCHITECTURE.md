@@ -1,5 +1,12 @@
 # Architecture
 
+[Native UI v3 resources](docs/UI_DESIGN_V3.md) are explicitly keyed and loaded only
+by ResearchProjectsWindow. Local palette changes are transient; OS high contrast
+overrides them. No global App styling or layer/package change occurs. The picker
+revalidates immutable project metadata through the existing store before returning
+an ID; App/ResearchLabWorkspace retain admission authority. Native UI checks are
+a separate dev-only executable outside the unchanged six-project solution.
+
 [Explicit Chat handoff](docs/CHAT_PROJECT_HANDOFF.md) adds disposable Application
 request tickets bound to the existing workspace lease and work-admission revision.
 The admission/retirement lock also protects single-use UI delivery. Desktop owns

@@ -2,6 +2,11 @@
 > a separately confirmed Saved Chat draft transfer. Project selection itself still
 > transfers no chat and grants no worker execution authority.
 
+> The [native v3 picker](UI_DESIGN_V3.md) adds scoped Instrument/Archive presentation,
+> exact destination revalidation, Refresh/Cancel and keyboard/scrolling improvements.
+> It preserves this catalog, workspace, storage and scientific execution boundary.
+> Native visual acceptance is separate from the earlier project receipts.
+
 # Local research projects — first Module B increment
 
 Normal navigation: **More / Chat / tray → ML Lab → create or select a research

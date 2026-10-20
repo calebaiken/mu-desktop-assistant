@@ -1,5 +1,12 @@
 # Dependency inventory
 
+2026-10-19 UI v3: no new direct packages, runtime dependencies, bundled fonts,
+images or logos. The standalone dev-only `scripts/ResearchProjects.UiChecks`
+project references Desktop and reuses its reviewed graph in a committed
+[lockfile](../scripts/ResearchProjects.UiChecks/packages.lock.json). It is outside
+the unchanged production solution and uses platform WPF/GDI for fixture-only UI
+checks. [Brand-source provenance](UI_DESIGN_V3.md); the kit is not redistributed.
+
 Recorded 2026-09-22 from the restored `.packages/<id>/<version>/*.nuspec` files,
 package notices and committed lock files. Repository URLs, commit IDs and license
 expressions below are package-supplied metadata; an absent commit is explicitly

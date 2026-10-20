@@ -32,11 +32,53 @@ jobs:
           python -m venv artifacts/ml-runtime
           & artifacts/ml-runtime/Scripts/python.exe -c "import json,os,sys,base64,pathlib; print('ML runtime interpreter ready:', sys.version)"
       - name: Build, test and smoke
+        id: required_positive
         shell: powershell
         run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify.ps1
       - name: Adversarial architecture controls
+        id: required_negative
         shell: powershell
         run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-negative.ps1
+      - name: Check out frozen baseline UI for comparable capture
+        uses: actions/checkout@v7
+        with:
+          ref: 6e4ba5d5f0edd5af23eabf3493e41c07dd6b592e
+          path: artifacts/ui-baseline-source
+      - name: Capture frozen baseline with current native capture tool
+        shell: powershell
+        run: |
+          $baseline = 'artifacts/ui-baseline-source'
+          $tool = "$baseline/scripts/ResearchProjects.UiChecks"
+          New-Item -ItemType Directory -Force -Path $tool | Out-Null
+          foreach ($file in @('ResearchProjects.UiChecks.csproj', 'packages.lock.json', 'Program.cs', 'IndependentChecks.cs', 'WindowsContrastScope.cs', 'NativeClientCapture.cs')) {
+            Copy-Item -LiteralPath "scripts/ResearchProjects.UiChecks/$file" -Destination $tool
+          }
+          Copy-Item -LiteralPath scripts/verify-projects-ui.ps1 -Destination "$baseline/scripts/verify-projects-ui.ps1"
+          & powershell -NoProfile -ExecutionPolicy Bypass -File "$baseline/scripts/verify-projects-ui.ps1" -Mode baseline -SourceCommit 6e4ba5d5f0edd5af23eabf3493e41c07dd6b592e
+          if ($LASTEXITCODE -ne 0) { throw 'Frozen baseline capture failed.' }
+          New-Item -ItemType Directory -Force -Path artifacts/ui-v3 | Out-Null
+          Copy-Item -LiteralPath "$baseline/artifacts/ui-v3/baseline" -Destination artifacts/ui-v3 -Recurse
+      - name: Verify native Research Projects UI
+        shell: powershell
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-projects-ui.ps1 -Mode candidate
+      - name: Preserve native Research Projects evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: research-projects-ui
+          path: artifacts/ui-v3
+      - name: Measure isolated companion resource budgets
+        # Preserve useful independent measurements even if a later UI qualification
+        # fails. The failed UI step still fails the job; neither gate is softened.
+        if: ${{ !cancelled() && steps.required_positive.outcome == 'success' && steps.required_negative.outcome == 'success' }}
+        shell: powershell
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts/measure-desktop.ps1
+      - name: Preserve companion resource evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: companion-resource-observation
+          path: artifacts/qa/performance-*
       - name: Preserve test results
         if: always()
         uses: actions/upload-artifact@v7

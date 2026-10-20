@@ -1,5 +1,52 @@
 # Development status
 
+## Current UI increment — Research Projects v3 (2026-10-20 status)
+
+[Draft PR #5](https://github.com/calebaiken/mu-desktop-assistant/pull/5),
+`feature/research-projects-ui-v3`, stacks on PR #4's documented `6e4ba5d`.
+Reviewed executable checkpoint: **cc163d6ea4afeceb34301114d0b2714119e0fabb**.
+Shared, opt-in Crimson Archive v3 WPF resources provide Instrument by default,
+a disposable Archive reading choice and Windows high-contrast overrides. The
+existing picker now groups project selection, exact identity/storage review,
+validated creation and deliberate Open, with Cancel/Refresh and bounded recovery.
+Open revalidates the reviewed immutable destination; closing invalidates late work.
+Muon, other views, project storage/admission, approvals and worker contracts remain
+unchanged. [Design sources, usage and limits](docs/UI_DESIGN_V3.md).
+
+Both final Windows [push39344178105](https://github.com/calebaiken/mu-desktop-assistant/actions/runs/39344178105)
+and [PR39344183029](https://github.com/calebaiken/mu-desktop-assistant/actions/runs/39344183029)
+succeed: mandatory positive/negative scripts, 524 passing C# tests, zero failed,
+one expected platform NotExecuted of525, 21 project/28 handoff native checkpoints,
+112 independent native UI checks and unchanged companion resource budgets.
+Linux helper crossbuild has zero warnings/errors; architecture11/11; Python
+worker/data/pipeline/project-isolation suites49/49. These are actual results in
+their stated environments, not model or physical-device qualification.
+
+The final push native artifact initially failed at its normal sa4 redirect. After
+a distinct raw resource download succeeded at that same host, one ordinary retry
+of the original native artifact succeeded. No alternate transport or configuration
+publication is inferred. Final Instrument/Archive/error/narrow/contrast images and
+all 112 detailed keyboard/viewport receipts are now independently inspected, with
+the disabled-list surface repaired. The current [independent review](docs/qa/RESEARCH_PROJECTS_UI_V3_REVIEW_WINDOWS.md)
+scores **94/100 = 9.4/10**, with zero confirmed unresolved critical production
+correctness/security defects. The requested UI phase remains **FAIL/INCOMPLETE**
+because its matched current-competitor comparison is unavailable; numerical
+success does not override that evidence gate. Four fresh blind native
+before/after rounds and the original failed captures remain preserved. A matched
+current live competitor win is not claimed; round4 prefers the final picker
+against its actual native baseline.
+
+Initial6.5/10 FAIL/INCOMPLETE QA, all failed captures/native checks and historical
+resource failures remain preserved in Testing and QA history. The >8.5 threshold
+and zero-critical-defect requirement are unchanged. Current push raw resource
+arithmetic was independently recomputed; it reports high contrast true and Windows
+animations false. The earlier native scope separately confirms restoration to
+false; the later resource observation is unexplained and does not qualify normal
+color/animated idle. Physical Windows11, screen readers, 125–200% display scaling,
+installed models/scientific workloads and current live competitors remain unverified.
+Next UI slices: Chat transfer hierarchy, then Lab review/Run states and Settings
+with existing Save/Cancel semantics. Module C memory remains a separate proposal.
+
 ## Current increment — explicit Chat-to-Research handoff (2026-10-19)
 
 [Draft stacked PR #4](https://github.com/calebaiken/mu-desktop-assistant/pull/4),

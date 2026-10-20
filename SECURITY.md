@@ -1,5 +1,14 @@
 # Security and privacy design
 
+The [Research Projects UI v3](docs/UI_DESIGN_V3.md) changes presentation, not action
+authority. Literal catalog names/IDs/paths remain display data. Selection starts no
+model, dataset scan or worker. Explicit Open revalidates its immutable snapshot;
+changed/closed/busy states cannot accept a destination. Existing workspace admission
+remains authoritative. Palette choice adds no persistence or telemetry. Native
+client capture/temporary OS contrast changes exist only in the separately invoked
+public-fixture developer harness; Mu gains no screen-capture/background-observation
+capability. Artifacts contain synthetic metadata, never user conversations/datasets.
+
 [Explicit Chat handoff](docs/CHAT_PROJECT_HANDOFF.md) transfers only the exact bounded
 Saved Chat draft after project/identity preview and confirmation. Temporary mode
 refuses transfer. Process-local single-use tickets capture a workspace lease and

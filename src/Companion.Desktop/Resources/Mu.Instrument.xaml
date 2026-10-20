@@ -1,0 +1,17 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Crimson Archive v3 canonical UI roles. Essential boundaries use secondary text,
+         because the canonical quiet border is decorative and does not meet 3:1. -->
+    <SolidColorBrush x:Key="Mu.Canvas" Color="#121115"/>
+    <SolidColorBrush x:Key="Mu.Surface" Color="#1E1B23"/>
+    <SolidColorBrush x:Key="Mu.Raised" Color="#29242D"/>
+    <SolidColorBrush x:Key="Mu.Text" Color="#F3EEE6"/>
+    <SolidColorBrush x:Key="Mu.SecondaryText" Color="#BEB3B4"/>
+    <SolidColorBrush x:Key="Mu.Primary" Color="#E19BAD"/>
+    <SolidColorBrush x:Key="Mu.PrimaryHover" Color="#F0B6C3"/>
+    <SolidColorBrush x:Key="Mu.OnPrimary" Color="#121115"/>
+    <SolidColorBrush x:Key="Mu.Accent" Color="#E0BA76"/>
+    <SolidColorBrush x:Key="Mu.Focus" Color="#E0BA76"/>
+    <SolidColorBrush x:Key="Mu.QuietBorder" Color="#4A404B"/>
+    <SolidColorBrush x:Key="Mu.ControlBorder" Color="#BEB3B4"/>
+    <SolidColorBrush x:Key="Mu.Error" Color="#F09FA9"/>
+</ResourceDictionary>
