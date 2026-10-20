@@ -6,8 +6,11 @@ Projects picker. This is not a replacement application shell. The feature branch
 `6e4ba5d5f0edd5af23eabf3493e41c07dd6b592e`; main and PR #1 are not merged.
 [Draft PR #5](https://github.com/calebaiken/mu-desktop-assistant/pull/5) targets
 `feature/chat-project-handoff`. Corrected native captures and fresh blind criticism
-are available; the complete independent interaction suite now passes. Final
-engineering acceptance awaits verification of the observed disabled-list surface repair.
+are available; the complete independent interaction suite now passes and final
+native pixels are inspected. Matched current live competitor qualification remains open.
+Independent engineering review is **94/100 = 9.4/10**, zero confirmed unresolved
+critical production correctness/security defects; the overall requested UI phase
+is **FAIL/INCOMPLETE** because the matched current-competitor benchmark is absent.
 
 ## Authority and provenance
 
@@ -66,9 +69,15 @@ actual WPF brush properties; screenshots and screen-reader checks remain separat
 
 Font fallbacks: Inter → Segoe UI; EB Garamond → Georgia; JetBrains Mono → Consolas.
 No fonts are downloaded or bundled. Body uses the compact 14-DIP instrument role,
-with 30-DIP display heading, 16-DIP row titles and 12-DIP selectable technical IDs.
+with a 30-DIP display heading, 16-DIP row titles, 12-DIP row IDs and a selectable
+13-DIP identity/path review.
 Spacing follows the 4/8/12/16/24 scale, primary control targets are at least 44 DIPs, and
 keyboard focus is 2 DIPs. DIPs and physical screenshot pixels are recorded separately.
+The native TextBox edit template retains platform focus/edit affordances; a
+programmatically focused border can use Windows blue instead of the canonical
+Mu focus adorner. One inspected narrow-state pair is #569DE5 against #1E1B23,
+5.945336:1. Brush-role assertions and this pixel sample do not qualify every
+hover/focus/disabled pixel, assistive technology, or a complete WCAG audit.
 Vertical scrolling uses a keyed, palette-aware native ScrollBar template, native
 system scrollbar width, 32-DIP thumb minimum and the existing paging/range commands.
 Keyboard/UIA scrolling remains native; horizontal templates remain unchanged.
@@ -129,6 +138,29 @@ navigation sidebar or fake activity counters were added.
 
 ## Native evidence and limits
 
+Final executable checkpoint: **cc163d6ea4afeceb34301114d0b2714119e0fabb**.
+Both Windows push39344178105 and PR39344183029 succeed, including both mandatory
+scripts, 524 passing C# cases/one expected platform skip, 21 project/28 handoff
+native checkpoints, all112 independent UI checks, actual OS/WPF contrast and
+unchanged companion resource budgets. Exact counters/measurements are in Testing.
+Final artifact12230441547 initially failed at its ordinary sa4 redirect, as did
+the distinct PR artifact12230865960 at sa16. A later distinct raw resource artifact
+succeeded at sa4; one standard retry of the original native artifact then succeeded
+at that same host. No redirect rewrite, reupload, alternate transport or published
+configuration is inferred. Final native manifest identifies exact cc163d6; its
+Instrument/Archive/error/narrow/contrast pixels and all detailed keyboard/viewport
+receipts are independently inspected. The bright disabled-list surface is repaired.
+The final [independent checkpoint](qa/RESEARCH_PROJECTS_UI_V3_REVIEW_WINDOWS.md)
+records the score and remaining acceptance limits. Earlier evidence below retains
+its actual source identity and is never relabeled as a later build.
+
+The current push raw resource artifact12231040817 was independently recomputed:
+all three intervals pass unchanged limits. It reports high contrast true and
+animations false. The preceding native contrast receipt separately records
+original false, enabled true, restored true and restored WPF false; the later
+resource state is unexplained. These are not normal-color/animated-idle release
+qualification and do not erase historical failures.
+
 Run both required Windows gates unchanged, then:
 
 ```powershell
@@ -169,9 +201,8 @@ and candidate artifact12229771010 from run39341858853. A configuration draft
 preserves the known allowlist and adds observed artifact hosts; saving it does
 not prove publication/access. No alternate transport bypasses denied destinations.
 Status annotations contain bounded counters/labels only, never screenshot bytes,
-private content, signed URLs or a substitute for visual evidence. No claim of visual
-complete interaction acceptance, current-interface Gauntlet win or complete
-accessibility is made.
+private content, signed URLs or a substitute for visual evidence. No current-interface
+Gauntlet win or complete physical/accessibility qualification is claimed.
 
 Corrected captures record 100% DPI, actual 1024×720-DIP work area, and
 800×600, 540×460 and 1024×680-DIP windows. The earlier 1024×768 window extended
@@ -210,8 +241,9 @@ runner: no idle blink/timer was observed in any interval. This does not establis
 animated-idle resource acceptance or replace historical failures. The short picker
 observation was1500ms,1.041607% one-core CPU and47,374,336 private bytes, including
 the capture harness; it is not compared to the companion's60-second idle gate.
-The native error PNG exposed a bright default disabled-list surface; the bounded
-keyed ListBox/template repair still requires its own native evidence.
+The native error PNG exposed a bright default disabled-list surface. The final
+keyed ListBox/template repair passes native execution checks and its actual new
+error-state pixels are independently inspected.
 
 The [frozen independent protocol](qa/RESEARCH_PROJECTS_UI_V3_PROTOCOL.md) has 50
 criteria. Passing requires >8.5/10 and zero unresolved critical defects; missing
@@ -237,7 +269,10 @@ preferred abefea7 for hierarchy and explicit destination review, while identifyi
 nested scrolling as its largest deficit. [Round3](qa/RESEARCH_PROJECTS_UI_V3_CRITIC_ROUND3.md)
 prefers the compact d5d1a8c tree, with small/wrapped exact metadata as its main
 remaining deficit. The genuine published VS Code reference
-informs research only; no current competitor win is claimed.
+informs research only. [Round4](qa/RESEARCH_PROJECTS_UI_V3_CRITIC_ROUND4.md) prefers
+the final cc163d6 primary/error pair against baseline; scattered catalog-error
+guidance and small/wrapped metadata remain follow-ups. No current competitor
+win is claimed.
 
 After native visual acceptance, use separate PRs for Chat draft/transfer hierarchy
 and keyboard flow; Lab dataset/proposal/review/Run/Jobs distinctions; Settings

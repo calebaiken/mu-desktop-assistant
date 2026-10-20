@@ -10,12 +10,12 @@
 - Preserved Muon, scientific/approval flows, local storage and resource budgets.
   No packages, fonts or branding assets added.
 - Added independent native UIA/injected-keyboard checks and capture tooling.
-  At d5d1a8c both Windows runs pass the required gates,112 independent native UI
-  checks and unchanged companion CPU/memory budgets. Earlier
-  UI/capture failures and initial 6.5/10 incomplete QA are retained. PR-run
-  screenshots and detailed receipts were independently inspected; final acceptance
-  awaits native verification of a disabled-list surface repair. Physical
-  accessibility/current live competitors remain unqualified.
+  At cc163d6 both Windows runs pass the required gates, 112 independent native UI
+  checks and unchanged companion CPU/memory budgets. Earlier UI/capture failures
+  and initial 6.5/10 incomplete QA are retained. Final native screenshots and
+  detailed receipts were independently inspected, including the repaired disabled
+  surface. Physical accessibility, animated idle and matched current live
+  competitors remain unqualified; independent review records the acceptance limits.
 
 ## Unreleased — Explicit Chat-to-Research handoff (2026-10-19, bounded increment)
 
